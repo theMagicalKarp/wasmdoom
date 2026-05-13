@@ -1,2 +1,6 @@
+.zig-cache/
+zig-out/
+*.o
+
 notes.md
 .DS_Store

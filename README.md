@@ -18,6 +18,6 @@ zig build
 ## Formatting
 
 ```sh
-zig build fmt         # rewrite i_*.c / i_*.h in place
+zig build fmt         # rewrite *.c / *.h in place
 zig build fmt-check   # CI-friendly dry run
 ```

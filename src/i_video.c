@@ -24,7 +24,9 @@
 
 #include "doomdef.h"
 
-void I_ShutdownGraphics(void) {}
+void I_ShutdownGraphics(void) {
+  // TODO: Expose to Host
+}
 
 //
 // I_StartFrame
@@ -34,7 +36,9 @@ void I_StartFrame(void) {}
 //
 // I_StartTic
 //
-void I_StartTic(void) {}
+void I_StartTic(void) {
+  // TODO: Expose to Host
+}
 
 //
 // I_UpdateNoBlit
@@ -44,16 +48,24 @@ void I_UpdateNoBlit(void) {}
 //
 // I_FinishUpdate
 //
-void I_FinishUpdate(void) {}
+void I_FinishUpdate(void) {
+  // COPY TO FRAME BUFFER
+}
 
 //
 // I_ReadScreen
 //
-void I_ReadScreen(byte *scr) {}
+void I_ReadScreen(byte *scr) {
+  memcpy(scr, screens[0], SCREENWIDTH * SCREENHEIGHT);
+}
 
 //
 // I_SetPalette
 //
-void I_SetPalette(byte *palette) {}
+void I_SetPalette(byte *palette) {
+  // TODO
+}
 
-void I_InitGraphics(void) {}
+void I_InitGraphics(void) {
+  // TODO: Expose to Host
+}

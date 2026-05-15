@@ -70,6 +70,13 @@ const c_flags = [_][]const u8{
     "-DNORMALUNIX",
     "-DLINUX",
     "-Wno-everything",
+    // The 1993 DOOM source leans on behavior the C standard calls undefined
+    // (signed integer overflow, type-punned/aliased reads, unaligned access,
+    // etc). Zig enables LLVM's UndefinedBehaviorSanitizer by default for Debug
+    // and ReleaseSafe builds, so without this the game would trap and abort as
+    // soon as that code runs. Disabling UBSan lets the original code execute
+    // as written.
+    "-fno-sanitize=undefined",
 };
 
 pub fn build(b: *std.Build) !void {

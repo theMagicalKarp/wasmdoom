@@ -26,6 +26,11 @@
 
 #include "doomdef.h"
 
+#ifdef SNDSERV
+FILE *sndserver = 0;
+char *sndserver_filename = "./sndserver";
+#endif
+
 //
 // SFX API
 //

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "doomdef.h"
 #include "i_sound.h"
@@ -33,7 +34,7 @@
 #endif
 #include "i_system.h"
 
-int mb_used = 6;
+int mb_used = 16;
 
 void I_Tactile(int on, int off, int total) {}
 
@@ -43,35 +44,70 @@ ticcmd_t *I_BaseTiccmd(void) { return &emptycmd; }
 int I_GetHeapSize(void) { return mb_used * 1024 * 1024; }
 
 byte *I_ZoneBase(int *size) {
-  *size = 0;
-  return NULL;
+  *size = mb_used * 1024 * 1024;
+  return (byte *)malloc(*size);
 }
 
 //
 // I_GetTime
 // returns time in 1/70th second tics
 //
-int I_GetTime(void) { return 0; }
+static uint64_t basetime_ns = 0;
+int I_GetTime(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  uint64_t now_ns = (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+
+  if (basetime_ns == 0) {
+    basetime_ns = now_ns;
+    return 0;
+  }
+  return (int)((now_ns - basetime_ns) * 70ull / 1000000000ull);
+}
 
 //
 // I_Init
 //
-void I_Init(void) {}
+void I_Init(void) {
+  // TODO: Expose to Hosts
+}
 
 //
 // I_Quit
 //
-void I_Quit(void) {}
+void I_Quit(void) {
+  D_QuitNetGame();
+  I_ShutdownSound();
+  I_ShutdownMusic();
+  M_SaveDefaults();
+  I_ShutdownGraphics();
+  exit(0);
+}
 
-void I_WaitVBL(int count) {}
+void I_WaitVBL(int count) { usleep(count * (1000000 / 70)); }
 
 void I_BeginRead(void) {}
 
 void I_EndRead(void) {}
 
-byte *I_AllocLow(int length) { return NULL; }
+byte *I_AllocLow(int length) {
+  byte *mem;
+
+  mem = (byte *)malloc(length);
+  memset(mem, 0, length);
+  return mem;
+}
 
 //
 // I_Error
 //
-void I_Error(char *error, ...) {}
+void I_Error(char *error, ...) {
+  va_list ap;
+  fprintf(stderr, "Error: ");
+  va_start(ap, error);
+  vfprintf(stderr, error, ap);
+  va_end(ap);
+  fprintf(stderr, "\n");
+  fflush(stderr);
+  exit(1);
+}

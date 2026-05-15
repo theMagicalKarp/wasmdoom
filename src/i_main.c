@@ -16,11 +16,16 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "d_main.h"
 #include "doomdef.h"
+
+#include "d_main.h"
 #include "m_argv.h"
 
 int main(int argc, char **argv) {
-  printf("Hello world!");
+  myargc = argc;
+  myargv = argv;
+
+  D_DoomMain();
+
   return 0;
 }

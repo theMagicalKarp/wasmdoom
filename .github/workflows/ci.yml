@@ -12,12 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup `wasmtime`
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+        with:
+          version: "44.0.1"
+
       - name: Set up Zig
         uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
 
       - run: zig build
+
+      - name: Verify WASM Execution
+        run: |
+          wasmtime run --dir . \
+            --env HOME="." \
+            --env DOOMWADDIR="./wads" \
+            ./zig-out/bin/wasmdoom.wasm
 
   fmt-check:
     runs-on: ubuntu-latest

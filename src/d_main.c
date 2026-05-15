@@ -576,7 +576,7 @@ void IdentifyVersion(void) {
     return;
   }
 
-  if (!access(doom2fwad, R_OK)) {
+  if (M_FileExists(doom2fwad)) {
     gamemode = commercial;
     // C'est ridicule!
     // Let's handle languages in config files, okay?
@@ -586,37 +586,37 @@ void IdentifyVersion(void) {
     return;
   }
 
-  if (!access(doom2wad, R_OK)) {
+  if (M_FileExists(doom2wad)) {
     gamemode = commercial;
     D_AddFile(doom2wad);
     return;
   }
 
-  if (!access(plutoniawad, R_OK)) {
+  if (M_FileExists(plutoniawad)) {
     gamemode = commercial;
     D_AddFile(plutoniawad);
     return;
   }
 
-  if (!access(tntwad, R_OK)) {
+  if (M_FileExists(tntwad)) {
     gamemode = commercial;
     D_AddFile(tntwad);
     return;
   }
 
-  if (!access(doomuwad, R_OK)) {
+  if (M_FileExists(doomuwad)) {
     gamemode = retail;
     D_AddFile(doomuwad);
     return;
   }
 
-  if (!access(doomwad, R_OK)) {
+  if (M_FileExists(doomwad)) {
     gamemode = registered;
     D_AddFile(doomwad);
     return;
   }
 
-  if (!access(doom1wad, R_OK)) {
+  if (M_FileExists(doom1wad)) {
     gamemode = shareware;
     D_AddFile(doom1wad);
     return;
@@ -1049,5 +1049,5 @@ void D_DoomMain(void) {
       D_StartTitle(); // start up intro loop
   }
 
-  D_DoomLoop(); // never returns
+  // D_DoomLoop(); // never returns
 }

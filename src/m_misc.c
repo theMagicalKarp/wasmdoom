@@ -25,6 +25,7 @@
 
 static const char rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -136,6 +137,24 @@ int M_ReadFile(char const *name, byte **buffer) {
 
   *buffer = buf;
   return length;
+}
+
+// @ADDITION
+//
+// M_FileExists
+// Replacement for the `access` system call used to test for a file's
+// existence. Some platforms, WASI runtimes in particular, do not
+// fully implement `access`, so the more rugged approach is to simply
+// attempt to open the file for reading and treat any error as "missing".
+//
+boolean M_FileExists(char *filename) {
+  FILE *fstream = fopen(filename, "r");
+  if (fstream == NULL) {
+    return false;
+  }
+
+  fclose(fstream);
+  return true;
 }
 
 //
@@ -452,7 +471,7 @@ void M_ScreenShot(void) {
   for (i = 0; i <= 99; i++) {
     lbmname[4] = i / 10 + '0';
     lbmname[5] = i % 10 + '0';
-    if (access(lbmname, 0) == -1)
+    if (!M_FileExists(lbmname))
       break; // file doesn't exist
   }
   if (i == 100)

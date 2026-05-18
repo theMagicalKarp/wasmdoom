@@ -31,6 +31,14 @@ jobs:
             --env DOOMWADDIR="./wads" \
             ./zig-out/bin/wasmdoom.wasm
 
+      - name: Upload wasm artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: wasmdoom-wasm
+          path: zig-out/bin/wasmdoom.wasm
+          if-no-files-found: error
+          retention-days: 3
+
   fmt-check:
     runs-on: ubuntu-latest
     steps:
@@ -44,3 +52,44 @@ jobs:
           version: 0.16.0
 
       - run: zig build fmt-check
+
+  web:
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: wasmdoom-wasm
+          path: zig-out/bin
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Upload web dist artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-dist
+          path: web/dist
+          if-no-files-found: error
+          retention-days: 5

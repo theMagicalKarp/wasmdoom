@@ -4,8 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>wasmdoom</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+      }
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #screen {
+        height: 100vh;
+        image-rendering: pixelated;
+      }
+    </style>
   </head>
   <body>
+    <canvas id="screen" width="320" height="200"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

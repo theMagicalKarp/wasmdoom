@@ -52,5 +52,7 @@ void D_PageTicker(void);
 void D_PageDrawer(void);
 void D_AdvanceDemo(void);
 void D_StartTitle(void);
+// @ADDITION
+void D_DoomLoopTick(void);
 
 #endif

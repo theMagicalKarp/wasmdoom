@@ -323,39 +323,48 @@ void D_DoomLoop(void) {
   I_InitGraphics();
 
   while (1) {
-    // frame syncronous IO operations
-    I_StartFrame();
+    D_DoomLoopTick();
+  }
+}
 
-    // process one or more tics
-    if (singletics) {
-      I_StartTic();
-      D_ProcessEvents();
-      G_BuildTiccmd(&netcmds[consoleplayer][maketic % BACKUPTICS]);
-      if (advancedemo)
-        D_DoAdvanceDemo();
-      M_Ticker();
-      G_Ticker();
-      gametic++;
-      maketic++;
-    } else {
-      TryRunTics(); // will run at least one tic
-    }
+// @ADDITION
+// Runs a single iteration of the DOOM game loop: input, ticking, display and
+// sound. Extracted from D_DoomLoop's while(1) so a host that owns the event
+// loop (e.g. the WebAssembly browser host) can advance the game one frame at
+// a time by calling this directly.
+void D_DoomLoopTick(void) {
+  // frame syncronous IO operations
+  I_StartFrame();
 
-    S_UpdateSounds(players[consoleplayer].mo); // move positional sounds
+  // process one or more tics
+  if (singletics) {
+    I_StartTic();
+    D_ProcessEvents();
+    G_BuildTiccmd(&netcmds[consoleplayer][maketic % BACKUPTICS]);
+    if (advancedemo)
+      D_DoAdvanceDemo();
+    M_Ticker();
+    G_Ticker();
+    gametic++;
+    maketic++;
+  } else {
+    TryRunTics(); // will run at least one tic
+  }
 
-    // Update display, next frame, with current state.
-    D_Display();
+  S_UpdateSounds(players[consoleplayer].mo); // move positional sounds
+
+  // Update display, next frame, with current state.
+  D_Display();
 
 #ifndef SNDSERV
-    // Sound mixing for the buffer is snychronous.
-    I_UpdateSound();
+  // Sound mixing for the buffer is snychronous.
+  I_UpdateSound();
 #endif
-    // Synchronous sound output is explicitly called.
+  // Synchronous sound output is explicitly called.
 #ifndef SNDINTR
-    // Update sound output.
-    I_SubmitSound();
+  // Update sound output.
+  I_SubmitSound();
 #endif
-  }
 }
 
 //

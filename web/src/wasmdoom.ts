@@ -1,0 +1,7 @@
+export const WASMDOOM_KEYS = {
+  KEY_RIGHTARROW: 0xae,
+  KEY_LEFTARROW: 0xac,
+  KEY_UPARROW: 0xad,
+  KEY_DOWNARROW: 0xaf,
+  KEY_ENTER: 13,
+};

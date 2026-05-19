@@ -61,6 +61,7 @@ const doom_sources = [_][]const u8{
     "src/tables.c",
     "src/v_video.c",
     "src/w_wad.c",
+    "src/wasmdoom.c",
     "src/wi_stuff.c",
     "src/z_zone.c",
 };

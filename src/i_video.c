@@ -36,9 +36,7 @@ void I_StartFrame(void) {}
 //
 // I_StartTic
 //
-void I_StartTic(void) {
-  // TODO: Expose to Host
-}
+void I_StartTic(void) {}
 
 //
 // I_UpdateNoBlit
@@ -62,10 +60,8 @@ void I_ReadScreen(byte *scr) {
 //
 // I_SetPalette
 //
-void I_SetPalette(byte *palette) {
-  // TODO
-}
+byte doom_palette[768];
 
-void I_InitGraphics(void) {
-  // TODO: Expose to Host
-}
+void I_SetPalette(byte *palette) { memcpy(doom_palette, palette, 768); }
+
+void I_InitGraphics(void) {}

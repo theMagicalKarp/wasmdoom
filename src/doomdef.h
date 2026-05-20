@@ -29,7 +29,9 @@
 // Global parameters/defines.
 //
 // DOOM version
-enum { VERSION = 110 };
+// @EDIT
+// Changed 110 to 109, to ensure the demo plays for the shareware WAD.
+enum { VERSION = 109 };
 
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.

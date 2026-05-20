@@ -71,6 +71,7 @@ const c_flags = [_][]const u8{
     "-DNORMALUNIX",
     "-DLINUX",
     "-Wno-everything",
+    "-DSNDSRV",
     // The 1993 DOOM source leans on behavior the C standard calls undefined
     // (signed integer overflow, type-punned/aliased reads, unaligned access,
     // etc). Zig enables LLVM's UndefinedBehaviorSanitizer by default for Debug

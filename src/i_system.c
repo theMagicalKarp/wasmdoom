@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 
 #include "doomdef.h"
 #include "i_sound.h"
@@ -52,17 +52,18 @@ byte *I_ZoneBase(int *size) {
 // I_GetTime
 // returns time in 1/70th second tics
 //
-static uint64_t basetime_ns = 0;
+static int basetime = 0;
 int I_GetTime(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  uint64_t now_ns = (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+  struct timeval tp;
+  struct timezone tzp;
+  int newtics;
 
-  if (basetime_ns == 0) {
-    basetime_ns = now_ns;
-    return 0;
+  gettimeofday(&tp, &tzp);
+  if (!basetime) {
+    basetime = tp.tv_sec;
   }
-  return (int)((now_ns - basetime_ns) * 70ull / 1000000000ull);
+  newtics = (tp.tv_sec - basetime) * TICRATE + tp.tv_usec * TICRATE / 1000000;
+  return newtics;
 }
 
 //

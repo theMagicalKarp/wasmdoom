@@ -6,13 +6,18 @@ import {
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
 import { assertWasmdoomInstance } from "./wasi-instance.ts";
-import { WASMDOOM_KEYS } from "./wasmdoom.ts";
+import { WASMDOOM_KEYS, WASMDOOM_MOUSE_BUTTONS } from "./wasmdoom.ts";
 
 const KEY_MAP = new Map([
+  ["KeyW", WASMDOOM_KEYS.KEY_UPARROW],
+  ["KeyS", WASMDOOM_KEYS.KEY_DOWNARROW],
+  ["KeyA", WASMDOOM_KEYS.KEY_STRAFELEFT],
+  ["KeyD", WASMDOOM_KEYS.KEY_STRAFERIGHT],
   ["ArrowUp", WASMDOOM_KEYS.KEY_UPARROW],
   ["ArrowDown", WASMDOOM_KEYS.KEY_DOWNARROW],
   ["ArrowLeft", WASMDOOM_KEYS.KEY_LEFTARROW],
   ["ArrowRight", WASMDOOM_KEYS.KEY_RIGHTARROW],
+
   ["Enter", WASMDOOM_KEYS.KEY_ENTER],
   ["Space", WASMDOOM_KEYS.KEY_USE],
   ["ShiftLeft", WASMDOOM_KEYS.KEY_SPEED],
@@ -42,6 +47,12 @@ const KEY_MAP = new Map([
   ["F11", WASMDOOM_KEYS.KEY_FN_ELEVEN],
   ["F12", WASMDOOM_KEYS.KEY_FN_TWELVE],
 ]);
+
+const MOUSE_BUTTON_MAP = [
+  WASMDOOM_MOUSE_BUTTONS.FIRE,
+  WASMDOOM_MOUSE_BUTTONS.STRAFE,
+  WASMDOOM_MOUSE_BUTTONS.USE,
+];
 
 async function main() {
   const canvas = document.getElementById("screen");
@@ -96,7 +107,7 @@ async function main() {
       return;
     }
     event.preventDefault();
-    instance.exports.wasmdoom_send_key(1, doomkey);
+    instance.exports.wasmdoom_keydown(doomkey);
   });
 
   window.addEventListener("keyup", (event: KeyboardEvent) => {
@@ -105,8 +116,40 @@ async function main() {
       return;
     }
     event.preventDefault();
-    instance.exports.wasmdoom_send_key(0, doomkey);
+    instance.exports.wasmdoom_keyup(doomkey);
   });
+
+  let mouseButtons = 0;
+  let mouseDX = 0;
+  let mouseDY = 0;
+
+  canvas.addEventListener("click", () => canvas.requestPointerLock());
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  document.addEventListener("mousemove", (e) => {
+    if (document.pointerLockElement !== canvas) return;
+    mouseDX += e.movementX;
+    mouseDY -= e.movementY;
+  });
+  document.addEventListener("mousedown", (e) => {
+    if (document.pointerLockElement !== canvas) {
+      return;
+    }
+    const bit = MOUSE_BUTTON_MAP[e.button];
+    if (bit !== undefined) {
+      mouseButtons |= bit;
+    }
+  });
+  document.addEventListener("mouseup", (e) => {
+    if (document.pointerLockElement !== canvas) {
+      return;
+    }
+    const bit = MOUSE_BUTTON_MAP[e.button];
+    if (bit !== undefined) {
+      mouseButtons &= ~bit;
+    }
+  });
+
   const SCREEN_WIDTH = 320;
   const SCREEN_HEIGHT = 200;
   instance.exports.wasmdoom_init();
@@ -115,6 +158,9 @@ async function main() {
 
   const renderFrame = () => {
     assertWasmdoomInstance(instance);
+    instance.exports.wasmdoom_send_mouse(mouseButtons, mouseDX, mouseDY);
+    mouseDX = 0;
+    mouseDY = 0;
     instance.exports.wasmdoom_tick();
 
     const buffer = instance.exports.memory.buffer;

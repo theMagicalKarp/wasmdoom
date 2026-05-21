@@ -3,7 +3,9 @@ export type WasmdoomExports = {
   _start: () => unknown;
   wasmdoom_init: () => void;
   wasmdoom_tick: () => void;
-  wasmdoom_send_key: (pressed: number, keycode: number) => void;
+  wasmdoom_keydown: (keycode: number) => void;
+  wasmdoom_keyup: (keycode: number) => void;
+  wasmdoom_send_mouse: (buttons: number, dx: number, dy: number) => void;
   wasmdoom_get_framebuffer: () => number;
   wasmdoom_get_palette: () => number;
 };
@@ -15,7 +17,9 @@ export type WasmdoomInstance = WebAssembly.Instance & {
 const REQUIRED_FUNCTIONS = [
   "wasmdoom_init",
   "wasmdoom_tick",
-  "wasmdoom_send_key",
+  "wasmdoom_keydown",
+  "wasmdoom_keyup",
+  "wasmdoom_send_mouse",
   "wasmdoom_get_framebuffer",
   "wasmdoom_get_palette",
 ] as const;

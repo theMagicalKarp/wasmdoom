@@ -30,4 +30,10 @@ export const WASMDOOM_KEYS = {
   KEY_FN_TEN: 0x80 + 0x44,
   KEY_FN_ELEVEN: 0x80 + 0x57,
   KEY_FN_TWELVE: 0x80 + 0x58,
-};
+} as const;
+
+export const WASMDOOM_MOUSE_BUTTONS = {
+  FIRE: 1 << 0,
+  STRAFE: 1 << 1,
+  USE: 1 << 2,
+} as const;

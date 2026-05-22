@@ -16,6 +16,8 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <stdint.h>
+
 #include "z_zone.h"
 
 #include "i_sound.h"
@@ -23,6 +25,7 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "w_wad.h"
+#include "wasmdoom.h"
 
 #include "doomdef.h"
 
@@ -30,6 +33,9 @@
 FILE *sndserver = 0;
 char *sndserver_filename = "./sndserver";
 #endif
+
+// Opaque play handles; 0 is reserved to mean "failed to start".
+static int next_handle = 1;
 
 //
 // SFX API
@@ -44,21 +50,41 @@ void I_SetMusicVolume(int volume) {}
 // Retrieve the raw data lump index
 //  for a given SFX name.
 //
-int I_GetSfxLumpNum(sfxinfo_t *sfx) { return 0; }
-
-int I_StartSound(int id, int vol, int sep, int pitch, int priority) {
-  return 0;
+int I_GetSfxLumpNum(sfxinfo_t *sfx) {
+  char namebuf[16];
+  snprintf(namebuf, sizeof(namebuf), "ds%s", sfx->name);
+  return W_GetNumForName(namebuf);
 }
 
-void I_StopSound(int handle) {}
+int I_StartSound(int id, int vol, int sep, int pitch, int priority) {
+  sfxinfo_t *sfx = &S_sfx[id];
+  if (sfx->lumpnum < 0) {
+    sfx->lumpnum = I_GetSfxLumpNum(sfx);
+  }
 
-int I_SoundIsPlaying(int handle) { return 0; }
+  void *data = W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+  int len = W_LumpLength(sfx->lumpnum);
+
+  int handle = next_handle++;
+  if (next_handle <= 0) {
+    next_handle = 1;
+  }
+
+  wasmdoom_sound_start(handle, id, (const uint8_t *)data, len, vol, sep, pitch);
+  return handle;
+}
+
+void I_StopSound(int handle) { wasmdoom_sound_stop(handle); }
+
+int I_SoundIsPlaying(int handle) { return wasmdoom_sound_is_playing(handle); }
 
 void I_UpdateSound(void) {}
 
 void I_SubmitSound(void) {}
 
-void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {}
+void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {
+  wasmdoom_sound_update(handle, vol, sep, pitch);
+}
 
 void I_ShutdownSound(void) {}
 

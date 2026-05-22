@@ -7,6 +7,10 @@ import {
 } from "@bjorn3/browser_wasi_shim";
 import { assertWasmdoomInstance } from "./wasi-instance.ts";
 import { WASMDOOM_KEYS, WASMDOOM_MOUSE_BUTTONS } from "./wasmdoom.ts";
+import { createDoomAudio } from "./audio.ts";
+import { pathJoin } from "./utils.ts";
+
+const { BASE_URL } = import.meta.env;
 
 const KEY_MAP = new Map([
   ["KeyW", WASMDOOM_KEYS.KEY_UPARROW],
@@ -64,7 +68,7 @@ async function main() {
     throw new Error("failed to get 2d rendering context");
   }
 
-  const wadResp = await fetch("/wads/doom1.wad");
+  const wadResp = await fetch(pathJoin(BASE_URL, "wads/doom1.wad"));
   const wadBytes = new Uint8Array(await wadResp.arrayBuffer());
 
   const stdin = new OpenFile(new File([]));
@@ -82,15 +86,17 @@ async function main() {
   const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
 
   let memory: WebAssembly.Memory;
+  const audio = createDoomAudio(() => memory);
   const doomHost = {
     wasmdoom_error(messagePtr: number, length: number) {
       const bytes = new Uint8Array(memory.buffer, messagePtr, length);
       console.error(`[doom_host] error: ${new TextDecoder().decode(bytes)}`);
     },
+    ...audio.imports,
   };
 
   const { instance } = await WebAssembly.instantiateStreaming(
-    fetch("/wasmdoom.wasm"),
+    fetch(pathJoin(BASE_URL, "wasmdoom.wasm")),
     {
       wasi_snapshot_preview1: wasi.wasiImport,
       doom_host: doomHost,
@@ -123,8 +129,19 @@ async function main() {
   let mouseDX = 0;
   let mouseDY = 0;
 
-  canvas.addEventListener("click", () => canvas.requestPointerLock());
+  canvas.addEventListener("click", () => {
+    audio.start();
+    canvas.requestPointerLock();
+  });
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      audio.suspend();
+    } else {
+      audio.resume();
+    }
+  });
 
   document.addEventListener("mousemove", (e) => {
     if (document.pointerLockElement !== canvas) return;

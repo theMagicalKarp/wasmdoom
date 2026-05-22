@@ -5,17 +5,13 @@
 #include "doomdef.h"
 #include "i_video.h"
 #include "v_video.h"
+#include "wasmdoom.h"
 
 #define EXPORT(name) __attribute__((export_name(#name))) name
-#define IMPORT(mod, name)                                                      \
-  __attribute__((import_module(#mod), import_name(#name)))
 
 #define EVENTBUF_CAP 64
 static event_t event_buf[EVENTBUF_CAP];
 static unsigned event_head = 0, event_tail = 0;
-
-IMPORT(doom_host, wasmdoom_error)
-extern void wasmdoom_error(const char *message, int32_t length);
 
 void EXPORT(wasmdoom_init)(void) { I_InitGraphics(); }
 

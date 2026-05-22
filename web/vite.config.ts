@@ -51,6 +51,8 @@ function serveWasm(): Plugin {
 }
 
 export default defineConfig({
+  // Served from "/" in dev; GitHub Pages deploys under a sub-path via BASE_PATH.
+  base: process.env.BASE_PATH ?? "/",
   plugins: [serveWasm()],
   server: {
     fs: { allow: [".."] },

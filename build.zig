@@ -81,7 +81,7 @@ const c_flags = [_][]const u8{
     "-fno-sanitize=undefined",
 };
 
-pub fn build(b: *std.Build) !void {
+pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{
         .default_target = .{
             .cpu_arch = .wasm32,
@@ -107,40 +107,4 @@ pub fn build(b: *std.Build) !void {
     });
 
     b.installArtifact(exe);
-
-    const fmt_files = try collectFmtFiles(b, "src");
-
-    const fmt_step = b.step("fmt", "Format all C sources/headers with clang-format");
-    const fmt_run = b.addSystemCommand(&.{ "clang-format", "-i" });
-    fmt_run.addArgs(fmt_files);
-    fmt_step.dependOn(&fmt_run.step);
-
-    const fmt_check_step = b.step("fmt-check", "Check formatting of all C sources/headers without modifying");
-    const fmt_check_run = b.addSystemCommand(&.{ "clang-format", "--dry-run", "--Werror" });
-    fmt_check_run.addArgs(fmt_files);
-    fmt_check_step.dependOn(&fmt_check_run.step);
-}
-
-fn collectFmtFiles(b: *std.Build, sub_path: []const u8) ![]const []const u8 {
-    const io = b.graph.io;
-    var files: std.ArrayList([]const u8) = .empty;
-
-    var dir = try b.build_root.handle.openDir(io, sub_path, .{ .iterate = true });
-    defer dir.close(io);
-
-    var it = dir.iterate();
-    while (try it.next(io)) |entry| {
-        if (entry.kind != .file) continue;
-        if (!std.mem.endsWith(u8, entry.name, ".c") and
-            !std.mem.endsWith(u8, entry.name, ".h")) continue;
-        try files.append(b.allocator, b.fmt("{s}/{s}", .{ sub_path, entry.name }));
-    }
-
-    std.mem.sort([]const u8, files.items, {}, struct {
-        fn lessThan(_: void, a: []const u8, b_: []const u8) bool {
-            return std.mem.lessThan(u8, a, b_);
-        }
-    }.lessThan);
-
-    return files.toOwnedSlice(b.allocator);
 }

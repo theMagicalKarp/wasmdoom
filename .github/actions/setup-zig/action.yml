@@ -1,0 +1,38 @@
+name: Setup Zig
+description: Download, cache, and add a pinned Zig toolchain to PATH.
+
+inputs:
+  version:
+    description: Zig version to install (e.g. 0.16.0).
+    required: true
+  shasum:
+    description: Optional SHA-256 of the x86_64-linux tarball to verify.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Zig
+      id: cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.zig
+        key: zig-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}
+
+    - name: Download Zig
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        url="https://ziglang.org/download/${{ inputs.version }}/zig-x86_64-linux-${{ inputs.version }}.tar.xz"
+        curl -fsSL "$url" -o zig.tar.xz
+        if [ -n "${{ inputs.shasum }}" ]; then
+          echo "${{ inputs.shasum }}  zig.tar.xz" | sha256sum -c -
+        fi
+        mkdir -p "$HOME/.zig"
+        tar -xf zig.tar.xz --strip-components=1 -C "$HOME/.zig"
+        rm zig.tar.xz
+
+    - name: Add Zig to PATH
+      shell: bash
+      run: echo "$HOME/.zig" >> "$GITHUB_PATH"

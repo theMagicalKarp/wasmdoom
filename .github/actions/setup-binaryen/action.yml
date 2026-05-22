@@ -1,0 +1,38 @@
+name: Setup Binaryen
+description: Download, cache, and add a pinned Binaryen toolchain to PATH.
+
+inputs:
+  version:
+    description: Binaryen version to install (e.g. version_129).
+    required: true
+  shasum:
+    description: Optional SHA-256 of the x86_64-linux tarball to verify.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Binaryen
+      id: cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.binaryen
+        key: binaryen-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}
+
+    - name: Download Binaryen
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        url="https://github.com/WebAssembly/binaryen/releases/download/${{ inputs.version }}/binaryen-${{ inputs.version }}-x86_64-linux.tar.gz"
+        curl -fsSL "$url" -o binaryen.tar.gz
+        if [ -n "${{ inputs.shasum }}" ]; then
+          echo "${{ inputs.shasum }}  binaryen.tar.gz" | sha256sum -c -
+        fi
+        mkdir -p "$HOME/.binaryen"
+        tar -xf binaryen.tar.gz --strip-components=1 -C "$HOME/.binaryen"
+        rm binaryen.tar.gz
+
+    - name: Add Binaryen to PATH
+      shell: bash
+      run: echo "$HOME/.binaryen/bin" >> "$GITHUB_PATH"

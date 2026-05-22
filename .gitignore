@@ -4,3 +4,5 @@ zig-out/
 
 notes.md
 .DS_Store
+
+*.wasm

@@ -5,10 +5,118 @@ import {
   File,
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
+import nipplejs from "nipplejs";
 import { assertWasmdoomInstance } from "./wasi-instance.ts";
 import { WASMDOOM_KEYS, WASMDOOM_MOUSE_BUTTONS } from "./wasmdoom.ts";
 import { createDoomAudio } from "./audio.ts";
-import { pathJoin } from "./utils.ts";
+import { isMobileDevice, pathJoin } from "./utils.ts";
+
+type DoomInstance = {
+  exports: {
+    wasmdoom_keydown(key: number): void;
+    wasmdoom_keyup(key: number): void;
+  };
+};
+
+function setupMobileControls(instance: DoomInstance) {
+  const container = document.getElementById("mobile-controls");
+  const leftZone = document.getElementById("joystick-left-zone");
+  const rightZone = document.getElementById("joystick-right-zone");
+  const fireBtn = document.getElementById("fire-btn");
+  const useBtn = document.getElementById("use-btn");
+  if (!container || !leftZone || !rightZone || !fireBtn || !useBtn) return;
+
+  container.classList.add("visible");
+
+  const bindButton = (btn: HTMLElement, key: number) => {
+    const press = (e: Event) => {
+      e.preventDefault();
+      btn.classList.add("pressed");
+      instance.exports.wasmdoom_keydown(key);
+    };
+    const release = (e: Event) => {
+      e.preventDefault();
+      btn.classList.remove("pressed");
+      instance.exports.wasmdoom_keyup(key);
+    };
+    btn.addEventListener("touchstart", press, { passive: false });
+    btn.addEventListener("touchend", release, { passive: false });
+    btn.addEventListener("touchcancel", release, { passive: false });
+    btn.addEventListener("mousedown", press);
+    btn.addEventListener("mouseup", release);
+    btn.addEventListener("mouseleave", release);
+  };
+
+  bindButton(fireBtn, WASMDOOM_KEYS.KEY_FIRE);
+  bindButton(useBtn, WASMDOOM_KEYS.KEY_USE);
+  bindButton(useBtn, WASMDOOM_KEYS.KEY_ENTER);
+
+  const leftJoystick = nipplejs.create({
+    zone: leftZone,
+    mode: "static",
+    position: { left: "90px", bottom: "30%" },
+    color: "white",
+    size: 140,
+    restJoystick: true,
+  });
+
+  const rightJoystick = nipplejs.create({
+    zone: rightZone,
+    mode: "static",
+    position: { right: "90px", bottom: "30%" },
+    color: "white",
+    size: 140,
+    restJoystick: true,
+  });
+
+  const active = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+  };
+  const THRESHOLD = 0.3;
+
+  const setKey = (slot: keyof typeof active, key: number, want: boolean) => {
+    if (active[slot] === want) return;
+    active[slot] = want;
+    if (want) {
+      instance.exports.wasmdoom_keydown(key);
+    } else {
+      instance.exports.wasmdoom_keyup(key);
+    }
+  };
+
+  leftJoystick.on("move", (evt) => {
+    const data = evt.data;
+    if (!data || !data.vector) return;
+    const { x, y } = data.vector;
+    setKey("up", WASMDOOM_KEYS.KEY_UPARROW, y > THRESHOLD);
+    setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, y < -THRESHOLD);
+    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, x < -THRESHOLD);
+    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, x > THRESHOLD);
+  });
+
+  leftJoystick.on("end", () => {
+    setKey("up", WASMDOOM_KEYS.KEY_UPARROW, false);
+    setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, false);
+    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, false);
+    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, false);
+  });
+
+  rightJoystick.on("move", (evt) => {
+    const data = evt.data;
+    if (!data || !data.vector) return;
+    const { x } = data.vector;
+    setKey("right", WASMDOOM_KEYS.KEY_STRAFERIGHT, x > THRESHOLD);
+    setKey("left", WASMDOOM_KEYS.KEY_STRAFELEFT, x < -THRESHOLD);
+  });
+
+  rightJoystick.on("end", () => {
+    setKey("left", WASMDOOM_KEYS.KEY_STRAFELEFT, false);
+    setKey("right", WASMDOOM_KEYS.KEY_STRAFERIGHT, false);
+  });
+}
 
 const { BASE_URL } = import.meta.env;
 
@@ -155,11 +263,21 @@ async function main() {
   let mouseDX = 0;
   let mouseDY = 0;
 
+  const mobile = isMobileDevice(
+    typeof navigator === "undefined" ? undefined : navigator,
+  );
+
   canvas.addEventListener("click", () => {
     audio.start();
-    canvas.requestPointerLock();
+    if (!mobile) {
+      canvas.requestPointerLock();
+    }
   });
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  if (mobile) {
+    setupMobileControls(instance);
+  }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {

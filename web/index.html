@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>wasmdoom</title>
     <style>
       html,
@@ -10,22 +13,107 @@
         margin: 0;
         height: 100%;
         background: #000;
+        overflow: hidden;
+        touch-action: none;
       }
 
       body {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
       }
 
       #screen {
-        height: 100vh;
+        width: min(100vw, calc(100vh * 320 / 200));
+        height: auto;
         image-rendering: pixelated;
+      }
+
+      #mobile-controls {
+        display: none;
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      #mobile-controls.visible {
+        display: block;
+      }
+
+      #joystick-left-zone {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 40vw;
+        height: 50vh;
+        pointer-events: auto;
+      }
+
+      #joystick-right-zone {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        width: 40vw;
+        height: 50vh;
+        pointer-events: auto;
+      }
+
+      .action-btn {
+        position: absolute;
+        width: 18vw;
+        max-width: 96px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.6);
+        background: rgba(180, 30, 30, 0.45);
+        color: #fff;
+        font-family: sans-serif;
+        font-weight: bold;
+        font-size: 4vw;
+        text-transform: uppercase;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
+        transform: translate(-50%, 50%);
+        pointer-events: auto;
+        z-index: 1;
+      }
+
+      #fire-btn {
+        left: calc(90px + 92px);
+        bottom: calc(15vh + 92px);
+      }
+
+      #use-btn {
+        left: 90px;
+        bottom: calc(15vh + 130px);
+      }
+
+      .action-btn:active,
+      .action-btn.pressed {
+        background: rgba(220, 60, 60, 0.8);
+      }
+
+      #use-btn {
+        background: rgba(60, 100, 200, 0.45);
+      }
+
+      #use-btn:active,
+      #use-btn.pressed {
+        background: rgba(80, 130, 240, 0.8);
       }
     </style>
   </head>
   <body>
     <canvas id="screen" width="320" height="200"></canvas>
+    <div id="mobile-controls">
+      <button id="fire-btn" class="action-btn" type="button">Fire</button>
+      <button id="use-btn" class="action-btn" type="button">Use</button>
+      <div id="joystick-left-zone"></div>
+      <div id="joystick-right-zone"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

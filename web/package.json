@@ -13,7 +13,8 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@bjorn3/browser_wasi_shim": "^0.4.2"
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
+    "nipplejs": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

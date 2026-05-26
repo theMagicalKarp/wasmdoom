@@ -55,6 +55,7 @@ export default defineConfig({
   base: process.env.BASE_PATH ?? "/",
   plugins: [serveWasm()],
   server: {
+    host: "0.0.0.0",
     fs: { allow: [".."] },
   },
 });

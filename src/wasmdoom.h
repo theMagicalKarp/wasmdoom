@@ -9,6 +9,9 @@
 IMPORT(doom_host, wasmdoom_error)
 extern void wasmdoom_error(const char *message, int32_t length);
 
+IMPORT(doom_host, wasmdoom_draw)
+extern void wasmdoom_draw();
+
 IMPORT(doom_host, wasmdoom_sound_start)
 extern void wasmdoom_sound_start(int handle, int sfx_id, const uint8_t *data,
                                  int data_len, int vol, int sep, int pitch);

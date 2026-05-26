@@ -166,6 +166,10 @@ extern boolean setsizeneeded;
 extern int showMessages;
 void R_ExecuteSetViewSize(void);
 
+// A wipe spans multiple ticks; these persist its progress between frames.
+static boolean wipe_in_progress = false;
+static int wipe_starttime;
+
 void D_Display(void) {
   static boolean viewactivestate = false;
   static boolean menuactivestate = false;
@@ -175,7 +179,6 @@ void D_Display(void) {
   static int borderdrawcount;
   int nowtime;
   int tics;
-  int wipestart;
   int y;
   boolean done;
   boolean wipe;
@@ -183,6 +186,26 @@ void D_Display(void) {
 
   if (nodrawers)
     return; // for comparative timing / profiling
+
+  // A wipe is mid-animation: advance it, present frame, then yield.
+  // We must skip the normal render path below, which would overwrite
+  // screens[0] (the wipe's composite buffer).
+  if (wipe_in_progress) {
+    nowtime = I_GetTime();
+    tics = nowtime - wipe_starttime;
+    if (tics <= 0) {
+      return; // <1 tic elapsed this frame; canvas keeps last wipe frame
+    }
+    wipe_starttime = nowtime;
+    done = wipe_ScreenWipe(wipe_Melt, 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
+    I_UpdateNoBlit();
+    M_Drawer();       // menu drawn on top of the wipe
+    I_FinishUpdate(); // single page flip / blit this frame
+    if (done) {
+      wipe_in_progress = false;
+    }
+    return;
+  }
 
   redrawsbar = false;
 
@@ -286,22 +309,11 @@ void D_Display(void) {
     return;
   }
 
-  // wipe update
+  // wipe update -- begin a non-blocking, per-tick wipe; the first wipe frame is
+  // presented on the next D_DoomLoopTick via the wipe_in_progress branch above.
   wipe_EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
-
-  wipestart = I_GetTime() - 1;
-
-  do {
-    do {
-      nowtime = I_GetTime();
-      tics = nowtime - wipestart;
-    } while (!tics);
-    wipestart = nowtime;
-    done = wipe_ScreenWipe(wipe_Melt, 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
-    I_UpdateNoBlit();
-    M_Drawer();       // menu is drawn even on top of wipes
-    I_FinishUpdate(); // page flip or blit buffer
-  } while (!done);
+  wipe_starttime = I_GetTime() - 1; // -1 so the next tick advances >=1 melt tic
+  wipe_in_progress = true;
 }
 
 //
@@ -336,19 +348,23 @@ void D_DoomLoopTick(void) {
   // frame syncronous IO operations
   I_StartFrame();
 
-  // process one or more tics
-  if (singletics) {
-    I_StartTic();
-    D_ProcessEvents();
-    G_BuildTiccmd(&netcmds[consoleplayer][maketic % BACKUPTICS]);
-    if (advancedemo)
-      D_DoAdvanceDemo();
-    M_Ticker();
-    G_Ticker();
-    gametic++;
-    maketic++;
-  } else {
-    TryRunTics(); // will run at least one tic
+  // Freeze the simulation while a screen wipe animates rather than have
+  // `D_Display` be a blocking call.
+  if (!wipe_in_progress) {
+    // process one or more tics
+    if (singletics) {
+      I_StartTic();
+      D_ProcessEvents();
+      G_BuildTiccmd(&netcmds[consoleplayer][maketic % BACKUPTICS]);
+      if (advancedemo)
+        D_DoAdvanceDemo();
+      M_Ticker();
+      G_Ticker();
+      gametic++;
+      maketic++;
+    } else {
+      TryRunTics(); // will run at least one tic
+    }
   }
 
   S_UpdateSounds(players[consoleplayer].mo); // move positional sounds

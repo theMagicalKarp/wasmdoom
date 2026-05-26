@@ -92,6 +92,32 @@ async function main() {
       const bytes = new Uint8Array(memory.buffer, messagePtr, length);
       console.error(`[doom_host] error: ${new TextDecoder().decode(bytes)}`);
     },
+    wasmdoom_draw() {
+      assertWasmdoomInstance(instance);
+      console.log("drawing!");
+      const buffer = instance.exports.memory.buffer;
+      const indices = new Uint8Array(
+        buffer,
+        instance.exports.wasmdoom_get_framebuffer(),
+        SCREEN_WIDTH * SCREEN_HEIGHT,
+      );
+      const palette = new Uint8Array(
+        buffer,
+        instance.exports.wasmdoom_get_palette(),
+        256 * 3,
+      );
+
+      const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+      for (let i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
+        const p = indices[i] * 3;
+        const o = i * 4;
+        imageData.data[o + 0] = palette[p + 0]; // R
+        imageData.data[o + 1] = palette[p + 1]; // G
+        imageData.data[o + 2] = palette[p + 2]; // B
+        imageData.data[o + 3] = 255; // A
+      }
+      ctx.putImageData(imageData, 0, 0);
+    },
     ...audio.imports,
   };
 
@@ -179,29 +205,6 @@ async function main() {
     mouseDX = 0;
     mouseDY = 0;
     instance.exports.wasmdoom_tick();
-
-    const buffer = instance.exports.memory.buffer;
-    const indices = new Uint8Array(
-      buffer,
-      instance.exports.wasmdoom_get_framebuffer(),
-      SCREEN_WIDTH * SCREEN_HEIGHT,
-    );
-    const palette = new Uint8Array(
-      buffer,
-      instance.exports.wasmdoom_get_palette(),
-      256 * 3,
-    );
-
-    const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
-    for (let i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; i++) {
-      const p = indices[i] * 3;
-      const o = i * 4;
-      imageData.data[o + 0] = palette[p + 0]; // R
-      imageData.data[o + 1] = palette[p + 1]; // G
-      imageData.data[o + 2] = palette[p + 2]; // B
-      imageData.data[o + 3] = 255; // A
-    }
-    ctx.putImageData(imageData, 0, 0);
   };
 
   let lastFrame = performance.now();

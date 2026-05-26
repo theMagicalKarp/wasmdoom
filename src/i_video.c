@@ -21,6 +21,7 @@
 #include "i_system.h"
 #include "m_argv.h"
 #include "v_video.h"
+#include "wasmdoom.h"
 
 #include "doomdef.h"
 
@@ -46,9 +47,7 @@ void I_UpdateNoBlit(void) {}
 //
 // I_FinishUpdate
 //
-void I_FinishUpdate(void) {
-  // COPY TO FRAME BUFFER
-}
+void I_FinishUpdate(void) { wasmdoom_draw(); }
 
 //
 // I_ReadScreen

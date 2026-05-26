@@ -202,7 +202,6 @@ async function main() {
     },
     wasmdoom_draw() {
       assertWasmdoomInstance(instance);
-      console.log("drawing!");
       const buffer = instance.exports.memory.buffer;
       const indices = new Uint8Array(
         buffer,

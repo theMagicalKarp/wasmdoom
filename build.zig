@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const doom_sources = [_][]const u8{
+    "src/opl/opl3.c",
     "src/am_map.c",
     "src/d_items.c",
     "src/d_main.c",

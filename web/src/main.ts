@@ -74,6 +74,8 @@ function setupMobileControls(instance: DoomInstance) {
     down: false,
     left: false,
     right: false,
+    strafeRight: false,
+    strafeLeft: false,
   };
   const THRESHOLD = 0.3;
 
@@ -93,28 +95,28 @@ function setupMobileControls(instance: DoomInstance) {
     const { x, y } = data.vector;
     setKey("up", WASMDOOM_KEYS.KEY_UPARROW, y > THRESHOLD);
     setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, y < -THRESHOLD);
-    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, x < -THRESHOLD);
-    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, x > THRESHOLD);
+    setKey("strafeLeft", WASMDOOM_KEYS.KEY_STRAFELEFT, x < -THRESHOLD);
+    setKey("strafeRight", WASMDOOM_KEYS.KEY_STRAFERIGHT, x > THRESHOLD);
   });
 
   leftJoystick.on("end", () => {
     setKey("up", WASMDOOM_KEYS.KEY_UPARROW, false);
     setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, false);
-    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, false);
-    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, false);
+    setKey("strafeLeft", WASMDOOM_KEYS.KEY_STRAFELEFT, false);
+    setKey("strafeRight", WASMDOOM_KEYS.KEY_STRAFERIGHT, false);
   });
 
   rightJoystick.on("move", (evt) => {
     const data = evt.data;
     if (!data || !data.vector) return;
     const { x } = data.vector;
-    setKey("right", WASMDOOM_KEYS.KEY_STRAFERIGHT, x > THRESHOLD);
-    setKey("left", WASMDOOM_KEYS.KEY_STRAFELEFT, x < -THRESHOLD);
+    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, x < -THRESHOLD);
+    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, x > THRESHOLD);
   });
 
   rightJoystick.on("end", () => {
-    setKey("left", WASMDOOM_KEYS.KEY_STRAFELEFT, false);
-    setKey("right", WASMDOOM_KEYS.KEY_STRAFERIGHT, false);
+    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, false);
+    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, false);
   });
 }
 

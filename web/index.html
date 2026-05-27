@@ -4,8 +4,14 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="DOOM" />
+    <link rel="icon" href="icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png" />
     <title>wasmdoom</title>
     <style>
       html,
@@ -24,8 +30,23 @@
       }
 
       #screen {
-        width: min(100vw, calc(100vh * 320 / 200));
+        /* Padding around the canvas; grows to clear the notch in landscape. */
+        --pad-x: max(
+          12px,
+          env(safe-area-inset-left),
+          env(safe-area-inset-right)
+        );
+        --pad-y: max(
+          12px,
+          env(safe-area-inset-top),
+          env(safe-area-inset-bottom)
+        );
+        width: min(
+          calc(100vw - 2 * var(--pad-x)),
+          calc((100svh - 2 * var(--pad-y)) * 320 / 200)
+        );
         height: auto;
+        margin: var(--pad-y) var(--pad-x);
         image-rendering: pixelated;
       }
 
@@ -43,19 +64,19 @@
 
       #joystick-left-zone {
         position: absolute;
-        left: 0;
-        bottom: 0;
+        left: env(safe-area-inset-left, 0px);
+        bottom: env(safe-area-inset-bottom, 0px);
         width: 40vw;
-        height: 50vh;
+        height: 50svh;
         pointer-events: auto;
       }
 
       #joystick-right-zone {
         position: absolute;
-        right: 0;
-        bottom: 0;
+        right: env(safe-area-inset-right, 0px);
+        bottom: env(safe-area-inset-bottom, 0px);
         width: 40vw;
-        height: 50vh;
+        height: 50svh;
         pointer-events: auto;
       }
 
@@ -68,27 +89,48 @@
         border: 2px solid rgba(255, 255, 255, 0.6);
         background: rgba(180, 30, 30, 0.45);
         color: #fff;
-        font-family: sans-serif;
-        font-weight: bold;
-        font-size: 4vw;
-        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         user-select: none;
         -webkit-user-select: none;
         -webkit-tap-highlight-color: transparent;
         touch-action: none;
-        transform: translate(-50%, 50%);
+        transform: translateX(-50%);
         pointer-events: auto;
         z-index: 1;
       }
 
-      #fire-btn {
-        left: calc(90px + 92px);
-        bottom: calc(15vh + 92px);
+      /* Icon drawn as a white mask so it tints with background-color and
+         survives the background-color swaps on :active/.pressed. */
+      .action-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-color: #fff;
+        -webkit-mask: center / 50% no-repeat;
+        mask: center / 50% no-repeat;
       }
 
+      /* Fire (shoot): right, centered above the right joystick. */
+      #fire-btn {
+        left: 80vw;
+        bottom: calc(25svh + 100px);
+      }
+      #fire-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/crosshair.svg");
+        mask-image: url("node_modules/lucide-static/icons/crosshair.svg");
+      }
+
+      /* Use: left, centered above the left joystick. */
       #use-btn {
-        left: 90px;
-        bottom: calc(15vh + 130px);
+        left: 20vw;
+        bottom: calc(25svh + 100px);
+        background: rgba(60, 100, 200, 0.45);
+      }
+      #use-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/hand.svg");
+        mask-image: url("node_modules/lucide-static/icons/hand.svg");
       }
 
       .action-btn:active,
@@ -96,21 +138,31 @@
         background: rgba(220, 60, 60, 0.8);
       }
 
-      #use-btn {
-        background: rgba(60, 100, 200, 0.45);
-      }
-
       #use-btn:active,
       #use-btn.pressed {
         background: rgba(80, 130, 240, 0.8);
+      }
+
+      div.back {
+        border-radius: 25px;
       }
     </style>
   </head>
   <body>
     <canvas id="screen" width="320" height="200"></canvas>
     <div id="mobile-controls">
-      <button id="fire-btn" class="action-btn" type="button">Fire</button>
-      <button id="use-btn" class="action-btn" type="button">Use</button>
+      <button
+        id="fire-btn"
+        class="action-btn"
+        type="button"
+        aria-label="Fire"
+      ></button>
+      <button
+        id="use-btn"
+        class="action-btn"
+        type="button"
+        aria-label="Use"
+      ></button>
       <div id="joystick-left-zone"></div>
       <div id="joystick-right-zone"></div>
     </div>

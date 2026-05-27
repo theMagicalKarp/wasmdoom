@@ -1,4 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { createReadStream, readFileSync, statSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,7 +54,44 @@ function serveWasm(): Plugin {
 export default defineConfig({
   // Served from "/" in dev; GitHub Pages deploys under a sub-path via BASE_PATH.
   base: process.env.BASE_PATH ?? "/",
-  plugins: [serveWasm()],
+  plugins: [
+    serveWasm(),
+    // Workbox globs the finished dist/ in closeBundle, so the wasm emitted by
+    // serveWasm() above and the WAD copied from public/ are both on disk in
+    // time to be precached. SW is disabled in dev to keep the live-wasm
+    // middleware (Cache-Control: no-store) working.
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      includeAssets: ["icons/apple-touch-icon-180.png", "icons/favicon.png"],
+      manifest: {
+        name: "wasmdoom",
+        short_name: "DOOM",
+        description: "Doom compiled to WebAssembly",
+        display: "fullscreen",
+        orientation: "landscape",
+        background_color: "#000000",
+        theme_color: "#000000",
+        icons: [
+          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "icons/icon-512-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,wasm,wad,png,svg,ico}"],
+        // Raise the per-file limit so the ~4.2 MB WAD is precached
+        // (Workbox's default is 2 MiB).
+        maximumFileSizeToCacheInBytes: 7 * 1024 * 1024,
+      },
+      devOptions: { enabled: false },
+    }),
+  ],
   server: {
     host: "0.0.0.0",
     fs: { allow: [".."] },

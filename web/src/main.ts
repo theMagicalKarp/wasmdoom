@@ -10,6 +10,7 @@ import { assertWasmdoomInstance } from "./wasi-instance.ts";
 import { WASMDOOM_KEYS, WASMDOOM_MOUSE_BUTTONS } from "./wasmdoom.ts";
 import { createDoomAudio } from "./audio.ts";
 import { isMobileDevice, pathJoin } from "./utils.ts";
+import { Vector2 } from "./math.ts";
 
 type DoomInstance = {
   exports: {
@@ -47,37 +48,40 @@ function setupMobileControls(instance: DoomInstance) {
     btn.addEventListener("mouseleave", release);
   };
 
-  bindButton(fireBtn, WASMDOOM_KEYS.KEY_FIRE);
-  bindButton(useBtn, WASMDOOM_KEYS.KEY_USE);
-  bindButton(useBtn, WASMDOOM_KEYS.KEY_ENTER);
+  bindButton(fireBtn, WASMDOOM_KEYS.FIRE);
+  bindButton(useBtn, WASMDOOM_KEYS.USE);
+  bindButton(useBtn, WASMDOOM_KEYS.MENU_CONFIRM);
 
   const leftJoystick = nipplejs.create({
     zone: leftZone,
     mode: "static",
-    position: { left: "90px", bottom: "30%" },
+    position: { left: "50%", top: "50%" },
     color: "white",
-    size: 140,
+    size: 150,
     restJoystick: true,
+    shape: "square",
   });
 
   const rightJoystick = nipplejs.create({
     zone: rightZone,
     mode: "static",
-    position: { right: "90px", bottom: "30%" },
+    position: { left: "50%", top: "50%" },
     color: "white",
-    size: 140,
+    size: 150,
     restJoystick: true,
+    shape: "square",
   });
 
   const active = {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
     strafeRight: false,
     strafeLeft: false,
   };
   const THRESHOLD = 0.3;
+  const TURN_SENSITIVITY = 200;
+  const TURN_DEADZONE = 0.15;
+  const MOVE_SENSITIVITY = 100;
+  const MOVE_DEADZONE = 0.15;
+  let joystick = new Vector2(0.0, 0.0);
 
   const setKey = (slot: keyof typeof active, key: number, want: boolean) => {
     if (active[slot] === want) return;
@@ -93,73 +97,96 @@ function setupMobileControls(instance: DoomInstance) {
     const data = evt.data;
     if (!data || !data.vector) return;
     const { x, y } = data.vector;
-    setKey("up", WASMDOOM_KEYS.KEY_UPARROW, y > THRESHOLD);
-    setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, y < -THRESHOLD);
-    setKey("strafeLeft", WASMDOOM_KEYS.KEY_STRAFELEFT, x < -THRESHOLD);
-    setKey("strafeRight", WASMDOOM_KEYS.KEY_STRAFERIGHT, x > THRESHOLD);
+    joystick = joystick.setY(y);
+    setKey("strafeLeft", WASMDOOM_KEYS.STRAFE_LEFT, x < -THRESHOLD);
+    setKey("strafeRight", WASMDOOM_KEYS.STRAFE_RIGHT, x > THRESHOLD);
   });
 
   leftJoystick.on("end", () => {
-    setKey("up", WASMDOOM_KEYS.KEY_UPARROW, false);
-    setKey("down", WASMDOOM_KEYS.KEY_DOWNARROW, false);
-    setKey("strafeLeft", WASMDOOM_KEYS.KEY_STRAFELEFT, false);
-    setKey("strafeRight", WASMDOOM_KEYS.KEY_STRAFERIGHT, false);
+    joystick = joystick.setY(0);
+    setKey("strafeLeft", WASMDOOM_KEYS.STRAFE_LEFT, false);
+    setKey("strafeRight", WASMDOOM_KEYS.STRAFE_RIGHT, false);
   });
 
   rightJoystick.on("move", (evt) => {
     const data = evt.data;
     if (!data || !data.vector) return;
-    const { x } = data.vector;
-    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, x < -THRESHOLD);
-    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, x > THRESHOLD);
+    joystick = joystick.setX(data.vector.x);
   });
 
   rightJoystick.on("end", () => {
-    setKey("left", WASMDOOM_KEYS.KEY_LEFTARROW, false);
-    setKey("right", WASMDOOM_KEYS.KEY_RIGHTARROW, false);
+    joystick = joystick.setX(0);
   });
+
+  return {
+    fetchJoystick(): Vector2 {
+      let x = 0;
+      let y = 0;
+
+      if (Math.abs(joystick.x) >= TURN_DEADZONE) {
+        x = Math.round(
+          Math.sign(joystick.x) * joystick.x * joystick.x * TURN_SENSITIVITY,
+        );
+      }
+      if (Math.abs(joystick.y) >= MOVE_DEADZONE) {
+        y = Math.round(joystick.y * MOVE_SENSITIVITY);
+      }
+
+      return new Vector2(x, y);
+    },
+  };
 }
 
 const { BASE_URL } = import.meta.env;
 
 const KEY_MAP = new Map([
-  ["KeyW", WASMDOOM_KEYS.KEY_UPARROW],
-  ["KeyS", WASMDOOM_KEYS.KEY_DOWNARROW],
-  ["KeyA", WASMDOOM_KEYS.KEY_STRAFELEFT],
-  ["KeyD", WASMDOOM_KEYS.KEY_STRAFERIGHT],
-  ["ArrowUp", WASMDOOM_KEYS.KEY_UPARROW],
-  ["ArrowDown", WASMDOOM_KEYS.KEY_DOWNARROW],
-  ["ArrowLeft", WASMDOOM_KEYS.KEY_LEFTARROW],
-  ["ArrowRight", WASMDOOM_KEYS.KEY_RIGHTARROW],
+  ["KeyW", WASMDOOM_KEYS.MOVE_FORWARD],
+  ["KeyS", WASMDOOM_KEYS.MOVE_BACKWARD],
+  ["KeyA", WASMDOOM_KEYS.STRAFE_LEFT],
+  ["KeyD", WASMDOOM_KEYS.STRAFE_RIGHT],
+  ["ArrowUp", WASMDOOM_KEYS.UP],
+  ["ArrowDown", WASMDOOM_KEYS.DOWN],
+  ["ArrowLeft", WASMDOOM_KEYS.LEFT],
+  ["ArrowRight", WASMDOOM_KEYS.RIGHT],
 
-  ["Enter", WASMDOOM_KEYS.KEY_ENTER],
-  ["Space", WASMDOOM_KEYS.KEY_USE],
-  ["ShiftLeft", WASMDOOM_KEYS.KEY_SPEED],
-  ["KeyZ", WASMDOOM_KEYS.KEY_FIRE],
-  ["Comma", WASMDOOM_KEYS.KEY_STRAFELEFT],
-  ["Period", WASMDOOM_KEYS.KEY_STRAFERIGHT],
-  ["Escape", WASMDOOM_KEYS.KEY_BACKSPACE],
-  ["Tab", WASMDOOM_KEYS.KEY_MAP],
-  ["Digit1", WASMDOOM_KEYS.KEY_ONE],
-  ["Digit2", WASMDOOM_KEYS.KEY_TWO],
-  ["Digit3", WASMDOOM_KEYS.KEY_THREE],
-  ["Digit4", WASMDOOM_KEYS.KEY_FOUR],
-  ["Digit5", WASMDOOM_KEYS.KEY_FIVE],
-  ["Digit6", WASMDOOM_KEYS.KEY_SIX],
-  ["Digit7", WASMDOOM_KEYS.KEY_SEVEN],
+  ["Enter", WASMDOOM_KEYS.MENU_CONFIRM],
+  ["Space", WASMDOOM_KEYS.FIRE],
+  ["ShiftLeft", WASMDOOM_KEYS.RUN],
+  ["KeyE", WASMDOOM_KEYS.USE],
+  ["Comma", WASMDOOM_KEYS.STRAFE_LEFT],
+  ["Period", WASMDOOM_KEYS.STRAFE_RIGHT],
+  ["Backspace", WASMDOOM_KEYS.MENU_BACK],
+  ["KeyQ", WASMDOOM_KEYS.MENU_OPEN],
+  ["Tab", WASMDOOM_KEYS.AUTOMAP_TOGGLE],
+  ["Minus", WASMDOOM_KEYS.VIEW_SIZE_DOWN],
+  ["Equal", WASMDOOM_KEYS.VIEW_SIZE_UP],
 
-  ["F1", WASMDOOM_KEYS.KEY_FN_ONE],
-  ["F2", WASMDOOM_KEYS.KEY_FN_TWO],
-  ["F3", WASMDOOM_KEYS.KEY_FN_THREE],
-  ["F4", WASMDOOM_KEYS.KEY_FN_FOUR],
-  ["F5", WASMDOOM_KEYS.KEY_FN_FIVE],
-  ["F6", WASMDOOM_KEYS.KEY_FN_SIX],
-  ["F7", WASMDOOM_KEYS.KEY_FN_SEVEN],
-  ["F8", WASMDOOM_KEYS.KEY_FN_EIGHT],
-  ["F9", WASMDOOM_KEYS.KEY_FN_NINE],
-  ["F10", WASMDOOM_KEYS.KEY_FN_TEN],
-  ["F11", WASMDOOM_KEYS.KEY_FN_ELEVEN],
-  ["F12", WASMDOOM_KEYS.KEY_FN_TWELVE],
+  ["KeyF", WASMDOOM_KEYS.AUTOMAP_FOLLOW],
+  ["KeyG", WASMDOOM_KEYS.AUTOMAP_GRID],
+  ["KeyM", WASMDOOM_KEYS.AUTOMAP_MARK],
+  ["KeyC", WASMDOOM_KEYS.AUTOMAP_CLEARMARK],
+  ["Digit0", WASMDOOM_KEYS.AUTOMAP_GOBIG],
+
+  ["Digit1", WASMDOOM_KEYS.WEAPON_1],
+  ["Digit2", WASMDOOM_KEYS.WEAPON_2],
+  ["Digit3", WASMDOOM_KEYS.WEAPON_3],
+  ["Digit4", WASMDOOM_KEYS.WEAPON_4],
+  ["Digit5", WASMDOOM_KEYS.WEAPON_5],
+  ["Digit6", WASMDOOM_KEYS.WEAPON_6],
+  ["Digit7", WASMDOOM_KEYS.WEAPON_7],
+
+  ["F1", WASMDOOM_KEYS.HELP],
+  ["F2", WASMDOOM_KEYS.SAVE],
+  ["F3", WASMDOOM_KEYS.LOAD],
+  ["F4", WASMDOOM_KEYS.SOUND_VOLUME],
+  ["F5", WASMDOOM_KEYS.DETAIL],
+  ["F6", WASMDOOM_KEYS.QUICKSAVE],
+  ["F7", WASMDOOM_KEYS.END_GAME],
+  ["F8", WASMDOOM_KEYS.MESSAGES],
+  ["F9", WASMDOOM_KEYS.QUICKLOAD],
+  ["F10", WASMDOOM_KEYS.QUIT],
+  ["F11", WASMDOOM_KEYS.GAMMA],
+  ["F12", WASMDOOM_KEYS.SPY],
 ]);
 
 const MOUSE_BUTTON_MAP = [
@@ -188,7 +215,7 @@ async function main() {
   const cwd = new PreopenDirectory(
     "/",
     new Map<string, File>([
-      ["doom1.wad", new File(wadBytes, { readonly: false })],
+      ["doom1.wad", new File(wadBytes, { readonly: true })],
     ]),
   );
 
@@ -261,8 +288,7 @@ async function main() {
   });
 
   let mouseButtons = 0;
-  let mouseDX = 0;
-  let mouseDY = 0;
+  let mouse = new Vector2(0.0, 0.0);
 
   const mobile = isMobileDevice(
     typeof navigator === "undefined" ? undefined : navigator,
@@ -276,9 +302,7 @@ async function main() {
   });
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-  if (mobile) {
-    setupMobileControls(instance);
-  }
+  const mobileControls = mobile ? setupMobileControls(instance) : undefined;
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -289,9 +313,11 @@ async function main() {
   });
 
   document.addEventListener("mousemove", (e) => {
-    if (document.pointerLockElement !== canvas) return;
-    mouseDX += e.movementX;
-    mouseDY -= e.movementY;
+    if (document.pointerLockElement !== canvas) {
+      return;
+    }
+
+    mouse = mouse.add(new Vector2(e.movementX, 0.0));
   });
   document.addEventListener("mousedown", (e) => {
     if (document.pointerLockElement !== canvas) {
@@ -320,9 +346,11 @@ async function main() {
 
   const renderFrame = () => {
     assertWasmdoomInstance(instance);
-    instance.exports.wasmdoom_send_mouse(mouseButtons, mouseDX, mouseDY);
-    mouseDX = 0;
-    mouseDY = 0;
+    if (mobileControls) {
+      mouse = mouse.add(mobileControls.fetchJoystick());
+    }
+    instance.exports.wasmdoom_send_mouse(mouseButtons, mouse.x, mouse.y);
+    mouse = Vector2.zero();
     instance.exports.wasmdoom_tick();
   };
 

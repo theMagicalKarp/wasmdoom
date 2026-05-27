@@ -1,35 +1,61 @@
 export const WASMDOOM_KEYS = {
-  KEY_RIGHTARROW: 0xae,
-  KEY_LEFTARROW: 0xac,
-  KEY_UPARROW: 0xad,
-  KEY_DOWNARROW: 0xaf,
-  KEY_ENTER: 0xd,
-  KEY_USE: 0x20,
-  KEY_SPEED: 0x80 + 0x36,
-  KEY_FIRE: 0x80 + 0x1d,
-  KEY_STRAFELEFT: 0x2c,
-  KEY_STRAFERIGHT: 0x2e,
-  KEY_BACKSPACE: 0x7f,
-  KEY_MAP: 0x9,
-  KEY_ONE: 0x31,
-  KEY_TWO: 0x32,
-  KEY_THREE: 0x33,
-  KEY_FOUR: 0x34,
-  KEY_FIVE: 0x35,
-  KEY_SIX: 0x36,
-  KEY_SEVEN: 0x37,
-  KEY_FN_ONE: 0x80 + 0x3b,
-  KEY_FN_TWO: 0x80 + 0x3c,
-  KEY_FN_THREE: 0x80 + 0x3d,
-  KEY_FN_FOUR: 0x80 + 0x3e,
-  KEY_FN_FIVE: 0x80 + 0x3f,
-  KEY_FN_SIX: 0x80 + 0x40,
-  KEY_FN_SEVEN: 0x80 + 0x41,
-  KEY_FN_EIGHT: 0x80 + 0x42,
-  KEY_FN_NINE: 0x80 + 0x43,
-  KEY_FN_TEN: 0x80 + 0x44,
-  KEY_FN_ELEVEN: 0x80 + 0x57,
-  KEY_FN_TWELVE: 0x80 + 0x58,
+  // Movement / view
+  RIGHT: 0xae,
+  LEFT: 0xac,
+  UP: 0xad,
+  DOWN: 0xaf,
+
+  MOVE_FORWARD: 0xad,
+  MOVE_BACKWARD: 0xaf,
+  TURN_LEFT: 0xac,
+  TURN_RIGHT: 0xae,
+  STRAFE_LEFT: 0x2c,
+  STRAFE_RIGHT: 0x2e,
+  STRAFE_ON: 0x80 + 0x38,
+
+  // Combat / interaction
+  FIRE: 0x80 + 0x1d,
+  USE: 0x20,
+  RUN: 0x80 + 0x36,
+
+  // Weapon select
+  WEAPON_1: 0x31, // fist / chainsaw
+  WEAPON_2: 0x32, // pistol
+  WEAPON_3: 0x33, // shotgun
+  WEAPON_4: 0x34, // chaingun
+  WEAPON_5: 0x35, // rocket launcher
+  WEAPON_6: 0x36, // plasma rifle
+  WEAPON_7: 0x37, // BFG 9000
+
+  // Menu / system
+  MENU_OPEN: 0x1b,
+  MENU_CONFIRM: 0xd,
+  MENU_BACK: 0x7f,
+  PAUSE: 0xff,
+  VIEW_SIZE_UP: 0x3d,
+  VIEW_SIZE_DOWN: 0x2d,
+
+  // Automap
+  AUTOMAP_TOGGLE: 0x9,
+  AUTOMAP_FOLLOW: 0x66,
+  AUTOMAP_GRID: 0x67,
+  AUTOMAP_MARK: 0x6d,
+  AUTOMAP_CLEARMARK: 0x63,
+  AUTOMAP_GOBIG: 0x30,
+
+  // Function-key features (F1-F12)
+  HELP: 0x80 + 0x3b, // F1
+  SAVE: 0x80 + 0x3c, // F2
+  LOAD: 0x80 + 0x3d, // F3
+  SOUND_VOLUME: 0x80 + 0x3e, // F4
+  DETAIL: 0x80 + 0x3f, // F5
+  QUICKSAVE: 0x80 + 0x40, // F6
+  END_GAME: 0x80 + 0x41, // F7
+  MESSAGES: 0x80 + 0x42, // F8
+  QUICKLOAD: 0x80 + 0x43, // F9
+  QUIT: 0x80 + 0x44, // F10
+  GAMMA: 0x80 + 0x57, // F11
+  SPY: 0x80 + 0x58, // F12
 } as const;
 
 export const WASMDOOM_MOUSE_BUTTONS = {

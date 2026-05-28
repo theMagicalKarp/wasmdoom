@@ -31,9 +31,17 @@
  */
 
 #include "opl3.h"
+
+// @EDIT This ensures we can build without libc.
+#if __STDC_HOSTED__ == 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#else
+// Freestanding wasm target lacks libc headers. Forward-declare the single
+// libc function we use; wasm-ld resolves it against compiler-rt at link time.
+void *memset(void *s, int c, unsigned long n);
+#endif
 
 #if OPL_ENABLE_STEREOEXT && !defined OPL_SIN
 #ifndef _USE_MATH_DEFINES

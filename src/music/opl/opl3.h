@@ -37,7 +37,12 @@
 extern "C" {
 #endif
 
+// @EDIT This ensures we can build without libc.
+#if __STDC_HOSTED__ == 1
 #include <inttypes.h>
+#else
+#include <stdint.h>
+#endif
 
 #ifndef OPL_ENABLE_STEREOEXT
 #define OPL_ENABLE_STEREOEXT 0

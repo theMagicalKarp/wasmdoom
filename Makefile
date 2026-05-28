@@ -1,20 +1,22 @@
 .PHONY: check fix fmt-check fmt web-format web-format-check wasm wasm-verify web-typecheck web-test web-build
 
+C_SOURCES := $(shell find src -type f \( -name '*.c' -o -name '*.h' \))
+
 check: fmt-check wasm wasm-verify web-format-check web-typecheck web-test web-build
 
 fix: fmt web-format
 
 fmt-check:
-	clang-format --dry-run --Werror src/*.c src/*.h
+	clang-format --dry-run --Werror $(C_SOURCES)
 
 fmt:
-	clang-format -i src/*.c src/*.h
+	clang-format -i $(C_SOURCES)
 
 web-format:
 	cd web && npm run format
 
 wasm:
-	zig build
+	zig build -Doptimize=ReleaseSmall
 
 wasm-verify: wasm
 	wasm-as ci/stubs.wat -o ci/stubs.wasm

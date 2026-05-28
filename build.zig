@@ -1,7 +1,9 @@
 const std = @import("std");
 
-const doom_sources = [_][]const u8{
-    "src/opl/opl3.c",
+// Engine sources, everything the game wasm needs. The music synth lives in
+// a separate artifact (wasmdoom-music.wasm); src/music/*.c is intentionally
+// excluded from this list.
+const engine_sources = [_][]const u8{
     "src/am_map.c",
     "src/d_items.c",
     "src/d_main.c",
@@ -67,6 +69,12 @@ const doom_sources = [_][]const u8{
     "src/z_zone.c",
 };
 
+// Music synth sources — built into a separate wasm artifact. No engine
+// dependencies, no host imports.
+const music_sources = [_][]const u8{
+    "src/music/opl/opl3.c",
+};
+
 const c_flags = [_][]const u8{
     "-std=gnu99",
     "-DNORMALUNIX",
@@ -82,6 +90,8 @@ const c_flags = [_][]const u8{
     "-fno-sanitize=undefined",
 };
 
+const music_c_flags = [_][]const u8{};
+
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{
         .default_target = .{
@@ -91,13 +101,14 @@ pub fn build(b: *std.Build) void {
     });
     const optimize = b.standardOptimizeOption(.{});
 
+    // --- Engine (game) wasm ----------------------------------------------------
     const mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
         .link_libc = true, // wasi-libc when targeting wasm32-wasi
     });
     mod.addCSourceFiles(.{
-        .files = &doom_sources,
+        .files = &engine_sources,
         .flags = &c_flags,
     });
     mod.addIncludePath(b.path("src"));
@@ -108,4 +119,32 @@ pub fn build(b: *std.Build) void {
     });
 
     b.installArtifact(exe);
+
+    // --- Music synth wasm ------------------------------------------------------
+    // Freestanding so the artifact has no WASI imports, the host instantiates
+    // it with an empty import object.
+    const music_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding,
+    });
+    const music_mod = b.createModule(.{
+        .target = music_target,
+        .optimize = optimize,
+        .link_libc = false,
+    });
+    music_mod.addCSourceFiles(.{
+        .files = &music_sources,
+        .flags = &music_c_flags,
+    });
+    music_mod.addIncludePath(b.path("src"));
+    music_mod.addIncludePath(b.path("src/music"));
+
+    const music_exe = b.addExecutable(.{
+        .name = "wasmdoom-music",
+        .root_module = music_mod,
+    });
+    music_exe.entry = .disabled;
+    music_exe.rdynamic = true;
+
+    b.installArtifact(music_exe);
 }

@@ -39,7 +39,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: wasmdoom-wasm
-          path: zig-out/bin/wasmdoom.wasm
+          path: |
+            zig-out/bin/wasmdoom.wasm
+            zig-out/bin/wasmdoom-music.wasm
           if-no-files-found: error
           retention-days: 3
 

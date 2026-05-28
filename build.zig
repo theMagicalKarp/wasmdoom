@@ -73,6 +73,7 @@ const engine_sources = [_][]const u8{
 // dependencies, no host imports.
 const music_sources = [_][]const u8{
     "src/music/opl/opl3.c",
+    "src/music/genmidi.c",
 };
 
 const c_flags = [_][]const u8{

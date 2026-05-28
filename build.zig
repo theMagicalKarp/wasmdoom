@@ -141,7 +141,7 @@ pub fn build(b: *std.Build) void {
     music_mod.addIncludePath(b.path("src/music"));
 
     const music_exe = b.addExecutable(.{
-        .name = "wasmdoom-music",
+        .name = "wasmdoom.music",
         .root_module = music_mod,
     });
     music_exe.entry = .disabled;

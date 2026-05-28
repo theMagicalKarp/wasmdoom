@@ -24,11 +24,12 @@ wasm-verify: wasm
 		--all-features \
 		ci/stubs.wasm doom_host \
 		zig-out/bin/wasmdoom.wasm wasmdoom \
-		-o zig-out/bin/wasmdoom-ci.wasm
+		-o zig-out/bin/wasmdoom.ci.wasm
 	wasmtime run --dir . \
 		--env HOME="." \
 		--env DOOMWADDIR="./wads" \
-		./zig-out/bin/wasmdoom-ci.wasm
+		./zig-out/bin/wasmdoom.ci.wasm
+	rm ./zig-out/bin/wasmdoom.ci.wasm
 
 web-format-check:
 	cd web && npm run format:check

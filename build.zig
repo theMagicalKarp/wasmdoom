@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // Engine sources, everything the game wasm needs. The music synth lives in
-// a separate artifact (wasmdoom-music.wasm); src/music/*.c is intentionally
+// a separate artifact (wasmdoom.music.wasm); src/music/*.c is intentionally
 // excluded from this list.
 const engine_sources = [_][]const u8{
     "src/am_map.c",
@@ -74,6 +74,7 @@ const engine_sources = [_][]const u8{
 const music_sources = [_][]const u8{
     "src/music/opl/opl3.c",
     "src/music/genmidi.c",
+    "src/music/mus.c",
 };
 
 const c_flags = [_][]const u8{

@@ -75,6 +75,7 @@ const music_sources = [_][]const u8{
     "src/music/opl/opl3.c",
     "src/music/genmidi.c",
     "src/music/mus.c",
+    "src/music/oplplayer.c",
 };
 
 const c_flags = [_][]const u8{

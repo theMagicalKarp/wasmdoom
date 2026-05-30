@@ -34,7 +34,7 @@
 #endif
 #include "i_system.h"
 
-int mb_used = 16;
+int mb_used = 32;
 
 void I_Tactile(int on, int off, int total) {}
 
@@ -69,9 +69,7 @@ int I_GetTime(void) {
 //
 // I_Init
 //
-void I_Init(void) {
-  // TODO: Expose to Hosts
-}
+void I_Init(void) { I_InitSound(); }
 
 //
 // I_Quit

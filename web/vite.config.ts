@@ -5,27 +5,33 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-// Override with WASMDOOM_WASM (absolute, or relative to this config file).
+// Override with WASMDOOM_WASM / WASMDOOM_MUSIC_WASM (absolute, or relative
+// to this config file).
 const wasmPath = resolve(
   __dirname,
   process.env.WASMDOOM_WASM ?? "../zig-out/bin/wasmdoom.wasm",
 );
+const musicWasmPath = resolve(
+  __dirname,
+  process.env.WASMDOOM_MUSIC_WASM ?? "../zig-out/bin/wasmdoom.music.wasm",
+);
 
-function serveWasm(): Plugin {
+function serveWasmFile(urlPath: string, filePath: string): Plugin {
+  const fileName = urlPath.replace(/^\//, "");
   return {
-    name: "serve-wasmdoom-wasm",
+    name: `serve-${fileName}`,
     configureServer(server) {
-      server.middlewares.use("/wasmdoom.wasm", (_req, res, next) => {
+      server.middlewares.use(urlPath, (_req, res, next) => {
         try {
-          const stat = statSync(wasmPath);
+          const stat = statSync(filePath);
           res.setHeader("Content-Type", "application/wasm");
           res.setHeader("Content-Length", stat.size);
           res.setHeader("Cache-Control", "no-store");
-          createReadStream(wasmPath).pipe(res);
+          createReadStream(filePath).pipe(res);
         } catch (err) {
           res.statusCode = 404;
           res.end(
-            `wasmdoom.wasm not found at ${wasmPath}. ` +
+            `${fileName} not found at ${filePath}. ` +
               `Run \`zig build\` from the repo root first.\n` +
               `(${(err as Error).message})`,
           );
@@ -37,12 +43,12 @@ function serveWasm(): Plugin {
       try {
         this.emitFile({
           type: "asset",
-          fileName: "wasmdoom.wasm",
-          source: readFileSync(wasmPath),
+          fileName,
+          source: readFileSync(filePath),
         });
       } catch (err) {
         this.error(
-          `wasmdoom.wasm not found at ${wasmPath}. ` +
+          `${fileName} not found at ${filePath}. ` +
             `Run \`zig build\` from the repo root first.\n` +
             `(${(err as Error).message})`,
         );
@@ -55,7 +61,8 @@ export default defineConfig({
   // Served from "/" in dev; GitHub Pages deploys under a sub-path via BASE_PATH.
   base: process.env.BASE_PATH ?? "/",
   plugins: [
-    serveWasm(),
+    serveWasmFile("/wasmdoom.wasm", wasmPath),
+    serveWasmFile("/wasmdoom.music.wasm", musicWasmPath),
     // Workbox globs the finished dist/ in closeBundle, so the wasm emitted by
     // serveWasm() above and the WAD copied from public/ are both on disk in
     // time to be precached. SW is disabled in dev to keep the live-wasm
@@ -85,9 +92,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,wasm,wad,png,svg,ico}"],
-        // Raise the per-file limit so the ~4.2 MB WAD is precached
-        // (Workbox's default is 2 MiB).
-        maximumFileSizeToCacheInBytes: 7 * 1024 * 1024,
+        // Need to support bigger wads.
+        maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
       },
       devOptions: { enabled: false },
     }),

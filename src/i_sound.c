@@ -21,13 +21,9 @@
 #include "z_zone.h"
 
 #include "i_sound.h"
-#include "i_system.h"
-#include "m_argv.h"
-#include "m_misc.h"
+#include "sounds.h"
 #include "w_wad.h"
 #include "wasmdoom.h"
-
-#include "doomdef.h"
 
 #ifdef SNDSERV
 FILE *sndserver = 0;
@@ -44,7 +40,7 @@ void I_SetChannels() {}
 
 void I_SetSfxVolume(int volume) {}
 
-void I_SetMusicVolume(int volume) {}
+void I_SetMusicVolume(int volume) { wasmdoom_music_set_volume(volume); }
 
 //
 // Retrieve the raw data lump index
@@ -88,25 +84,50 @@ void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {
 
 void I_ShutdownSound(void) {}
 
-void I_InitSound() {}
+void I_InitSound() { I_InitMusic(); }
 
 //
 // MUSIC API.
 //
-void I_InitMusic(void) {}
+// Init/parsing of GENMIDI and the OPL3 chip live in the music wasm module
+// (wasmdoom.music.wasm). This file only marshals bytes across the eight host
+// imports declared in wasmdoom.h.
+static int next_music_handle = 1;
+
+void I_InitMusic(void) {
+  int lump = W_CheckNumForName("GENMIDI");
+  if (lump >= 0) {
+    void *data = W_CacheLumpNum(lump, PU_STATIC);
+    wasmdoom_music_set_genmidi((const uint8_t *)data, W_LumpLength(lump));
+  }
+}
 void I_ShutdownMusic(void) {}
 
-void I_PlaySong(int handle, int looping) {}
+int I_RegisterSong(void *data) {
+  const uint8_t *p = data;
+  // MUS header: scoreLen @4 (u16le), scoreStart @6 (u16le); total = start+len.
+  int score_len = p[4] | (p[5] << 8);
+  int score_start = p[6] | (p[7] << 8);
+  int len = score_start + score_len;
+  int handle = next_music_handle++;
+  if (next_music_handle <= 0) {
+    next_music_handle = 1;
+  }
+  wasmdoom_music_register(handle, p, len);
+  return handle;
+}
 
-void I_PauseSong(int handle) {}
+void I_PlaySong(int handle, int looping) {
+  wasmdoom_music_play(handle, looping);
+}
 
-void I_ResumeSong(int handle) {}
+void I_PauseSong(int handle) { wasmdoom_music_pause(handle); }
 
-void I_StopSong(int handle) {}
+void I_ResumeSong(int handle) { wasmdoom_music_resume(handle); }
 
-void I_UnRegisterSong(int handle) {}
+void I_StopSong(int handle) { wasmdoom_music_stop(handle); }
 
-int I_RegisterSong(void *data) { return 0; }
+void I_UnRegisterSong(int handle) { wasmdoom_music_unregister(handle); }
 
 // Is the song playing?
 int I_QrySongPlaying(int handle) { return 0; }

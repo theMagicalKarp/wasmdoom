@@ -266,8 +266,11 @@ async function main() {
   );
 
   assertWasmdoomInstance(instance);
-  wasi.start(instance);
+  // Set memory before wasi.start() runs the C main — I_InitMusic fires during
+  // start-up and the doom_host imports need to read the wasm memory.
   memory = instance.exports.memory;
+  wasi.start(instance);
+  let failure = false;
 
   window.addEventListener("keydown", (event: KeyboardEvent) => {
     const doomkey = KEY_MAP.get(event.code);
@@ -356,10 +359,20 @@ async function main() {
 
   let lastFrame = performance.now();
   function loop(now: number) {
+    if (failure) {
+      return;
+    }
     requestAnimationFrame(loop);
-    if (now - lastFrame < FRAME_MS) return;
+    if (now - lastFrame < FRAME_MS) {
+      return;
+    }
     lastFrame = now - ((now - lastFrame) % FRAME_MS);
-    renderFrame();
+    try {
+      renderFrame();
+    } catch (err) {
+      console.error("[wasmdoom] render frame failure:", err);
+      failure = true;
+    }
   }
   requestAnimationFrame(loop);
 }

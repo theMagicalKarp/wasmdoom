@@ -11,6 +11,8 @@
 
 #include "oplplayer.h"
 
+#include "utils.h"
+
 #define NUM_VOICES OPLPLAYER_NUM_VOICES
 #define NUM_MIDI_CHANNELS OPLPLAYER_NUM_MIDI_CHANNELS
 #define PERCUSSION_CHANNEL OPLPLAYER_PERCUSSION_CHANNEL
@@ -106,26 +108,6 @@ static const float freq_table[128] = {
     10548.08203125f,     11175.3037109375f,
     11839.8212890625f,   12543.853515625f,
 };
-
-static float clamp_f(float v, float lo, float hi) {
-  if (v < lo) {
-    return lo;
-  }
-  if (v > hi) {
-    return hi;
-  }
-  return v;
-}
-
-static int clamp_i(int v, int lo, int hi) {
-  if (v < lo) {
-    return lo;
-  }
-  if (v > hi) {
-    return hi;
-  }
-  return v;
-}
 
 // Linear-interpolated lookup of the MIDI note frequency. Linear interpolation
 // between adjacent semitones has < 0.1% error (well under one cent).

@@ -2,6 +2,8 @@
 zig-out/
 *.o
 
+music-out/
+
 notes.md
 .DS_Store
 

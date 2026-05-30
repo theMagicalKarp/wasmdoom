@@ -1,0 +1,27 @@
+{
+  "name": "wasmdoom-tools",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#lib/*": "./lib/*"
+  },
+  "bin": {
+    "wasmdoom-tools": "./cli.ts"
+  },
+  "scripts": {
+    "cli": "node cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "prettier": "3.8.3",
+    "typescript": "^6.0.3"
+  }
+}

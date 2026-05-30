@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - run: pip install 'clang-format==22.1.5'
+
       - name: Install Binaryen
         uses: ./.github/actions/setup-binaryen
         with:
@@ -29,6 +31,9 @@ jobs:
           version: 0.16.0
           shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
 
+      - name: clang-format
+        run: make fmt-check
+
       - name: zig build
         run: make wasm
 
@@ -43,12 +48,55 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-  fmt-check:
+  music:
     runs-on: ubuntu-latest
+    needs: build
     steps:
       - uses: actions/checkout@v6
-      - run: pip install 'clang-format==22.1.5'
-      - run: make fmt-check
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Install tools deps
+        working-directory: tools
+        run: npm ci
+
+      - name: Check formatting
+        working-directory: tools
+        run: npm run format:check
+
+      - name: Type-check
+        working-directory: tools
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: tools
+        run: npm run test
+
+      - name: Download wasm artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: wasmdoom-wasm
+          path: zig-out/bin
+
+      - name: Render WAD music (smoke test)
+        working-directory: tools
+        run: |
+          node cli.ts render-music ../wads/doom1.wad \
+            --wasm ../zig-out/bin/wasmdoom.music.wasm \
+            --out music-out
+
+      - name: Upload `D_E1M1.wav` Music Sample
+        uses: actions/upload-artifact@v7
+        with:
+          name: music-sample
+          path: tools/music-out/D_E1M1.wav
+          if-no-files-found: error
+          retention-days: 5
 
   web:
     runs-on: ubuntu-latest

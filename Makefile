@@ -1,4 +1,8 @@
-.PHONY: check fix fmt-check fmt web-format web-format-check wasm wasm-verify web-typecheck web-test web-build tools-format tools-format-check tools-typecheck tools-test tools-render
+.PHONY: check fix fmt-check fmt web-format web-format-check wasm wasm-release wasm-verify web-typecheck web-test web-build tools-format tools-format-check tools-typecheck tools-test tools-render
+
+# Default is a Debug build for fast local iteration. Override (or use the
+# `wasm-release` target) to produce the distributable artifact.
+ZIG_OPTIMIZE ?= Debug
 
 C_SOURCES := $(shell find src -type f \( -name '*.c' -o -name '*.h' \))
 
@@ -20,7 +24,7 @@ web-format: web/node_modules
 	cd web && npm run format
 
 wasm:
-	zig build -Doptimize=ReleaseSmall
+	zig build -Doptimize=$(ZIG_OPTIMIZE)
 
 wasm-verify: wasm
 	wasm-as ci/stubs.wat -o ci/stubs.wasm

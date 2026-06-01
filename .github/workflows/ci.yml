@@ -34,11 +34,11 @@ jobs:
       - name: clang-format
         run: make fmt-check
 
-      - name: zig build
-        run: make wasm
+      - name: zig build (release)
+        run: make wasm ZIG_OPTIMIZE=ReleaseSmall
 
       - name: Verify WASM Execution
-        run: make wasm-verify
+        run: make wasm-verify ZIG_OPTIMIZE=ReleaseSmall
 
       - name: Upload wasm artifact
         uses: actions/upload-artifact@v7

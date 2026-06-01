@@ -55,8 +55,10 @@ export type DoomAudioImports = {
 };
 
 export type DoomAudio = {
-  // Spread into the `doom_host` import object before instantiation.
-  imports: DoomAudioImports;
+  // Build the audio host imports bound to a live wasm-memory accessor.
+  // Called from inside `loadDoom`'s `buildHost`, where `getMemory` is the
+  // runtime's deferred ref — safe to invoke once the wasm is instantiated.
+  buildImports(getMemory: () => WebAssembly.Memory): DoomAudioImports;
   // Call from a user gesture; browsers block audio until then.
   start(): void;
   suspend(): void;
@@ -78,9 +80,7 @@ function rateOf(pitch: number): number {
   return Math.max(pitch, 1) / 128;
 }
 
-export function createDoomAudio(
-  getMemory: () => WebAssembly.Memory,
-): DoomAudio {
+export function createDoomAudio(): DoomAudio {
   let ctx: AudioContext | null = null;
   const sfxBuffers = new Map<number, AudioBuffer>();
   const voices = new Map<number, Voice>();
@@ -93,13 +93,6 @@ export function createDoomAudio(
     msg: MusicWorkletMessage;
     transfer: Transferable[];
   }> = [];
-
-  function copyMemoryRange(ptr: number, len: number): ArrayBuffer {
-    const src = new Uint8Array(getMemory().buffer, ptr, len);
-    const buf = new ArrayBuffer(len);
-    new Uint8Array(buf).set(src);
-    return buf;
-  }
 
   function postMusic(
     msg: MusicWorkletMessage,
@@ -170,118 +163,127 @@ export function createDoomAudio(
     musicQueue = [];
   }
 
-  function decodeSfx(
-    audioCtx: AudioContext,
-    ptr: number,
-    len: number,
-  ): AudioBuffer {
-    const raw = new Uint8Array(getMemory().buffer, ptr, len);
-    const sampleCount = Math.max(0, len - DMX_HEADER_BYTES);
-    const buffer = audioCtx.createBuffer(1, sampleCount, DMX_SAMPLE_RATE);
-    const channel = buffer.getChannelData(0);
-    for (let i = 0; i < sampleCount; i++) {
-      channel[i] = (raw[DMX_HEADER_BYTES + i] - 128) / 128;
+  function buildImports(getMemory: () => WebAssembly.Memory): DoomAudioImports {
+    function copyMemoryRange(ptr: number, len: number): ArrayBuffer {
+      const src = new Uint8Array(getMemory().buffer, ptr, len);
+      const buf = new ArrayBuffer(len);
+      new Uint8Array(buf).set(src);
+      return buf;
     }
-    return buffer;
+
+    function decodeSfx(
+      audioCtx: AudioContext,
+      ptr: number,
+      len: number,
+    ): AudioBuffer {
+      const raw = new Uint8Array(getMemory().buffer, ptr, len);
+      const sampleCount = Math.max(0, len - DMX_HEADER_BYTES);
+      const buffer = audioCtx.createBuffer(1, sampleCount, DMX_SAMPLE_RATE);
+      const channel = buffer.getChannelData(0);
+      for (let i = 0; i < sampleCount; i++) {
+        channel[i] = (raw[DMX_HEADER_BYTES + i] - 128) / 128;
+      }
+      return buffer;
+    }
+
+    return {
+      wasmdoom_sound_start(handle, sfxId, ptr, len, vol, sep, pitch) {
+        if (!ctx) {
+          return; // no audio until the first user gesture
+        }
+
+        let buffer = sfxBuffers.get(sfxId);
+        if (!buffer) {
+          buffer = decodeSfx(ctx, ptr, len);
+          sfxBuffers.set(sfxId, buffer);
+        }
+
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.playbackRate.value = rateOf(pitch);
+        const pan = ctx.createStereoPanner();
+        pan.pan.value = panOf(sep);
+        const gain = ctx.createGain();
+        gain.gain.value = gainOf(vol);
+
+        src.connect(pan).connect(gain).connect(ctx.destination);
+        src.onended = () => {
+          voices.delete(handle);
+        };
+        voices.set(handle, { src, gain, pan });
+        src.start();
+      },
+
+      wasmdoom_sound_stop(handle) {
+        const voice = voices.get(handle);
+        if (!voice) return;
+        voice.src.onended = null;
+        try {
+          voice.src.stop();
+        } catch {
+          // already stopped/ended
+        }
+        voices.delete(handle);
+      },
+
+      wasmdoom_sound_update(handle, vol, sep, pitch) {
+        const voice = voices.get(handle);
+        if (!voice) {
+          return;
+        }
+        voice.gain.gain.value = gainOf(vol);
+        voice.pan.pan.value = panOf(sep);
+        voice.src.playbackRate.value = rateOf(pitch);
+      },
+
+      wasmdoom_sound_is_playing(handle) {
+        return voices.has(handle) ? 1 : 0;
+      },
+
+      wasmdoom_music_set_genmidi(ptr, len) {
+        if (len <= 0) {
+          return;
+        }
+        const data = copyMemoryRange(ptr, len);
+        postMusic({ type: "setGenmidi", data }, [data]);
+      },
+
+      wasmdoom_music_register(handle, ptr, len) {
+        if (len <= 0) {
+          return;
+        }
+        const data = copyMemoryRange(ptr, len);
+        postMusic({ type: "register", handle, data }, [data]);
+      },
+
+      wasmdoom_music_play(handle, looping) {
+        postMusic({ type: "play", handle, looping: looping !== 0 });
+      },
+
+      wasmdoom_music_pause(handle) {
+        postMusic({ type: "pause", handle });
+      },
+
+      wasmdoom_music_resume(handle) {
+        postMusic({ type: "resume", handle });
+      },
+
+      wasmdoom_music_stop(handle) {
+        postMusic({ type: "stop", handle });
+      },
+
+      wasmdoom_music_unregister(handle) {
+        postMusic({ type: "unregister", handle });
+      },
+
+      wasmdoom_music_set_volume(volume) {
+        postMusic({ type: "setVolume", volume });
+      },
+    };
   }
 
-  const imports: DoomAudioImports = {
-    wasmdoom_sound_start(handle, sfxId, ptr, len, vol, sep, pitch) {
-      if (!ctx) {
-        return; // no audio until the first user gesture
-      }
-
-      let buffer = sfxBuffers.get(sfxId);
-      if (!buffer) {
-        buffer = decodeSfx(ctx, ptr, len);
-        sfxBuffers.set(sfxId, buffer);
-      }
-
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      src.playbackRate.value = rateOf(pitch);
-      const pan = ctx.createStereoPanner();
-      pan.pan.value = panOf(sep);
-      const gain = ctx.createGain();
-      gain.gain.value = gainOf(vol);
-
-      src.connect(pan).connect(gain).connect(ctx.destination);
-      src.onended = () => {
-        voices.delete(handle);
-      };
-      voices.set(handle, { src, gain, pan });
-      src.start();
-    },
-
-    wasmdoom_sound_stop(handle) {
-      const voice = voices.get(handle);
-      if (!voice) return;
-      voice.src.onended = null;
-      try {
-        voice.src.stop();
-      } catch {
-        // already stopped/ended
-      }
-      voices.delete(handle);
-    },
-
-    wasmdoom_sound_update(handle, vol, sep, pitch) {
-      const voice = voices.get(handle);
-      if (!voice) {
-        return;
-      }
-      voice.gain.gain.value = gainOf(vol);
-      voice.pan.pan.value = panOf(sep);
-      voice.src.playbackRate.value = rateOf(pitch);
-    },
-
-    wasmdoom_sound_is_playing(handle) {
-      return voices.has(handle) ? 1 : 0;
-    },
-
-    wasmdoom_music_set_genmidi(ptr, len) {
-      if (len <= 0) {
-        return;
-      }
-      const data = copyMemoryRange(ptr, len);
-      postMusic({ type: "setGenmidi", data }, [data]);
-    },
-
-    wasmdoom_music_register(handle, ptr, len) {
-      if (len <= 0) {
-        return;
-      }
-      const data = copyMemoryRange(ptr, len);
-      postMusic({ type: "register", handle, data }, [data]);
-    },
-
-    wasmdoom_music_play(handle, looping) {
-      postMusic({ type: "play", handle, looping: looping !== 0 });
-    },
-
-    wasmdoom_music_pause(handle) {
-      postMusic({ type: "pause", handle });
-    },
-
-    wasmdoom_music_resume(handle) {
-      postMusic({ type: "resume", handle });
-    },
-
-    wasmdoom_music_stop(handle) {
-      postMusic({ type: "stop", handle });
-    },
-
-    wasmdoom_music_unregister(handle) {
-      postMusic({ type: "unregister", handle });
-    },
-
-    wasmdoom_music_set_volume(volume) {
-      postMusic({ type: "setVolume", volume });
-    },
-  };
-
   return {
-    imports,
+    buildImports,
     start() {
       if (!ctx) {
         ctx = new AudioContext();

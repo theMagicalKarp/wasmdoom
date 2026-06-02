@@ -17,6 +17,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
     "commander": "^14.0.0"
   },
   "devDependencies": {

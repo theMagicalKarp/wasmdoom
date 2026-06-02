@@ -522,6 +522,9 @@ void IdentifyVersion(void) {
   char *plutoniawad;
   char *tntwad;
 
+  char *freedoom1wad;
+  char *freedoom2wad;
+
 #ifdef NORMALUNIX
   char *home;
   char *doomwaddir;
@@ -556,6 +559,14 @@ void IdentifyVersion(void) {
   // French stuff.
   doom2fwad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
   sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
+
+  // Freedoom Phase 1 (retail-equivalent, 4 episodes) and Phase 2
+  // (commercial-equivalent, MAP01-MAP32). BSD-licensed drop-in IWADs.
+  freedoom1wad = malloc(strlen(doomwaddir) + 1 + 13 + 1);
+  sprintf(freedoom1wad, "%s/freedoom1.wad", doomwaddir);
+
+  freedoom2wad = malloc(strlen(doomwaddir) + 1 + 13 + 1);
+  sprintf(freedoom2wad, "%s/freedoom2.wad", doomwaddir);
 
   home = getenv("HOME");
   if (!home)
@@ -629,6 +640,12 @@ void IdentifyVersion(void) {
     return;
   }
 
+  if (M_FileExists(freedoom2wad)) {
+    gamemode = commercial;
+    D_AddFile(freedoom2wad);
+    return;
+  }
+
   if (M_FileExists(doomuwad)) {
     gamemode = retail;
     D_AddFile(doomuwad);
@@ -644,6 +661,12 @@ void IdentifyVersion(void) {
   if (M_FileExists(doom1wad)) {
     gamemode = shareware;
     D_AddFile(doom1wad);
+    return;
+  }
+
+  if (M_FileExists(freedoom1wad)) {
+    gamemode = retail;
+    D_AddFile(freedoom1wad);
     return;
   }
 

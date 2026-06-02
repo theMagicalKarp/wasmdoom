@@ -1,0 +1,15 @@
+{
+  "ticks": 256,
+  "commands": [
+    { "tick": 90, "type": "keydown", "key": "MENU_CONFIRM" },
+    { "tick": 95, "type": "keyup", "key": "MENU_CONFIRM" },
+    { "tick": 100, "type": "keydown", "key": "MENU_CONFIRM" },
+    { "tick": 105, "type": "keyup", "key": "MENU_CONFIRM" },
+    { "tick": 110, "type": "keydown", "key": "MENU_CONFIRM" },
+    { "tick": 115, "type": "keyup", "key": "MENU_CONFIRM" },
+    { "tick": 120, "type": "keydown", "key": "MENU_CONFIRM" },
+    { "tick": 125, "type": "keyup", "key": "MENU_CONFIRM" },
+    { "tick": 135, "type": "snapshot", "name": "mid-wipe" },
+    { "tick": 176, "type": "snapshot", "name": "game-start" }
+  ]
+}

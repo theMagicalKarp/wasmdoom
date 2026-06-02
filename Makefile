@@ -1,4 +1,4 @@
-.PHONY: check fix fmt-check fmt web-format web-format-check wasm wasm-release wasm-verify web-typecheck web-test web-build tools-format tools-format-check tools-typecheck tools-test tools-render
+.PHONY: check fix fmt-check fmt web-format web-format-check wasm-release wasm-verify web-typecheck web-test web-build web-check tools-format tools-format-check tools-typecheck tools-test tools-check tools-render-music tools-render-music-all tools-simulate
 
 # Default is a Debug build for fast local iteration. Override (or use the
 # `wasm-release` target) to produce the distributable artifact.
@@ -6,7 +6,7 @@ ZIG_OPTIMIZE ?= Debug
 
 C_SOURCES := $(shell find src -type f \( -name '*.c' -o -name '*.h' \))
 
-check: fmt-check wasm wasm-verify tools-format-check tools-typecheck tools-test tools-render web-format-check web-typecheck web-test web-build
+check: fmt-check wasm wasm-verify tools-check tools-render-music tools-simulate web-check web-build
 
 fix: fmt web-format tools-format
 
@@ -23,10 +23,15 @@ web/node_modules: web/package-lock.json
 web-format: web/node_modules
 	cd web && npm run format
 
-wasm:
+zig-out/bin/wasmdoom.wasm: $(C_SOURCES)
 	zig build -Doptimize=$(ZIG_OPTIMIZE)
+	@touch $@ zig-out/bin/wasmdoom.music.wasm
 
-wasm-verify: wasm
+zig-out/bin/wasmdoom.music.wasm: zig-out/bin/wasmdoom.wasm
+
+wasm: zig-out/bin/wasmdoom.wasm zig-out/bin/wasmdoom.music.wasm
+
+wasm-verify: zig-out/bin/wasmdoom.wasm
 	wasm-as ci/stubs.wat -o ci/stubs.wasm
 	wasm-merge \
 		--all-features \
@@ -48,7 +53,11 @@ web-typecheck: web/node_modules
 web-test: web/node_modules
 	cd web && npm run test
 
-web-build: wasm web/node_modules
+# Static-check aggregate for the web frontend. Excludes `web-build` because the
+# build requires the wasm artifact, which CI downloads as a separate step.
+web-check: web-format-check web-typecheck web-test
+
+web-build: zig-out/bin/wasmdoom.wasm zig-out/bin/wasmdoom.music.wasm web/node_modules
 	cd web && npm run build
 
 # Install tools deps; re-runs only when the lockfile changes.
@@ -67,13 +76,35 @@ tools-typecheck: tools/node_modules
 tools-test: tools/node_modules
 	cd tools && npm run test
 
-# Smoke-test the music pipeline end to end by generating one short track.
-tools-render: wasm tools/node_modules
-	node tools/cli.ts render-music ./wads/doom1.wad \
-		--wasm ./zig-out/bin/wasmdoom.music.wasm \
-		--track E1M1 --out music-out
+# Static-check aggregate for the tools workspace. Excludes the render and
+# simulate targets because they require the wasm artifact, which CI downloads
+# as a separate step.
+tools-check: tools-format-check tools-typecheck tools-test
 
-tools-render-all: wasm tools/node_modules
+# Smoke-test the music pipeline end to end by generating one short track.
+tools-render-music: zig-out/bin/wasmdoom.music.wasm tools/node_modules
 	node tools/cli.ts render-music ./wads/doom1.wad \
 		--wasm ./zig-out/bin/wasmdoom.music.wasm \
-		--out music-out
+		--track E1M1 --out ci-out/music
+
+tools-render-music-all: zig-out/bin/wasmdoom.music.wasm tools/node_modules
+	node tools/cli.ts render-music ./wads/doom1.wad \
+		--wasm ./zig-out/bin/wasmdoom.music.wasm \
+		--out ci-out/music
+
+# Run every scripted simulation under ci/sim/<wad>/*.json. The WAD name is
+# derived from the directory name (e.g. ci/sim/doom1/ -> ./wads/doom1.wad).
+tools-simulate: zig-out/bin/wasmdoom.wasm tools/node_modules
+	@for wad_dir in ci/sim/*/; do \
+		wad=$$(basename $$wad_dir); \
+		for script in $$wad_dir*.json; do \
+			[ -e "$$script" ] || continue; \
+			name=$$(basename $$script .json); \
+			echo ">>> simulate: $$wad/$$name"; \
+			node tools/cli.ts simulate ./wads/$$wad.wad \
+				--wasm ./zig-out/bin/wasmdoom.wasm \
+				--commands $$script \
+				--out ci-out/sim/$$wad/$$name \
+				--quiet || exit 1; \
+		done; \
+	done

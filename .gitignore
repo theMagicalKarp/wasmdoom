@@ -2,9 +2,14 @@
 zig-out/
 *.o
 
-music-out/
+ci-out/
 
 notes.md
 .DS_Store
 
 *.wasm
+
+wads/*.wad
+!wads/doom1.wad
+!wads/freedoom1.wad
+!wads/freedoom2.wad

@@ -3,6 +3,7 @@ import { Command } from "commander";
 
 import { registerListLumps } from "./commands/list-lumps.ts";
 import { registerRenderMusic } from "./commands/render-music.ts";
+import { registerSimulate } from "./commands/simulate.ts";
 
 const program = new Command();
 program
@@ -12,6 +13,7 @@ program
 
 registerListLumps(program);
 registerRenderMusic(program);
+registerSimulate(program);
 
 try {
   await program.parseAsync();

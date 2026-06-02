@@ -1,0 +1,9 @@
+{
+  "ticks": 180,
+  "commands": [
+    { "tick": 60, "type": "snapshot", "name": "title" },
+    { "tick": 90, "type": "keydown", "key": "MENU_OPEN" },
+    { "tick": 95, "type": "keyup", "key": "MENU_OPEN" },
+    { "tick": 150, "type": "snapshot", "name": "menu" }
+  ]
+}

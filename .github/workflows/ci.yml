@@ -48,7 +48,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-  music:
+  simulate:
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -61,21 +61,8 @@ jobs:
           cache: npm
           cache-dependency-path: tools/package-lock.json
 
-      - name: Install tools deps
-        working-directory: tools
-        run: npm ci
-
-      - name: Check formatting
-        working-directory: tools
-        run: npm run format:check
-
-      - name: Type-check
-        working-directory: tools
-        run: npm run typecheck
-
-      - name: Unit tests
-        working-directory: tools
-        run: npm run test
+      - name: Static checks
+        run: make tools-check
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v8
@@ -83,18 +70,25 @@ jobs:
           name: wasmdoom-wasm
           path: zig-out/bin
 
-      - name: Render WAD music (smoke test)
-        working-directory: tools
-        run: |
-          node cli.ts render-music ../wads/doom1.wad \
-            --wasm ../zig-out/bin/wasmdoom.music.wasm \
-            --out music-out
+      - name: Render WAD music
+        run: make tools-render-music-all
 
       - name: Upload `D_E1M1.wav` Music Sample
         uses: actions/upload-artifact@v7
         with:
           name: music-sample
-          path: tools/music-out/D_E1M1.wav
+          path: ci-out/music/D_E1M1.wav
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Run scripted simulations
+        run: make tools-simulate
+
+      - name: Upload simulation snapshots
+        uses: actions/upload-artifact@v7
+        with:
+          name: sim-snapshots
+          path: ci-out/sim
           if-no-files-found: error
           retention-days: 5
 
@@ -117,16 +111,9 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
-      - run: npm ci
-
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Type-check
-        run: npm run typecheck
-
-      - name: Unit tests
-        run: npm run test
+      - name: Static checks
+        working-directory: ${{ github.workspace }}
+        run: make web-check
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v8

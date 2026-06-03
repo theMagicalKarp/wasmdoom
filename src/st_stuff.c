@@ -489,7 +489,9 @@ boolean ST_Responder(event_t *ev) {
   }
 
   // if a user keypress...
-  else if (ev->type == ev_keydown) {
+  // @EDIT Status-bar cheat input now reads ev_typechar so cheat strings match
+  // against typed characters instead of raw keycodes.
+  else if (ev->type == ev_typechar) {
     if (!netgame) {
       // b. - enabled for more debug fun.
       // if (gameskill != sk_nightmare) {

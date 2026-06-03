@@ -79,6 +79,13 @@ void I_Tactile(int on, int off, int total);
 
 void I_Error(char *error, ...);
 
+int I_SaveGame(char const *name, void *source, int length);
+int I_LoadGame(char const *name, byte **buffer);
+
+// Reads up to `length` bytes from the start of a saved game into `buffer`.
+// Returns the number of bytes copied, or -1 if no save exists.
+int I_ReadSaveString(char const *name, char *buffer, int length);
+
 #endif
 //-----------------------------------------------------------------------------
 //

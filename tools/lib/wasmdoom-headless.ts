@@ -182,6 +182,14 @@ export async function loadHeadlessDoom(opts: {
     wasmdoom_music_stop(): void {},
     wasmdoom_music_unregister(): void {},
     wasmdoom_music_set_volume(): void {},
+    // Save/load stubs — headless has no persistence layer. Pretend every save
+    // succeeds and no save slots exist.
+    wasmdoom_save_game(): number {
+      return 0;
+    },
+    wasmdoom_load_game(): number {
+      return -1;
+    },
   };
 
   const module = new WebAssembly.Module(wasmBytes);

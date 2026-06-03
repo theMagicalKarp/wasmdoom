@@ -27,7 +27,9 @@ void EXPORT(wasmdoom_tick)(void) {
 }
 
 void EXPORT(wasmdoom_keydown)(int keyCode) {
-  event_buf[event_tail] = (event_t){.type = ev_keydown, .data1 = keyCode};
+  evtype_t type = (keyCode & WASMDOOM_TYPECHAR_FLAG) ? ev_typechar : ev_keydown;
+  int data1 = keyCode & ~WASMDOOM_TYPECHAR_FLAG;
+  event_buf[event_tail] = (event_t){.type = type, .data1 = data1};
   event_tail++;
   event_tail %= EVENTBUF_CAP;
 }

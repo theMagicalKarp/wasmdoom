@@ -8,10 +8,15 @@
 // drains accumulated mouse delta + button state into wasmdoom_send_mouse.
 
 import nipplejs from "nipplejs";
-import type { DoomAudio } from "./audio.ts";
+import type { DoomAudio } from "./doom-audio.ts";
 import type { WasmdoomExports } from "./doom-runtime.ts";
 import { isMobileDevice } from "./utils.ts";
 import { Vector2 } from "./math.ts";
+
+// Sentinel bit on wasmdoom_keydown's argument: when set, the low byte is
+// delivered as a typed ASCII character (ev_typechar) rather than a game key
+// (ev_keydown). Mirrors WASMDOOM_TYPECHAR_FLAG in src/wasmdoom.h.
+const WASMDOOM_TYPECHAR_FLAG = 0x100;
 
 // Key codes Doom's C side recognises. These mirror the values produced by
 // the wasm module's input layer; treat them as a wire protocol.
@@ -157,12 +162,22 @@ export function createInput(opts: {
   let mouse = Vector2.zero();
 
   window.addEventListener("keydown", (event) => {
+    let consumed = false;
     const doomkey = KEY_MAP.get(event.code);
-    if (doomkey === undefined) {
-      return;
+    if (doomkey !== undefined) {
+      doom.wasmdoom_keydown(doomkey);
+      consumed = true;
     }
-    event.preventDefault();
-    doom.wasmdoom_keydown(doomkey);
+    if (event.key.length === 1) {
+      const code = event.key.charCodeAt(0);
+      if (code >= 32 && code <= 126) {
+        doom.wasmdoom_keydown(WASMDOOM_TYPECHAR_FLAG | code);
+        consumed = true;
+      }
+    }
+    if (consumed) {
+      event.preventDefault();
+    }
   });
 
   window.addEventListener("keyup", (event) => {

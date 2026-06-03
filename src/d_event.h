@@ -28,7 +28,16 @@
 //
 
 // Input event types.
-typedef enum { ev_keydown, ev_keyup, ev_mouse, ev_joystick } evtype_t;
+typedef enum {
+  ev_keydown,
+  ev_keyup,
+  ev_mouse,
+  ev_joystick,
+  // @EDIT New event type for typed (case-folded, modifier-applied) characters
+  // from the host. Lets text-consuming code (save names, cheats) dispatch on
+  // event type rather than re-deriving characters from raw keycodes.
+  ev_typechar
+} evtype_t;
 
 // Event structure.
 typedef struct {

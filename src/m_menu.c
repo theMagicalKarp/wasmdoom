@@ -357,8 +357,6 @@ menu_t SaveDef = {load_end, &MainDef, SaveMenu, M_DrawSave, 80, 54, 0};
 //  read the strings from the savegame files
 //
 void M_ReadSaveStrings(void) {
-  int handle;
-  int count;
   int i;
   char name[256];
 
@@ -368,14 +366,13 @@ void M_ReadSaveStrings(void) {
     else
       sprintf(name, SAVEGAMENAME "%d.dsg", i);
 
-    handle = open(name, O_RDONLY | 0, 0666);
-    if (handle == -1) {
+    // @EDIT Avoid POSIX open/read/close and rely on host system to gather
+    // names.
+    if (I_ReadSaveString(name, savegamestrings[i], SAVESTRINGSIZE) < 0) {
       strcpy(&savegamestrings[i][0], EMPTYSTRING);
       LoadMenu[i].status = 0;
       continue;
     }
-    count = read(handle, &savegamestrings[i], SAVESTRINGSIZE);
-    close(handle);
     LoadMenu[i].status = 1;
   }
 }
@@ -1075,6 +1072,10 @@ boolean M_Responder(event_t *ev) {
       }
     } else if (ev->type == ev_keydown) {
       ch = ev->data1;
+      // @EDIT Capture typed characters into `ch` so the save-name entry block
+      // below can consume them; raw ev_keydown still drives navigation keys.
+    } else if (ev->type == ev_typechar) {
+      ch = ev->data1;
     }
   }
 
@@ -1083,6 +1084,22 @@ boolean M_Responder(event_t *ev) {
 
   // Save Game string input
   if (saveStringEnter) {
+    // @EDIT Typed characters are inserted into the save name here; the switch
+    // below still handles editing keys (backspace/enter/escape) via ev_keydown.
+    if (ev->type == ev_typechar) {
+      ch = toupper(ch);
+      if (ch != 32) {
+        if (ch - HU_FONTSTART < 0 || ch - HU_FONTSTART >= HU_FONTSIZE) {
+          return true;
+        }
+      }
+      if (ch >= 32 && ch <= 127 && saveCharIndex < SAVESTRINGSIZE - 1 &&
+          M_StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8) {
+        savegamestrings[saveSlot][saveCharIndex++] = ch;
+        savegamestrings[saveSlot][saveCharIndex] = 0;
+      }
+      return true;
+    }
     switch (ch) {
     case KEY_BACKSPACE:
       if (saveCharIndex > 0) {
@@ -1101,20 +1118,14 @@ boolean M_Responder(event_t *ev) {
       if (savegamestrings[saveSlot][0])
         M_DoSave(saveSlot);
       break;
-
-    default:
-      ch = toupper(ch);
-      if (ch != 32)
-        if (ch - HU_FONTSTART < 0 || ch - HU_FONTSTART >= HU_FONTSIZE)
-          break;
-      if (ch >= 32 && ch <= 127 && saveCharIndex < SAVESTRINGSIZE - 1 &&
-          M_StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8) {
-        savegamestrings[saveSlot][saveCharIndex++] = ch;
-        savegamestrings[saveSlot][saveCharIndex] = 0;
-      }
-      break;
     }
     return true;
+  }
+
+  // @EDIT Outside save-name entry, ev_typechar is not consumed by any menu
+  // path; drop it so it doesn't fall through to keydown logic below.
+  if (ev->type == ev_typechar) {
+    return false;
   }
 
   // Take care of any messages that need input

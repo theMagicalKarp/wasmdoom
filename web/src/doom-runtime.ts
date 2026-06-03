@@ -17,7 +17,7 @@ import {
   File,
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
-import type { DoomAudioImports } from "./audio.ts";
+import type { DoomAudioImports } from "./doom-audio.ts";
 
 export type WasmdoomExports = {
   memory: WebAssembly.Memory;
@@ -65,6 +65,12 @@ function assertWasmdoomInstance(
 export type DoomHostImports = DoomAudioImports & {
   wasmdoom_error(messagePtr: number, length: number): void;
   wasmdoom_draw(): void;
+  wasmdoom_save_game(
+    namePtr: number,
+    sourcePtr: number,
+    length: number,
+  ): number;
+  wasmdoom_load_game(namePtr: number, destPtr: number, maxLen: number): number;
 };
 
 // Live references to the running wasm. Both throw if read before the

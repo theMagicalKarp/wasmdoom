@@ -1065,7 +1065,10 @@ void G_DoLoadGame(void) {
 
   gameaction = ga_nothing;
 
-  length = M_ReadFile(savename, &savebuffer);
+  // @EDIT Use the host's I_LoadGame hook instead of M_ReadFile to avoid
+  // dependency on POSIX filesystem, and intsead rely on the host system to
+  // handle saves. length = M_ReadFile(savename, &savebuffer);
+  length = I_LoadGame(savename, &savebuffer);
   save_p = savebuffer + SAVESTRINGSIZE;
 
   // skip the description field
@@ -1161,7 +1164,11 @@ void G_DoSaveGame(void) {
   length = save_p - savebuffer;
   if (length > SAVEGAMESIZE)
     I_Error("Savegame buffer overrun");
-  M_WriteFile(name, savebuffer, length);
+
+  // @EDIT Use the host's I_SaveGame hook instead of M_WriteFile to avoid
+  // POSIX filesystem, and intsead rely on the host system to handle saves.
+  // M_WriteFile(name, savebuffer, length);
+  I_SaveGame(name, savebuffer, length);
   gameaction = ga_nothing;
   savedescription[0] = 0;
 

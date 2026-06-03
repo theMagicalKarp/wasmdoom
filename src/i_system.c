@@ -33,6 +33,8 @@
 #pragma implementation "i_system.h"
 #endif
 #include "i_system.h"
+#include "wasmdoom.h"
+#include "z_zone.h"
 
 int mb_used = 32;
 
@@ -109,4 +111,30 @@ void I_Error(char *error, ...) {
   fprintf(stderr, "\n");
   fflush(stderr);
   exit(1);
+}
+
+int I_SaveGame(char const *name, void *source, int length) {
+  return wasmdoom_save_game(name, (const uint8_t *)source, length);
+}
+
+int I_LoadGame(char const *name, byte **buffer) {
+  int size = wasmdoom_load_game(name, NULL, 0);
+  if (size <= 0) {
+    return 0;
+  }
+  byte *buf = Z_Malloc(size, PU_STATIC, NULL);
+  if (wasmdoom_load_game(name, buf, size) != size) {
+    Z_Free(buf);
+    return 0;
+  }
+  *buffer = buf;
+  return size;
+}
+
+int I_ReadSaveString(char const *name, char *buffer, int length) {
+  int size = wasmdoom_load_game(name, (uint8_t *)buffer, length);
+  if (size <= 0) {
+    return -1;
+  }
+  return size < length ? size : length;
 }

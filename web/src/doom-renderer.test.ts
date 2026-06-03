@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { indicesToRGBA } from "./renderer.ts";
+import { indicesToRGBA } from "./doom-renderer.ts";
 
 test("indicesToRGBA expands one indexed pixel to RGBA with opaque alpha", () => {
   const palette = new Uint8Array([0x11, 0x22, 0x33]);

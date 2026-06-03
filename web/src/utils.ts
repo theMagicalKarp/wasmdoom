@@ -18,3 +18,30 @@ export function isMobileDevice(nav: NavigatorLike | undefined): boolean {
   const touchPoints = nav.maxTouchPoints ?? 0;
   return mobileUA || touchPoints > 1;
 }
+
+export function bytesToBase64(bytes: Uint8Array): string {
+  let s = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    s += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(s);
+}
+
+export function base64ToBytes(encoded: string): Uint8Array {
+  const bin = atob(encoded);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) {
+    out[i] = bin.charCodeAt(i);
+  }
+  return out;
+}
+
+export function readCString(memory: WebAssembly.Memory, ptr: number): string {
+  const bytes = new Uint8Array(memory.buffer, ptr);
+  let end = 0;
+  while (end < bytes.length && bytes[end] !== 0) {
+    end++;
+  }
+  return new TextDecoder("utf-8").decode(bytes.subarray(0, end));
+}

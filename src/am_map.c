@@ -640,6 +640,11 @@ boolean AM_Responder(event_t *ev) {
       cheatstate = 0;
       rc = false;
     }
+  }
+
+  // @EDIT Automap cheat strings consume ev_typechar (typed characters) rather
+  // than ev_keydown, so cheat matching sees post-shift/case-fold input.
+  else if (ev->type == ev_typechar) {
     if (!deathmatch && cht_CheckCheat(&cheat_amap, ev->data1)) {
       rc = false;
       cheating = (cheating + 1) % 3;

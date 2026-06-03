@@ -1,8 +1,9 @@
-import { createDoomAudio } from "./audio.ts";
+import { createDoomAudio } from "./doom-audio.ts";
+import { createDoomSaver } from "./doom-save.ts";
 import { loadDoom } from "./doom-runtime.ts";
 import { runGameLoop } from "./game-loop.ts";
 import { createInput } from "./input.ts";
-import { createDoomRenderer } from "./renderer.ts";
+import { createDoomRenderer } from "./doom-renderer.ts";
 import { pathJoin } from "./utils.ts";
 
 const { BASE_URL } = import.meta.env;
@@ -12,14 +13,17 @@ async function main() {
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error("missing #screen canvas element");
   }
+  const wad = "doom1.wad";
   const renderer = createDoomRenderer(canvas);
+  const saver = createDoomSaver({ namespace: wad });
   const audio = createDoomAudio();
 
   const doom = await loadDoom({
-    wadUrl: pathJoin(BASE_URL, "wads/doom1.wad"),
+    wadUrl: pathJoin(BASE_URL, `wads/${wad}`),
     wasmUrl: pathJoin(BASE_URL, "wasmdoom.wasm"),
     buildHost: (host) => ({
       ...audio.buildImports(host.getMemory),
+      ...saver.buildImports(host.getMemory),
       wasmdoom_error(ptr, len) {
         const bytes = new Uint8Array(host.getMemory().buffer, ptr, len);
         console.error(`[doom_host] error: ${new TextDecoder().decode(bytes)}`);

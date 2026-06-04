@@ -64,7 +64,6 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
   if (!Number.isInteger(fps) || fps <= 0) {
     throw new Error(`--fps must be a positive integer (got ${opts.fps})`);
   }
-  const frameMs = 1000 / fps;
 
   const snapshotsDir = join(opts.out, "snapshots");
   await mkdir(snapshotsDir, { recursive: true });
@@ -92,11 +91,6 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
   let crashed = false;
 
   for (let tick = 0; tick < ticks; tick++) {
-    // Advance the virtual clock one frame before ticking so the engine sees
-    // ~35/fps game-tics of elapsed time per iteration, matching the browser's
-    // fixed-rate loop. Each script tick is therefore one rendered frame.
-    doom.clock.advanceMs(frameMs);
-
     const pendingSnapshots: { name: string }[] = [];
     const cmds = byTick.get(tick);
     if (cmds) {

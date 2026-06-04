@@ -75,10 +75,6 @@ export type ErrorRecord = {
 export type HeadlessDoom = {
   exports: WasmdoomExports;
   errors: ErrorRecord[];
-  // Controls the virtual clock the wasm sees via gettimeofday/clock_time_get.
-  // Advance it between ticks to pace the simulation deterministically — Doom's
-  // TryRunTics reads this to decide how many game-tics to run per frame.
-  clock: { advanceMs(ms: number): void };
 };
 
 function readCString(
@@ -133,32 +129,6 @@ export async function loadHeadlessDoom(opts: {
       throw new Error("doom host import called before wasm was ready");
     }
     return exports.memory;
-  };
-
-  // TODO: We should expose this to the host to implement.
-  // Virtual clock. Doom's I_GetTime calls gettimeofday, which the wasi shim
-  // services via clock_time_get reading Date.now(). Headless runs far faster
-  // than real time, so the real clock barely advances and TryRunTics hits its
-  // `counts = 1` floor — the game crawls one tic per call. Override
-  // clock_time_get to report a controllable virtual time that the caller steps
-  // one frame at a time (advanceMs), so the engine advances at its native
-  // cadence deterministically. Both realtime and monotonic ids share the value.
-  const CREEP_MS = 0.01;
-  let virtualTimeMs = 0;
-  wasi.wasiImport.clock_time_get = (
-    _id: number,
-    _precision: bigint,
-    timePtr: number,
-  ): number => {
-    virtualTimeMs += CREEP_MS;
-    const view = new DataView(getMemory().buffer);
-    view.setBigUint64(timePtr, BigInt(Math.round(virtualTimeMs * 1e6)), true);
-    return 0;
-  };
-  const clock = {
-    advanceMs(ms: number): void {
-      virtualTimeMs += ms;
-    },
   };
 
   const doomHost = {
@@ -234,7 +204,7 @@ export async function loadHeadlessDoom(opts: {
     );
   }
 
-  return { exports, errors, clock };
+  return { exports, errors };
 }
 
 // Run a single tick, converting WASIProcExit into an EngineCrashError so the

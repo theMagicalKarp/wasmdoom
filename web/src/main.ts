@@ -44,7 +44,7 @@ async function main() {
 
   doom.exports.wasmdoom_init();
   runGameLoop({
-    fps: 30,
+    fps: 35,
     tick: () => {
       input.flushFrame();
       doom.exports.wasmdoom_tick();

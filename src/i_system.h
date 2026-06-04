@@ -40,6 +40,10 @@ byte *I_ZoneBase(int *size);
 // returns current time in tics.
 int I_GetTime(void);
 
+// Called once per host frame (top of wasmdoom_tick) to advance the
+// tick counter that I_GetTime reports.
+void I_AdvanceTime(void);
+
 //
 // Called by D_DoomLoop,
 // called before processing any tics in a frame

@@ -3,6 +3,7 @@
 
 #include "d_main.h"
 #include "doomdef.h"
+#include "i_system.h"
 #include "i_video.h"
 #include "v_video.h"
 #include "wasmdoom.h"
@@ -16,6 +17,8 @@ static unsigned event_head = 0, event_tail = 0;
 void EXPORT(wasmdoom_init)(void) { I_InitGraphics(); }
 
 void EXPORT(wasmdoom_tick)(void) {
+  I_AdvanceTime();
+
   while (event_head != event_tail) {
     event_t ev = event_buf[event_head++];
     event_head %= EVENTBUF_CAP;

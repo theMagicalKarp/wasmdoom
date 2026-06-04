@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <unistd.h>
 
 #include "doomdef.h"
 #include "i_sound.h"
@@ -50,23 +50,12 @@ byte *I_ZoneBase(int *size) {
   return (byte *)malloc(*size);
 }
 
-//
-// I_GetTime
-// returns time in 1/70th second tics
-//
-static int basetime = 0;
-int I_GetTime(void) {
-  struct timeval tp;
-  struct timezone tzp;
-  int newtics;
-
-  gettimeofday(&tp, &tzp);
-  if (!basetime) {
-    basetime = tp.tv_sec;
-  }
-  newtics = (tp.tv_sec - basetime) * TICRATE + tp.tv_usec * TICRATE / 1000000;
-  return newtics;
-}
+// Host-driven tick counter. Advanced once per wasmdoom_tick so the
+// simulation freezes cleanly whenever the host stops calling us, instead
+// of fast-forwarding off the wall clock on resume.
+static uint32_t tickcount = 0;
+void I_AdvanceTime(void) { tickcount++; }
+int I_GetTime(void) { return tickcount; }
 
 //
 // I_Init

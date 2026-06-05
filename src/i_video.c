@@ -21,7 +21,6 @@
 #include "i_system.h"
 #include "m_argv.h"
 #include "v_video.h"
-#include "wasmdoom.h"
 
 #include "doomdef.h"
 
@@ -47,7 +46,9 @@ void I_UpdateNoBlit(void) {}
 //
 // I_FinishUpdate
 //
-void I_FinishUpdate(void) { wasmdoom_draw(); }
+// The host unconditionally presents the framebuffer after wasmdoom_tick
+// returns; the tick boundary is the present signal.
+void I_FinishUpdate(void) {}
 
 //
 // I_ReadScreen

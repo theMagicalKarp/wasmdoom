@@ -1,4 +1,5 @@
 import { createDoomAudio } from "./doom-audio.ts";
+import { EVENT, createEventDispatcher } from "./doom-events.ts";
 import { createDoomSaver } from "./doom-save.ts";
 import { loadDoom } from "./doom-runtime.ts";
 import { runGameLoop } from "./game-loop.ts";
@@ -21,16 +22,26 @@ async function main() {
   const doom = await loadDoom({
     wadUrl: pathJoin(BASE_URL, `wads/${wad}`),
     wasmUrl: pathJoin(BASE_URL, "wasmdoom.wasm"),
-    buildHost: (host) => ({
-      ...audio.buildImports(host.getMemory),
-      ...saver.buildImports(host.getMemory),
-      wasmdoom_error(ptr, len) {
-        const bytes = new Uint8Array(host.getMemory().buffer, ptr, len);
-        console.error(`[doom_host] error: ${new TextDecoder().decode(bytes)}`);
-      },
-      wasmdoom_draw: () => renderer.drawFrame(host.getExports()),
-    }),
   });
+
+  // Front-load persisted saves before any tick runs so I_LoadGame is a pure
+  // in-memory lookup with no host round-trip.
+  saver.installAll(doom.exports);
+
+  const events = createEventDispatcher(doom.exports);
+  audio.register(events, doom.exports);
+  saver.register(events, doom.exports);
+  events.register(EVENT.ERROR, (view) => {
+    const ptr = view.getUint32(0, true);
+    const len = view.getUint32(4, true);
+    const bytes = new Uint8Array(doom.exports.memory.buffer, ptr, len);
+    console.error(`[doom_engine] ${new TextDecoder().decode(bytes)}`);
+  });
+
+  doom.exports.wasmdoom_init();
+  // _start and wasmdoom_init emit setup events (GENMIDI, etc); drain them
+  // before the loop starts.
+  events.drain();
 
   const input = createInput({ canvas, doom: doom.exports, audio });
 
@@ -42,12 +53,19 @@ async function main() {
     }
   });
 
-  doom.exports.wasmdoom_init();
   runGameLoop({
     fps: 35,
     tick: () => {
       input.flushFrame();
-      doom.exports.wasmdoom_tick();
+      // Drain in finally so an I_Error (which emits EV_ERROR then exit()s,
+      // throwing WASIProcExit out of the tick) still gets its event logged
+      // before the throw latches the loop off.
+      try {
+        doom.exports.wasmdoom_tick();
+      } finally {
+        events.drain();
+      }
+      renderer.drawFrame(doom.exports);
     },
   });
 }

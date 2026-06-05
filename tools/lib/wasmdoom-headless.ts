@@ -1,9 +1,4 @@
 // Node-side host that loads the Doom wasm and a WAD into a WASI sandbox.
-// Mirrors web/src/doom-runtime.ts but uses node:fs and stubs every audio
-// import — we have no audio sink off-browser. The same memory-before-_start
-// hazard the web runtime documents applies here: I_InitMusic fires during
-// wasi.start() and reaches into host imports, so the host ref must be
-// resolved before start() runs.
 
 import { readFile } from "node:fs/promises";
 import { basename } from "node:path";
@@ -26,6 +21,10 @@ export type WasmdoomExports = {
   wasmdoom_send_mouse: (buttons: number, dx: number, dy: number) => void;
   wasmdoom_get_framebuffer: () => number;
   wasmdoom_get_palette: () => number;
+  wasmdoom_events_ptr: () => number;
+  wasmdoom_events_len: () => number;
+  wasmdoom_save_slot_ptr: (slot: number) => number;
+  wasmdoom_save_commit: (slot: number, dataLen: number) => number;
 };
 
 const REQUIRED_FUNCTIONS = [
@@ -36,6 +35,10 @@ const REQUIRED_FUNCTIONS = [
   "wasmdoom_send_mouse",
   "wasmdoom_get_framebuffer",
   "wasmdoom_get_palette",
+  "wasmdoom_events_ptr",
+  "wasmdoom_events_len",
+  "wasmdoom_save_slot_ptr",
+  "wasmdoom_save_commit",
 ] as const;
 
 function assertWasmdoomExports(
@@ -68,23 +71,50 @@ export class EngineCrashError extends Error {
 }
 
 export type ErrorRecord = {
-  source: "wasmdoom_error" | "stderr" | "exit";
+  source: "exit";
   message: string;
 };
+
+// Event tag for I_Error's EV_ERROR record. Kept in sync with EV_ERROR in
+// src/wd_events.h; the headless host only cares about this one tag, so we scan
+// for it directly rather than pulling in the full web-side dispatcher.
+const EV_ERROR = 1;
+
+// Scan the outbound event buffer for the EV_ERROR record I_Error emits right
+// before exit(), and decode its message. Safe to call after the tick/_start has
+// thrown: proc_exit only throws, so wasm linear memory stays readable, and the
+// buffer is cleared only at the start of the next tick (which never comes after
+// a crash). Returns null if no error record is present.
+function readEngineError(exports: WasmdoomExports): string | null {
+  const len = exports.wasmdoom_events_len();
+  if (len === 0) {
+    return null;
+  }
+  const base = exports.wasmdoom_events_ptr();
+  const view = new DataView(exports.memory.buffer, base, len);
+  let offset = 0;
+  while (offset + 4 <= len) {
+    const tag = view.getUint16(offset, true);
+    const payloadLen = view.getUint16(offset + 2, true);
+    const payloadStart = offset + 4;
+    if (payloadStart + payloadLen > len) {
+      break;
+    }
+    if (tag === EV_ERROR && payloadLen >= 8) {
+      const msgPtr = view.getUint32(payloadStart, true);
+      const msgLen = view.getUint32(payloadStart + 4, true);
+      const bytes = new Uint8Array(exports.memory.buffer, msgPtr, msgLen);
+      return new TextDecoder().decode(bytes);
+    }
+    offset = payloadStart + payloadLen;
+  }
+  return null;
+}
 
 export type HeadlessDoom = {
   exports: WasmdoomExports;
   errors: ErrorRecord[];
 };
-
-function readCString(
-  memory: WebAssembly.Memory,
-  ptr: number,
-  len: number,
-): string {
-  const bytes = new Uint8Array(memory.buffer, ptr, len);
-  return new TextDecoder("utf-8").decode(bytes);
-}
 
 export async function loadHeadlessDoom(opts: {
   wadPath: string;
@@ -105,10 +135,6 @@ export async function loadHeadlessDoom(opts: {
   });
   const stderr = ConsoleStdout.lineBuffered((line) => {
     opts.onStderr?.(line);
-    // Doom's I_Error writes "Error: ..." to stderr right before exit(1).
-    if (line.startsWith("Error:")) {
-      errors.push({ source: "stderr", message: line });
-    }
   });
   // Expose the WAD inside the sandbox under its real basename so the engine's
   // IdentifyVersion picks the right gamemode (doom1.wad → shareware,
@@ -123,52 +149,12 @@ export async function loadHeadlessDoom(opts: {
   const env = ["HOME=/", "DOOMWADDIR=/"];
   const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
 
-  let exports: WasmdoomExports | null = null;
-  const getMemory = (): WebAssembly.Memory => {
-    if (exports === null) {
-      throw new Error("doom host import called before wasm was ready");
-    }
-    return exports.memory;
-  };
-
-  const doomHost = {
-    wasmdoom_error(ptr: number, len: number): void {
-      const message = readCString(getMemory(), ptr, len);
-      errors.push({ source: "wasmdoom_error", message });
-    },
-    wasmdoom_draw(): void {},
-    // Audio/music stubs — the wasm calls into these but headless has no sink.
-    wasmdoom_sound_start(): void {},
-    wasmdoom_sound_stop(): void {},
-    wasmdoom_sound_update(): void {},
-    wasmdoom_sound_is_playing(): number {
-      return 0;
-    },
-    wasmdoom_music_set_genmidi(): void {},
-    wasmdoom_music_register(): void {},
-    wasmdoom_music_play(): void {},
-    wasmdoom_music_pause(): void {},
-    wasmdoom_music_resume(): void {},
-    wasmdoom_music_stop(): void {},
-    wasmdoom_music_unregister(): void {},
-    wasmdoom_music_set_volume(): void {},
-    // Save/load stubs — headless has no persistence layer. Pretend every save
-    // succeeds and no save slots exist.
-    wasmdoom_save_game(): number {
-      return 0;
-    },
-    wasmdoom_load_game(): number {
-      return -1;
-    },
-  };
-
   const module = new WebAssembly.Module(wasmBytes);
   const instance = new WebAssembly.Instance(module, {
     wasi_snapshot_preview1: wasi.wasiImport,
-    doom_host: doomHost,
   });
   assertWasmdoomExports(instance.exports);
-  exports = instance.exports;
+  const exports = instance.exports;
 
   let startCode: number;
   try {
@@ -177,13 +163,13 @@ export async function loadHeadlessDoom(opts: {
     // wasi.start catches WASIProcExit internally and returns the code, so
     // anything thrown here is either a host-import throw or a wasm trap.
     if (err instanceof WASIProcExit) {
-      errors.push({
-        source: "exit",
-        message: `process exited during _start with code ${err.code}`,
-      });
+      const engineError = readEngineError(exports);
+      const message =
+        engineError ?? `process exited during _start with code ${err.code}`;
+      errors.push({ source: "exit", message });
       throw new EngineCrashError(
         err.code,
-        `wasm exited during init (code ${err.code})`,
+        engineError ?? `wasm exited during init (code ${err.code})`,
       );
     }
     const message = err instanceof Error ? err.message : String(err);
@@ -194,13 +180,13 @@ export async function loadHeadlessDoom(opts: {
     throw new EngineCrashError(-1, `wasm trapped during init: ${message}`);
   }
   if (startCode !== 0) {
-    errors.push({
-      source: "exit",
-      message: `process exited during _start with code ${startCode}`,
-    });
+    const engineError = readEngineError(exports);
+    const message =
+      engineError ?? `process exited during _start with code ${startCode}`;
+    errors.push({ source: "exit", message });
     throw new EngineCrashError(
       startCode,
-      `wasm exited during init (code ${startCode})`,
+      engineError ?? `wasm exited during init (code ${startCode})`,
     );
   }
 
@@ -208,17 +194,18 @@ export async function loadHeadlessDoom(opts: {
 }
 
 // Run a single tick, converting WASIProcExit into an EngineCrashError so the
-// caller doesn't have to import the wasi shim.
+// caller doesn't have to import the wasi shim. wasmdoom_tick clears the event
+// buffer itself at the start of each tick.
 export function tickSafely(doom: HeadlessDoom): void {
   try {
     doom.exports.wasmdoom_tick();
   } catch (err) {
     if (err instanceof WASIProcExit) {
-      doom.errors.push({
-        source: "exit",
-        message: `process exited during tick with code ${err.code}`,
-      });
-      throw new EngineCrashError(err.code);
+      const engineError = readEngineError(doom.exports);
+      const message =
+        engineError ?? `process exited during tick with code ${err.code}`;
+      doom.errors.push({ source: "exit", message });
+      throw new EngineCrashError(err.code, message);
     }
     throw err;
   }

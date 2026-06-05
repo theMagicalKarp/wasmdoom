@@ -1,14 +1,9 @@
 // Loads and instantiates the Doom wasm module.
 //
-// Fetches the WAD, builds a WASI sandbox with the WAD exposed in /, wires
-// the caller's host imports, instantiates the wasm, and runs `_start`.
-//
-// The memory-before-_start hazard is owned here: `wasi.start()` runs the C
-// program's I_InitMusic during startup, which calls back into the host
-// imports (audio, in particular) — those imports need to read wasm memory
-// before _start returns. We solve that by handing buildHost a `host` ref
-// object whose `getMemory`/`getExports` resolve as soon as the wasm is
-// instantiated but before `_start` runs.
+// Fetches the WAD, builds a WASI sandbox with the WAD exposed in /,
+// instantiates the wasm with no `doom_host` imports, and runs `_start`. The
+// engine accumulates outbound events into a static buffer the caller drains
+// after each tick.
 
 import {
   WASI,
@@ -17,7 +12,6 @@ import {
   File,
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
-import type { DoomAudioImports } from "./doom-audio.ts";
 
 export type WasmdoomExports = {
   memory: WebAssembly.Memory;
@@ -29,6 +23,10 @@ export type WasmdoomExports = {
   wasmdoom_send_mouse: (buttons: number, dx: number, dy: number) => void;
   wasmdoom_get_framebuffer: () => number;
   wasmdoom_get_palette: () => number;
+  wasmdoom_events_ptr: () => number;
+  wasmdoom_events_len: () => number;
+  wasmdoom_save_slot_ptr: (slot: number) => number;
+  wasmdoom_save_commit: (slot: number, dataLen: number) => number;
 };
 
 export type WasmdoomInstance = WebAssembly.Instance & {
@@ -43,6 +41,10 @@ const REQUIRED_FUNCTIONS = [
   "wasmdoom_send_mouse",
   "wasmdoom_get_framebuffer",
   "wasmdoom_get_palette",
+  "wasmdoom_events_ptr",
+  "wasmdoom_events_len",
+  "wasmdoom_save_slot_ptr",
+  "wasmdoom_save_commit",
 ] as const;
 
 function assertWasmdoomInstance(
@@ -62,24 +64,6 @@ function assertWasmdoomInstance(
   }
 }
 
-export type DoomHostImports = DoomAudioImports & {
-  wasmdoom_error(messagePtr: number, length: number): void;
-  wasmdoom_draw(): void;
-  wasmdoom_save_game(
-    namePtr: number,
-    sourcePtr: number,
-    length: number,
-  ): number;
-  wasmdoom_load_game(namePtr: number, destPtr: number, maxLen: number): number;
-};
-
-// Live references to the running wasm. Both throw if read before the
-// instance has been created.
-export type RuntimeHost = {
-  getMemory(): WebAssembly.Memory;
-  getExports(): WasmdoomExports;
-};
-
 export type Doom = {
   exports: WasmdoomExports;
 };
@@ -87,7 +71,6 @@ export type Doom = {
 export async function loadDoom(opts: {
   wadUrl: string;
   wasmUrl: string;
-  buildHost(host: RuntimeHost): DoomHostImports;
 }): Promise<Doom> {
   const wadResp = await fetch(opts.wadUrl);
   const wadBytes = new Uint8Array(await wadResp.arrayBuffer());
@@ -104,35 +87,12 @@ export async function loadDoom(opts: {
   const env = ["HOME=/", "DOOMWADDIR=/"];
   const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
 
-  let exports: WasmdoomExports | null = null;
-  const host: RuntimeHost = {
-    getMemory: () => {
-      if (exports === null) {
-        throw new Error("doom host import called before wasm was ready");
-      }
-      return exports.memory;
-    },
-    getExports: () => {
-      if (exports === null) {
-        throw new Error("doom host import called before wasm was ready");
-      }
-      return exports;
-    },
-  };
-
-  const imports = opts.buildHost(host);
   const { instance } = await WebAssembly.instantiateStreaming(
     fetch(opts.wasmUrl),
-    {
-      wasi_snapshot_preview1: wasi.wasiImport,
-      doom_host: imports,
-    },
+    { wasi_snapshot_preview1: wasi.wasiImport },
   );
   assertWasmdoomInstance(instance);
-  // Resolve `host` before `wasi.start` runs `_start`; I_InitMusic calls
-  // into host imports during start-up and they read wasm memory.
-  exports = instance.exports;
   wasi.start(instance);
 
-  return { exports };
+  return { exports: instance.exports };
 }

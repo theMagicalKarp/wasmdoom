@@ -36,12 +36,3 @@ export function base64ToBytes(encoded: string): Uint8Array {
   }
   return out;
 }
-
-export function readCString(memory: WebAssembly.Memory, ptr: number): string {
-  const bytes = new Uint8Array(memory.buffer, ptr);
-  let end = 0;
-  while (end < bytes.length && bytes[end] !== 0) {
-    end++;
-  }
-  return new TextDecoder("utf-8").decode(bytes.subarray(0, end));
-}

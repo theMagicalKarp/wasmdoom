@@ -1,14 +1,15 @@
 // Web Audio host for wasmdoom SFX and music.
 //
-// The wasm platform layer (src/i_sound.c) pushes sound events to us via the
-// `doom_host` imports below; we own the Web Audio graph and decode each unique
-// DMX lump exactly once. Music is synthesized in an AudioWorklet from the
-// WAD's GENMIDI/MUS lumps.
+// The wasm engine drops sound/music records into its outbound event buffer
+// each tick; we register handlers with the event dispatcher and turn those
+// records into Web Audio operations. Music is synthesized in an AudioWorklet
+// from the WAD's GENMIDI/MUS lumps.
 //
 // Doom SFX are DMX lumps: an 8-byte header (format, sample rate, sample count)
 // followed by unsigned 8-bit mono PCM. Stock Doom is always 11025 Hz; the
 // browser resamples to the device rate for us.
 
+import { EVENT, type EventDispatcher } from "./doom-events.ts";
 import type { MusicWorkletMessage } from "./music/music-worklet.ts";
 import workletURL from "./music/music-worklet.ts?worker&url";
 import { pathJoin } from "./utils.ts";
@@ -26,39 +27,15 @@ type Voice = {
   pan: StereoPannerNode;
 };
 
-export type DoomAudioImports = {
-  wasmdoom_sound_start(
-    handle: number,
-    sfxId: number,
-    ptr: number,
-    len: number,
-    vol: number,
-    sep: number,
-    pitch: number,
-  ): void;
-  wasmdoom_sound_stop(handle: number): void;
-  wasmdoom_sound_update(
-    handle: number,
-    vol: number,
-    sep: number,
-    pitch: number,
-  ): void;
-  wasmdoom_sound_is_playing(handle: number): number;
-  wasmdoom_music_set_genmidi(ptr: number, len: number): void;
-  wasmdoom_music_register(handle: number, ptr: number, len: number): void;
-  wasmdoom_music_play(handle: number, looping: number): void;
-  wasmdoom_music_pause(handle: number): void;
-  wasmdoom_music_resume(handle: number): void;
-  wasmdoom_music_stop(handle: number): void;
-  wasmdoom_music_unregister(handle: number): void;
-  wasmdoom_music_set_volume(volume: number): void;
+export type AudioWasmExports = {
+  memory: WebAssembly.Memory;
 };
 
 export type DoomAudio = {
-  // Build the audio host imports bound to a live wasm-memory accessor.
-  // Called from inside `loadDoom`'s `buildHost`, where `getMemory` is the
-  // runtime's deferred ref — safe to invoke once the wasm is instantiated.
-  buildImports(getMemory: () => WebAssembly.Memory): DoomAudioImports;
+  // Register handlers for sound/music events on the dispatcher. The exports
+  // ref is captured so handlers can read SFX/MUS bytes from wasm memory each
+  // time a record fires.
+  register(events: EventDispatcher, doom: AudioWasmExports): void;
   // Call from a user gesture; browsers block audio until then.
   start(): void;
   suspend(): void;
@@ -163,9 +140,9 @@ export function createDoomAudio(): DoomAudio {
     musicQueue = [];
   }
 
-  function buildImports(getMemory: () => WebAssembly.Memory): DoomAudioImports {
+  function register(events: EventDispatcher, doom: AudioWasmExports): void {
     function copyMemoryRange(ptr: number, len: number): ArrayBuffer {
-      const src = new Uint8Array(getMemory().buffer, ptr, len);
+      const src = new Uint8Array(doom.memory.buffer, ptr, len);
       const buf = new ArrayBuffer(len);
       new Uint8Array(buf).set(src);
       return buf;
@@ -176,7 +153,7 @@ export function createDoomAudio(): DoomAudio {
       ptr: number,
       len: number,
     ): AudioBuffer {
-      const raw = new Uint8Array(getMemory().buffer, ptr, len);
+      const raw = new Uint8Array(doom.memory.buffer, ptr, len);
       const sampleCount = Math.max(0, len - DMX_HEADER_BYTES);
       const buffer = audioCtx.createBuffer(1, sampleCount, DMX_SAMPLE_RATE);
       const channel = buffer.getChannelData(0);
@@ -186,104 +163,117 @@ export function createDoomAudio(): DoomAudio {
       return buffer;
     }
 
-    return {
-      wasmdoom_sound_start(handle, sfxId, ptr, len, vol, sep, pitch) {
-        if (!ctx) {
-          return; // no audio until the first user gesture
-        }
+    events.register(EVENT.SOUND_START, (view) => {
+      const handle = view.getInt32(0, true);
+      const sfxId = view.getInt32(4, true);
+      const ptr = view.getUint32(8, true);
+      const len = view.getInt32(12, true);
+      const vol = view.getInt32(16, true);
+      const sep = view.getInt32(20, true);
+      const pitch = view.getInt32(24, true);
 
-        let buffer = sfxBuffers.get(sfxId);
-        if (!buffer) {
-          buffer = decodeSfx(ctx, ptr, len);
-          sfxBuffers.set(sfxId, buffer);
-        }
+      if (!ctx) {
+        return; // no audio until the first user gesture
+      }
 
-        const src = ctx.createBufferSource();
-        src.buffer = buffer;
-        src.playbackRate.value = rateOf(pitch);
-        const pan = ctx.createStereoPanner();
-        pan.pan.value = panOf(sep);
-        const gain = ctx.createGain();
-        gain.gain.value = gainOf(vol);
+      let buffer = sfxBuffers.get(sfxId);
+      if (!buffer) {
+        buffer = decodeSfx(ctx, ptr, len);
+        sfxBuffers.set(sfxId, buffer);
+      }
 
-        src.connect(pan).connect(gain).connect(ctx.destination);
-        src.onended = () => {
-          voices.delete(handle);
-        };
-        voices.set(handle, { src, gain, pan });
-        src.start();
-      },
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.playbackRate.value = rateOf(pitch);
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = panOf(sep);
+      const gain = ctx.createGain();
+      gain.gain.value = gainOf(vol);
 
-      wasmdoom_sound_stop(handle) {
-        const voice = voices.get(handle);
-        if (!voice) return;
-        voice.src.onended = null;
-        try {
-          voice.src.stop();
-        } catch {
-          // already stopped/ended
-        }
+      src.connect(pan).connect(gain).connect(ctx.destination);
+      src.onended = () => {
         voices.delete(handle);
-      },
+      };
+      voices.set(handle, { src, gain, pan });
+      src.start();
+    });
 
-      wasmdoom_sound_update(handle, vol, sep, pitch) {
-        const voice = voices.get(handle);
-        if (!voice) {
-          return;
-        }
-        voice.gain.gain.value = gainOf(vol);
-        voice.pan.pan.value = panOf(sep);
-        voice.src.playbackRate.value = rateOf(pitch);
-      },
+    events.register(EVENT.SOUND_STOP, (view) => {
+      const handle = view.getInt32(0, true);
+      const voice = voices.get(handle);
+      if (!voice) return;
+      voice.src.onended = null;
+      try {
+        voice.src.stop();
+      } catch {
+        // already stopped/ended
+      }
+      voices.delete(handle);
+    });
 
-      wasmdoom_sound_is_playing(handle) {
-        return voices.has(handle) ? 1 : 0;
-      },
+    events.register(EVENT.SOUND_UPDATE, (view) => {
+      const handle = view.getInt32(0, true);
+      const vol = view.getInt32(4, true);
+      const sep = view.getInt32(8, true);
+      const pitch = view.getInt32(12, true);
+      const voice = voices.get(handle);
+      if (!voice) return;
+      voice.gain.gain.value = gainOf(vol);
+      voice.pan.pan.value = panOf(sep);
+      voice.src.playbackRate.value = rateOf(pitch);
+    });
 
-      wasmdoom_music_set_genmidi(ptr, len) {
-        if (len <= 0) {
-          return;
-        }
-        const data = copyMemoryRange(ptr, len);
-        postMusic({ type: "setGenmidi", data }, [data]);
-      },
+    events.register(EVENT.MUSIC_SET_GENMIDI, (view) => {
+      const ptr = view.getUint32(0, true);
+      const len = view.getInt32(4, true);
+      if (len <= 0) return;
+      const data = copyMemoryRange(ptr, len);
+      postMusic({ type: "setGenmidi", data }, [data]);
+    });
 
-      wasmdoom_music_register(handle, ptr, len) {
-        if (len <= 0) {
-          return;
-        }
-        const data = copyMemoryRange(ptr, len);
-        postMusic({ type: "register", handle, data }, [data]);
-      },
+    events.register(EVENT.MUSIC_REGISTER, (view) => {
+      const handle = view.getInt32(0, true);
+      const ptr = view.getUint32(4, true);
+      const len = view.getInt32(8, true);
+      if (len <= 0) return;
+      const data = copyMemoryRange(ptr, len);
+      postMusic({ type: "register", handle, data }, [data]);
+    });
 
-      wasmdoom_music_play(handle, looping) {
-        postMusic({ type: "play", handle, looping: looping !== 0 });
-      },
+    events.register(EVENT.MUSIC_PLAY, (view) => {
+      const handle = view.getInt32(0, true);
+      const looping = view.getInt32(4, true);
+      postMusic({ type: "play", handle, looping: looping !== 0 });
+    });
 
-      wasmdoom_music_pause(handle) {
-        postMusic({ type: "pause", handle });
-      },
+    events.register(EVENT.MUSIC_PAUSE, (view) => {
+      const handle = view.getInt32(0, true);
+      postMusic({ type: "pause", handle });
+    });
 
-      wasmdoom_music_resume(handle) {
-        postMusic({ type: "resume", handle });
-      },
+    events.register(EVENT.MUSIC_RESUME, (view) => {
+      const handle = view.getInt32(0, true);
+      postMusic({ type: "resume", handle });
+    });
 
-      wasmdoom_music_stop(handle) {
-        postMusic({ type: "stop", handle });
-      },
+    events.register(EVENT.MUSIC_STOP, (view) => {
+      const handle = view.getInt32(0, true);
+      postMusic({ type: "stop", handle });
+    });
 
-      wasmdoom_music_unregister(handle) {
-        postMusic({ type: "unregister", handle });
-      },
+    events.register(EVENT.MUSIC_UNREGISTER, (view) => {
+      const handle = view.getInt32(0, true);
+      postMusic({ type: "unregister", handle });
+    });
 
-      wasmdoom_music_set_volume(volume) {
-        postMusic({ type: "setVolume", volume });
-      },
-    };
+    events.register(EVENT.MUSIC_SET_VOLUME, (view) => {
+      const volume = view.getInt32(0, true);
+      postMusic({ type: "setVolume", volume });
+    });
   }
 
   return {
-    buildImports,
+    register,
     start() {
       if (!ctx) {
         ctx = new AudioContext();

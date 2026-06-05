@@ -25,6 +25,7 @@
 #include "i_sound.h"
 #include "i_video.h"
 #include "m_misc.h"
+#include "wd_events.h"
 
 #include "d_net.h"
 #include "g_game.h"
@@ -33,7 +34,7 @@
 #pragma implementation "i_system.h"
 #endif
 #include "i_system.h"
-#include "wasmdoom.h"
+#include "wd_save.h"
 #include "z_zone.h"
 
 int mb_used = 32;
@@ -92,38 +93,49 @@ byte *I_AllocLow(int length) {
 // I_Error
 //
 void I_Error(char *error, ...) {
+  // static so the buffer outlives this frame: emit_error stores a pointer into
+  // it, and the host reads from wasm memory after exit() unwinds.
+  static char msg[1024];
   va_list ap;
-  fprintf(stderr, "Error: ");
   va_start(ap, error);
-  vfprintf(stderr, error, ap);
+  int len = vsnprintf(msg, sizeof(msg), error, ap);
   va_end(ap);
-  fprintf(stderr, "\n");
-  fflush(stderr);
+  if (len < 0) {
+    len = 0;
+  }
+  if (len > (int)sizeof(msg) - 1) {
+    len = (int)sizeof(msg) - 1;
+  }
+
+  emit_error(msg, len);
+
   exit(1);
 }
 
 int I_SaveGame(char const *name, void *source, int length) {
-  return wasmdoom_save_game(name, (const uint8_t *)source, length);
+  save_write(name, (const uint8_t *)source, length);
+  return 0;
 }
 
 int I_LoadGame(char const *name, byte **buffer) {
-  int size = wasmdoom_load_game(name, NULL, 0);
+  const uint8_t *data;
+  int size = save_lookup(name, &data);
   if (size <= 0) {
     return 0;
   }
   byte *buf = Z_Malloc(size, PU_STATIC, NULL);
-  if (wasmdoom_load_game(name, buf, size) != size) {
-    Z_Free(buf);
-    return 0;
-  }
+  memcpy(buf, data, size);
   *buffer = buf;
   return size;
 }
 
 int I_ReadSaveString(char const *name, char *buffer, int length) {
-  int size = wasmdoom_load_game(name, (uint8_t *)buffer, length);
+  const uint8_t *data;
+  int size = save_lookup(name, &data);
   if (size <= 0) {
     return -1;
   }
-  return size < length ? size : length;
+  int n = size < length ? size : length;
+  memcpy(buffer, data, n);
+  return n;
 }

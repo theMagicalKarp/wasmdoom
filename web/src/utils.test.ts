@@ -5,7 +5,6 @@ import {
   bytesToBase64,
   isMobileDevice,
   pathJoin,
-  readCString,
 } from "./utils.ts";
 
 test("joins segments with a single slash", () => {
@@ -153,39 +152,4 @@ test("base64ToBytes: decodes binary bytes including 0xff", () => {
 test("base64ToBytes is inverse of bytesToBase64", () => {
   const bytes = new Uint8Array([0, 1, 2, 3, 127, 128, 200, 254, 255]);
   assert.deepEqual(base64ToBytes(bytesToBase64(bytes)), bytes);
-});
-
-function makeMemory(bytes: ArrayLike<number>, offset = 0): WebAssembly.Memory {
-  const memory = new WebAssembly.Memory({ initial: 1 });
-  new Uint8Array(memory.buffer).set(bytes, offset);
-  return memory;
-}
-
-test("readCString: reads an ASCII string terminated by NUL", () => {
-  const memory = makeMemory([0x68, 0x69, 0x00, 0x78]);
-  assert.equal(readCString(memory, 0), "hi");
-});
-
-test("readCString: returns an empty string when the first byte is NUL", () => {
-  const memory = makeMemory([0x00, 0x61]);
-  assert.equal(readCString(memory, 0), "");
-});
-
-test("readCString: honors the pointer offset", () => {
-  const memory = makeMemory([0x00, 0x66, 0x6f, 0x6f, 0x00], 0);
-  assert.equal(readCString(memory, 1), "foo");
-});
-
-test("readCString: decodes multi-byte UTF-8 sequences", () => {
-  // "héllo" in UTF-8: 68 c3 a9 6c 6c 6f
-  const memory = makeMemory([0x68, 0xc3, 0xa9, 0x6c, 0x6c, 0x6f, 0x00]);
-  assert.equal(readCString(memory, 0), "héllo");
-});
-
-test("readCString: reads until end of memory if no NUL is present", () => {
-  const memory = new WebAssembly.Memory({ initial: 1 });
-  const view = new Uint8Array(memory.buffer);
-  view.fill(0x41);
-  const result = readCString(memory, view.length - 4);
-  assert.equal(result, "AAAA");
 });

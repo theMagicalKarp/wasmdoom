@@ -23,7 +23,7 @@
 #include "i_sound.h"
 #include "sounds.h"
 #include "w_wad.h"
-#include "wasmdoom.h"
+#include "wd_events.h"
 
 #ifdef SNDSERV
 FILE *sndserver = 0;
@@ -33,6 +33,36 @@ char *sndserver_filename = "./sndserver";
 // Opaque play handles; 0 is reserved to mean "failed to start".
 static int next_handle = 1;
 
+// Voice lifetime is tracked on the C side so I_SoundIsPlaying needs no host
+// round-trip. DMX lumps have a known sample count (lump_len - 8 bytes of
+// header) and play at an effective 11025 Hz, so a voice's end tick is
+// deterministic from data we already have.
+//
+// Slot is keyed by handle % MAX_VOICES; collisions just overwrite the older
+// voice's bookkeeping. Doom's numChannels stays well under MAX_VOICES, and a
+// stale handle is harmless — find_voice() ignores any slot whose recorded
+// handle doesn't match.
+#define DMX_HEADER_BYTES 8
+#define DMX_SAMPLE_RATE 11025
+#define MAX_VOICES 32
+
+struct voice_meta {
+  int handle;
+  int end_tick;
+  int stopped;
+};
+
+static struct voice_meta voices[MAX_VOICES];
+
+static struct voice_meta *voice_slot(int handle) {
+  return &voices[(unsigned)handle % MAX_VOICES];
+}
+
+static struct voice_meta *find_voice(int handle) {
+  struct voice_meta *slot = voice_slot(handle);
+  return slot->handle == handle ? slot : 0;
+}
+
 //
 // SFX API
 //
@@ -40,7 +70,7 @@ void I_SetChannels() {}
 
 void I_SetSfxVolume(int volume) {}
 
-void I_SetMusicVolume(int volume) { wasmdoom_music_set_volume(volume); }
+void I_SetMusicVolume(int volume) { emit_music_set_volume(volume); }
 
 //
 // Retrieve the raw data lump index
@@ -66,20 +96,43 @@ int I_StartSound(int id, int vol, int sep, int pitch, int priority) {
     next_handle = 1;
   }
 
-  wasmdoom_sound_start(handle, id, (const uint8_t *)data, len, vol, sep, pitch);
+  int samples = len > DMX_HEADER_BYTES ? len - DMX_HEADER_BYTES : 0;
+  int effective_pitch = pitch < 1 ? 1 : pitch;
+  int effective_samples = (int)((long long)samples * 128 / effective_pitch);
+  int duration_ticks =
+      (effective_samples * TICRATE + DMX_SAMPLE_RATE - 1) / DMX_SAMPLE_RATE;
+
+  struct voice_meta *slot = voice_slot(handle);
+  slot->handle = handle;
+  slot->end_tick = I_GetTime() + duration_ticks;
+  slot->stopped = 0;
+
+  emit_sound_start(handle, id, (const uint8_t *)data, len, vol, sep, pitch);
   return handle;
 }
 
-void I_StopSound(int handle) { wasmdoom_sound_stop(handle); }
+void I_StopSound(int handle) {
+  struct voice_meta *slot = find_voice(handle);
+  if (slot) {
+    slot->stopped = 1;
+  }
+  emit_sound_stop(handle);
+}
 
-int I_SoundIsPlaying(int handle) { return wasmdoom_sound_is_playing(handle); }
+int I_SoundIsPlaying(int handle) {
+  struct voice_meta *slot = find_voice(handle);
+  if (!slot || slot->stopped) {
+    return 0;
+  }
+  return I_GetTime() < slot->end_tick;
+}
 
 void I_UpdateSound(void) {}
 
 void I_SubmitSound(void) {}
 
 void I_UpdateSoundParams(int handle, int vol, int sep, int pitch) {
-  wasmdoom_sound_update(handle, vol, sep, pitch);
+  emit_sound_update(handle, vol, sep, pitch);
 }
 
 void I_ShutdownSound(void) {}
@@ -90,15 +143,16 @@ void I_InitSound() { I_InitMusic(); }
 // MUSIC API.
 //
 // Init/parsing of GENMIDI and the OPL3 chip live in the music wasm module
-// (wasmdoom.music.wasm). This file only marshals bytes across the eight host
-// imports declared in wasmdoom.h.
+// (wasmdoom.music.wasm). This file just emits typed records into the outbound
+// event buffer; the host drains them after each tick and feeds them to the
+// music worklet.
 static int next_music_handle = 1;
 
 void I_InitMusic(void) {
   int lump = W_CheckNumForName("GENMIDI");
   if (lump >= 0) {
     void *data = W_CacheLumpNum(lump, PU_STATIC);
-    wasmdoom_music_set_genmidi((const uint8_t *)data, W_LumpLength(lump));
+    emit_music_set_genmidi((const uint8_t *)data, W_LumpLength(lump));
   }
 }
 void I_ShutdownMusic(void) {}
@@ -113,21 +167,19 @@ int I_RegisterSong(void *data) {
   if (next_music_handle <= 0) {
     next_music_handle = 1;
   }
-  wasmdoom_music_register(handle, p, len);
+  emit_music_register(handle, p, len);
   return handle;
 }
 
-void I_PlaySong(int handle, int looping) {
-  wasmdoom_music_play(handle, looping);
-}
+void I_PlaySong(int handle, int looping) { emit_music_play(handle, looping); }
 
-void I_PauseSong(int handle) { wasmdoom_music_pause(handle); }
+void I_PauseSong(int handle) { emit_music_pause(handle); }
 
-void I_ResumeSong(int handle) { wasmdoom_music_resume(handle); }
+void I_ResumeSong(int handle) { emit_music_resume(handle); }
 
-void I_StopSong(int handle) { wasmdoom_music_stop(handle); }
+void I_StopSong(int handle) { emit_music_stop(handle); }
 
-void I_UnRegisterSong(int handle) { wasmdoom_music_unregister(handle); }
+void I_UnRegisterSong(int handle) { emit_music_unregister(handle); }
 
 // Is the song playing?
 int I_QrySongPlaying(int handle) { return 0; }

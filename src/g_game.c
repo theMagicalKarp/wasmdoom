@@ -70,7 +70,9 @@ static const char rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 boolean G_CheckDemoStatus(void);
 void G_ReadDemoTiccmd(ticcmd_t *cmd);
-void G_WriteDemoTiccmd(ticcmd_t *cmd);
+// @REMOVAL G_WriteDemoTiccmd forward decl
+// Demo recording is gone (see doomstat.h `demorecording` @REMOVAL); the
+// writer function and its prototype were both deleted.
 void G_PlayerReborn(int player);
 void G_InitNew(skill_t skill, int episode, int map);
 
@@ -115,13 +117,14 @@ int gametic;
 int levelstarttic;                       // gametic at level start
 int totalkills, totalitems, totalsecret; // for intermission
 
-char demoname[32];
-boolean demorecording;
+// @REMOVAL demo-recording globals
+// `demoname[32]`, `boolean demorecording`, and `byte *demoend` are gone. Only
+// playback state survives because wasmdoom never writes a demo buffer to a
+// file or bounds-checks against its end.
 boolean demoplayback;
 boolean netdemo;
 byte *demobuffer;
 byte *demo_p;
-byte *demoend;
 boolean singledemo; // quit after playing a demo from cmdline
 
 boolean precache = true; // if true, load all graphics at start
@@ -199,7 +202,12 @@ char savedescription[32];
 mobj_t *bodyque[BODYQUESIZE];
 int bodyqueslot;
 
-void *statcopy; // for statistics driver
+// @REMOVAL statcopy
+// `void *statcopy` was an upstream hook for an external statistics driver
+// (`-statcopy <addr>`) which `G_DoCompleted` populated with a `wbstartstruct_t`
+// snapshot. wasmdoom has no such driver and no way to take a numeric address
+// at startup, so the variable, the `-statcopy` parse, and the memcpy in
+// `G_DoCompleted` were all dropped.
 
 int G_CmdChecksum(ticcmd_t *cmd) {
   int i;
@@ -471,13 +479,10 @@ boolean G_Responder(event_t *ev) {
   }
 
   if (gamestate == GS_LEVEL) {
-#if 0 
-	if (devparm && ev->type == ev_keydown && ev->data1 == ';') 
-	{ 
-	    G_DeathMatchSpawnPlayer (0); 
-	    return true; 
-	}
-#endif
+    // @REMOVAL devparm spawn cheat
+    // Upstream had an `#if 0`-guarded `devparm && ';'` cheat to spawn a
+    // deathmatch player. Already dead code in upstream — removed alongside
+    // `devparm` since it would otherwise dangle.
     if (HU_Responder(ev))
       return true; // chat ate the event
     if (ST_Responder(ev))
@@ -592,8 +597,10 @@ void G_Ticker(void) {
 
       if (demoplayback)
         G_ReadDemoTiccmd(cmd);
-      if (demorecording)
-        G_WriteDemoTiccmd(cmd);
+      // @REMOVAL G_WriteDemoTiccmd call
+      // Upstream wrote the just-built ticcmd into the demo buffer here when
+      // `demorecording`. No recording in wasmdoom, so the call (and the
+      // function itself) are gone.
 
       // check for turbo cheats
       if (cmd->forwardmove > TURBOTHRESHOLD && !(gametic & 31) &&
@@ -1002,9 +1009,10 @@ void G_DoCompleted(void) {
   viewactive = false;
   automapactive = false;
 
-  if (statcopy)
-    memcpy(statcopy, &wminfo, sizeof(wminfo));
-
+  // @REMOVAL statcopy snapshot
+  // Upstream did `if (statcopy) memcpy(statcopy, &wminfo, sizeof(wminfo));`
+  // here to feed the external stats driver. The `statcopy` hook is gone (see
+  // the global's @REMOVAL above).
   WI_Start(&wminfo);
 }
 
@@ -1130,10 +1138,7 @@ void G_DoSaveGame(void) {
   int length;
   int i;
 
-  if (M_CheckParm("-cdrom"))
-    sprintf(name, "c:\\doomdata\\" SAVEGAMENAME "%d.dsg", savegameslot);
-  else
-    sprintf(name, SAVEGAMENAME "%d.dsg", savegameslot);
+  sprintf(name, SAVEGAMENAME "%d.dsg", savegameslot);
   description = savedescription;
 
   save_p = savebuffer = screens[1] + 0x4000;
@@ -1324,66 +1329,19 @@ void G_ReadDemoTiccmd(ticcmd_t *cmd) {
   cmd->buttons = (unsigned char)*demo_p++;
 }
 
-void G_WriteDemoTiccmd(ticcmd_t *cmd) {
-  if (gamekeydown['q']) // press q to end demo recording
-    G_CheckDemoStatus();
-  *demo_p++ = cmd->forwardmove;
-  *demo_p++ = cmd->sidemove;
-  *demo_p++ = (cmd->angleturn + 128) >> 8;
-  *demo_p++ = cmd->buttons;
-  demo_p -= 4;
-  if (demo_p > demoend - 16) {
-    // no more space
-    G_CheckDemoStatus();
-    return;
-  }
-
-  G_ReadDemoTiccmd(cmd); // make SURE it is exactly the same
-}
-
-//
-// G_RecordDemo
-//
-void G_RecordDemo(char *name) {
-  int i;
-  int maxsize;
-
-  usergame = false;
-  strcpy(demoname, name);
-  strcat(demoname, ".lmp");
-  maxsize = 0x20000;
-  i = M_CheckParm("-maxdemo");
-  if (i && i < myargc - 1)
-    maxsize = atoi(myargv[i + 1]) * 1024;
-  demobuffer = Z_Malloc(maxsize, PU_STATIC, NULL);
-  demoend = demobuffer + maxsize;
-
-  demorecording = true;
-}
-
-void G_BeginRecording(void) {
-  int i;
-
-  demo_p = demobuffer;
-
-  *demo_p++ = VERSION;
-  *demo_p++ = gameskill;
-  *demo_p++ = gameepisode;
-  *demo_p++ = gamemap;
-  *demo_p++ = deathmatch;
-  *demo_p++ = respawnparm;
-  *demo_p++ = fastparm;
-  *demo_p++ = nomonsters;
-  *demo_p++ = consoleplayer;
-
-  for (i = 0; i < MAXPLAYERS; i++)
-    *demo_p++ = playeringame[i];
-}
-
 //
 // G_PlayDemo
 //
 
+// @REMOVAL demo-record entry points
+// Four upstream functions were deleted from this block:
+//   - `G_WriteDemoTiccmd` (per-tic encoder + buffer overflow guard)
+//   - `G_RecordDemo`      (allocates buffer for `-record`, sets
+//   `demorecording`)
+//   - `G_BeginRecording`  (writes the demo header — version/skill/episode/…)
+//   - `G_TimeDemo`        (sets `timingdemo`/`singletics`, plays at max speed)
+// wasmdoom only plays demos (for the intro attract loop); it never records
+// them and has no `-record`/`-timedemo`/`-maxdemo` startup paths.
 char *defdemoname;
 
 void G_DeferedPlayDemo(char *name) {
@@ -1428,19 +1386,6 @@ void G_DoPlayDemo(void) {
   demoplayback = true;
 }
 
-//
-// G_TimeDemo
-//
-void G_TimeDemo(char *name) {
-  nodrawers = M_CheckParm("-nodraw");
-  noblit = M_CheckParm("-noblit");
-  timingdemo = true;
-  singletics = true;
-
-  defdemoname = name;
-  gameaction = ga_playdemo;
-}
-
 /*
 ===================
 =
@@ -1477,13 +1422,10 @@ boolean G_CheckDemoStatus(void) {
     return true;
   }
 
-  if (demorecording) {
-    *demo_p++ = DEMOMARKER;
-    M_WriteFile(demoname, demobuffer, demo_p - demobuffer);
-    Z_Free(demobuffer);
-    demorecording = false;
-    I_Error("Demo %s recorded", demoname);
-  }
-
+  // @REMOVAL demorecording finalise
+  // Upstream finished the demo here: appended `DEMOMARKER`, wrote the buffer
+  // to disk via `M_WriteFile(demoname, ...)`, freed it, and `I_Error`'d
+  // "Demo %s recorded". Recording is gone (see global @REMOVAL above), so
+  // nothing left to do but report no-demo-was-cleaned.
   return false;
 }

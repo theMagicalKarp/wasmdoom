@@ -17,7 +17,6 @@ const engine_sources = [_][]const u8{
     "src/g_game.c",
     "src/hu_lib.c",
     "src/hu_stuff.c",
-    "src/i_main.c",
     "src/i_net.c",
     "src/i_sound.c",
     "src/i_system.c",
@@ -123,6 +122,11 @@ pub fn build(b: *std.Build) void {
         .name = "wasmdoom",
         .root_module = mod,
     });
+    // Reactor model: no auto-running `main`/`_start`. wasi-libc exports
+    // `_initialize` (runs __wasm_call_ctors) instead; the host calls it once,
+    // stages flags + the WAD into linear memory, then calls `wasmdoom_init`.
+    exe.wasi_exec_model = .reactor;
+    exe.rdynamic = true;
 
     b.installArtifact(exe);
 

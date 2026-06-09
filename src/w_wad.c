@@ -37,6 +37,7 @@ static const char rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #include "doomtype.h"
 #include "i_system.h"
 #include "m_swap.h"
+#include "wasmdoom.h"
 #include "z_zone.h"
 
 #ifdef __GNUG__
@@ -194,6 +195,58 @@ void W_AddFile(char *filename) {
 }
 
 //
+// W_AddMemFile
+// Builds lumpinfo for the IWAD the host staged into linear memory, reading the
+// header and lump directory by memcpy instead of POSIX open/read/lseek. Each
+// lump is tagged with WAD_HANDLE_MEM so W_ReadLump serves it from the buffer.
+//
+void W_AddMemFile(void) {
+  const uint8_t *base = wd_wad_data();
+  wadinfo_t header;
+  lumpinfo_t *lump_p;
+  unsigned i;
+  int length;
+  int startlump;
+  filelump_t *fileinfo;
+
+  if (!base) {
+    I_Error("W_AddMemFile: no WAD staged in memory");
+  }
+
+  printf(" adding in-memory WAD (%i bytes)\n", wd_wad_size());
+  startlump = numlumps;
+
+  memcpy(&header, base, sizeof(header));
+  if (strncmp(header.identification, "IWAD", 4)) {
+    if (strncmp(header.identification, "PWAD", 4)) {
+      I_Error("WAD buffer doesn't have IWAD or PWAD id\n");
+    }
+  }
+  header.numlumps = LONG(header.numlumps);
+  header.infotableofs = LONG(header.infotableofs);
+  length = header.numlumps * sizeof(filelump_t);
+  fileinfo = alloca(length);
+  memcpy(fileinfo, base + header.infotableofs, length);
+  numlumps += header.numlumps;
+
+  // Fill in lumpinfo
+  lumpinfo = realloc(lumpinfo, numlumps * sizeof(lumpinfo_t));
+
+  if (!lumpinfo) {
+    I_Error("Couldn't realloc lumpinfo");
+  }
+
+  lump_p = &lumpinfo[startlump];
+
+  for (i = startlump; i < numlumps; i++, lump_p++, fileinfo++) {
+    lump_p->handle = WAD_HANDLE_MEM;
+    lump_p->position = LONG(fileinfo->filepos);
+    lump_p->size = LONG(fileinfo->size);
+    strncpy(lump_p->name, fileinfo->name, 8);
+  }
+}
+
+//
 // W_Reload
 // Flushes any of the reloadable lumps in memory
 //  and reloads the directory.
@@ -269,6 +322,41 @@ void W_InitMultipleFiles(char **filenames) {
 
   if (!lumpcache)
     I_Error("Couldn't allocate lumpcache");
+
+  memset(lumpcache, 0, size);
+}
+
+//
+// W_InitFromMemory
+// Like W_InitMultipleFiles, but the IWAD comes from the host-staged buffer in
+// linear memory. Any additional files in `wadfiles` (e.g. -file PWADs, demo
+// .lmp) are still loaded by name afterwards, so they override the IWAD's lumps.
+//
+void W_InitFromMemory(char **filenames) {
+  int size;
+
+  numlumps = 0;
+
+  // will be realloced as lumps are added
+  lumpinfo = malloc(1);
+
+  W_AddMemFile();
+
+  for (; *filenames; filenames++) {
+    W_AddFile(*filenames);
+  }
+
+  if (!numlumps) {
+    I_Error("W_Init: no lumps found");
+  }
+
+  // set up caching
+  size = numlumps * sizeof(*lumpcache);
+  lumpcache = malloc(size);
+
+  if (!lumpcache) {
+    I_Error("Couldn't allocate lumpcache");
+  }
 
   memset(lumpcache, 0, size);
 }
@@ -373,6 +461,12 @@ void W_ReadLump(int lump, void *dest) {
   l = lumpinfo + lump;
 
   // ??? I_BeginRead ();
+
+  if (l->handle == WAD_HANDLE_MEM) {
+    // lump lives in the host-staged WAD buffer in linear memory
+    memcpy(dest, wd_wad_data() + l->position, l->size);
+    return;
+  }
 
   if (l->handle == -1) {
     // reloadable file, so use open / read / close

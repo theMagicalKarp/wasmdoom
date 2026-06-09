@@ -47,13 +47,11 @@ void G_DoLoadGame(void);
 // Called by M_Responder.
 void G_SaveGame(int slot, char *description);
 
-// Only called by startup code.
-void G_RecordDemo(char *name);
-
-void G_BeginRecording(void);
-
-void G_PlayDemo(char *name);
-void G_TimeDemo(char *name);
+// @REMOVAL demo entry-point prototypes
+// `G_RecordDemo`, `G_BeginRecording`, `G_PlayDemo`, and `G_TimeDemo` were
+// removed. wasmdoom never records demos and has no startup-driven demo modes
+// (`-record` / `-playdemo` / `-timedemo`); the engine only auto-plays demos
+// via the intro attract loop (`G_DeferedPlayDemo` -> `G_DoPlayDemo`).
 boolean G_CheckDemoStatus(void);
 
 void G_ExitLevel(void);

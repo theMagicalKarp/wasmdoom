@@ -361,10 +361,7 @@ void M_ReadSaveStrings(void) {
   char name[256];
 
   for (i = 0; i < load_end; i++) {
-    if (M_CheckParm("-cdrom"))
-      sprintf(name, "c:\\doomdata\\" SAVEGAMENAME "%d.dsg", i);
-    else
-      sprintf(name, SAVEGAMENAME "%d.dsg", i);
+    sprintf(name, SAVEGAMENAME "%d.dsg", i);
 
     // @EDIT Avoid POSIX open/read/close and rely on host system to gather
     // names.
@@ -412,10 +409,7 @@ void M_DrawSaveLoadBorder(int x, int y) {
 void M_LoadSelect(int choice) {
   char name[256];
 
-  if (M_CheckParm("-cdrom"))
-    sprintf(name, "c:\\doomdata\\" SAVEGAMENAME "%d.dsg", choice);
-  else
-    sprintf(name, SAVEGAMENAME "%d.dsg", choice);
+  sprintf(name, SAVEGAMENAME "%d.dsg", choice);
   G_LoadGame(name);
   M_ClearMenus();
 }
@@ -1144,10 +1138,11 @@ boolean M_Responder(event_t *ev) {
     return true;
   }
 
-  if (devparm && ch == KEY_F1) {
-    G_ScreenShot();
-    return true;
-  }
+  // @REMOVAL devparm F1 screenshot
+  // Upstream had `if (devparm && ch == KEY_F1) { G_ScreenShot(); return true;
+  // }` here. `devparm` is gone (see d_main.c @REMOVAL), so the dev-only
+  // shortcut goes with it. `G_ScreenShot` itself remains and is still reachable
+  // via the normal `ga_screenshot` flow.
 
   // F-Keys
   if (!menuactive)

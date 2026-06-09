@@ -1,10 +1,11 @@
 #include <stdint.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 #include "d_main.h"
 #include "doomdef.h"
 #include "i_system.h"
 #include "i_video.h"
+#include "m_argv.h"
 #include "v_video.h"
 #include "wasmdoom.h"
 #include "wd_events.h"
@@ -16,7 +17,67 @@
 static event_t event_buf[EVENTBUF_CAP];
 static unsigned event_head = 0, event_tail = 0;
 
-void EXPORT(wasmdoom_init)(void) { I_InitGraphics(); }
+// --- Flag staging ----------------------------------------------------------
+// The host writes NUL-separated argv tokens (excluding argv[0]) into
+// wd_argv_buf via the wasmdoom_argv_ptr() pointer, ending the list with an
+// empty token (double NUL). wd_build_argv points myargv[] into the buffer so
+// the engine's M_CheckParm sees the flags. WD_ARGV_BUF_CAP is mirrored on the
+// JS side (no separate export, matching how EV_ERROR is mirrored).
+#define WD_ARGV_BUF_CAP 4096
+#define WD_ARGV_MAX 64
+static char wd_argv_buf[WD_ARGV_BUF_CAP];
+static char *wd_argv[WD_ARGV_MAX];
+
+uint8_t *EXPORT(wasmdoom_argv_ptr)(void) { return (uint8_t *)wd_argv_buf; }
+
+// The buffer is self-terminating: tokens are NUL-separated and the list ends
+// with an empty token (a leading NUL, i.e. a double NUL). No flags ⇒ the first
+// byte is NUL ⇒ argc == 1 (just argv[0]), matching the old ["wasmdoom"].
+static void wd_build_argv(void) {
+  int n = 0;
+  wd_argv[n++] = "wasmdoom"; // argv[0], matches the previous hardcoded value
+  char *p = wd_argv_buf;
+  char *end = wd_argv_buf + WD_ARGV_BUF_CAP;
+  while (p < end && *p && n < WD_ARGV_MAX - 1) {
+    wd_argv[n++] = p;
+    while (p < end && *p) {
+      p++; // skip to the token's NUL terminator
+    }
+    if (p < end) {
+      p++; // step past the NUL to the next token
+    }
+  }
+  wd_argv[n] = NULL;
+  myargc = n;
+  myargv = wd_argv;
+}
+
+// --- WAD staging -----------------------------------------------------------
+// The host allocates a buffer with wasmdoom_wad_alloc(len) (self-committing:
+// the length is recorded), writes the IWAD bytes into it, then sets the
+// gamemode via wasmdoom_init. w_wad.c reads lumps straight from this buffer.
+static uint8_t *wd_wad_buf = NULL;
+static int wd_wad_len = 0;
+
+uint8_t *EXPORT(wasmdoom_wad_alloc)(int len) {
+  if (wd_wad_buf) {
+    I_Error("wasmdoom_wad_alloc: WAD already staged");
+  }
+  wd_wad_buf = malloc(len);
+  wd_wad_len = wd_wad_buf ? len : 0;
+  return wd_wad_buf;
+}
+
+const uint8_t *wd_wad_data(void) { return wd_wad_buf; }
+int wd_wad_size(void) { return wd_wad_len; }
+
+// Explicit engine entry point. Replaces the implicit _start -> main ->
+// D_DoomMain path: the host stages flags + WAD, then calls this.
+void EXPORT(wasmdoom_init)(void) {
+  wd_build_argv();
+  D_DoomMain();
+  I_InitGraphics();
+}
 
 void EXPORT(wasmdoom_tick)(void) {
   event_buffer_clear();

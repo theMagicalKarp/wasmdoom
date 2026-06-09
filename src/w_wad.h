@@ -53,11 +53,17 @@ typedef struct {
   int size;
 } lumpinfo_t;
 
+// Sentinel lumpinfo_t.handle value meaning "this lump lives in the WAD buffer
+// the host staged into linear memory" (read via memcpy, not POSIX I/O). -1 is
+// already taken by the reloadable-file hack.
+#define WAD_HANDLE_MEM -2
+
 extern void **lumpcache;
 extern lumpinfo_t *lumpinfo;
 extern int numlumps;
 
 void W_InitMultipleFiles(char **filenames);
+void W_InitFromMemory(char **filenames);
 void W_Reload(void);
 
 int W_CheckNumForName(char *name);

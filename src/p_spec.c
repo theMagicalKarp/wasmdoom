@@ -960,21 +960,17 @@ void P_PlayerInSpecialSector(player_t *player) {
 // P_UpdateSpecials
 // Animate planes, scroll walls, etc.
 //
-boolean levelTimer;
-int levelTimeCount;
-
+// @REMOVAL level timer
+// The globals `boolean levelTimer` / `int levelTimeCount` and the per-tic
+// countdown that called `G_ExitLevel()` when it hit zero were removed.
+// Upstream used these to implement `-timer N` / `-avg` deathmatch round
+// timers; wasmdoom has no command-line deathmatch entry path, so the timer
+// state and the parse blocks in `P_SpawnSpecials` were dropped together.
 void P_UpdateSpecials(void) {
   anim_t *anim;
   int pic;
   int i;
   line_t *line;
-
-  //	LEVEL TIMER
-  if (levelTimer == true) {
-    levelTimeCount--;
-    if (!levelTimeCount)
-      G_ExitLevel();
-  }
 
   //	ANIMATE FLATS AND TEXTURES GLOBALLY
   for (anim = anims; anim < lastanim; anim++) {
@@ -1107,22 +1103,10 @@ void P_SpawnSpecials(void) {
   if (W_CheckNumForName("texture2") >= 0)
     episode = 2;
 
-  // See if -TIMER needs to be used.
-  levelTimer = false;
-
-  i = M_CheckParm("-avg");
-  if (i && deathmatch) {
-    levelTimer = true;
-    levelTimeCount = 20 * 60 * 35;
-  }
-
-  i = M_CheckParm("-timer");
-  if (i && deathmatch) {
-    int time;
-    time = atoi(myargv[i + 1]) * 60 * 35;
-    levelTimer = true;
-    levelTimeCount = time;
-  }
+  // @REMOVAL -avg / -timer parse
+  // Upstream parsed `-avg` (20-minute Austin Virtual Gaming round) and
+  // `-timer N` (N-minute round) here and armed `levelTimer`/`levelTimeCount`.
+  // See the @REMOVAL above `P_UpdateSpecials` for the timer-state rationale.
 
   //	Init special SECTORs.
   sector = sectors;

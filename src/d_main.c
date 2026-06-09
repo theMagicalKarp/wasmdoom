@@ -16,7 +16,7 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	DOOM main program (D_DoomMain) and game loop (D_DoomLoop),
+//	DOOM main program (D_DoomMain) and game loop (D_DoomLoopTick),
 //	plus functions to determine game mode (shareware, registered),
 //	parse command line parameters, configure game parameters (turbo),
 //	and call the startup functions.
@@ -71,20 +71,19 @@ static const char rcsid[] = "$Id: d_main.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 #include "d_main.h"
 
-//
-// D-DoomLoop()
-// Not a globally visible function,
-//  just included for source reference,
-//  called by D_DoomMain, never exits.
-// Manages timing and IO,
-//  calls all ?_Responder, ?_Ticker, and ?_Drawer,
-//  calls I_GetTime, I_StartFrame, and I_StartTic
-//
-void D_DoomLoop(void);
+// @REMOVAL
+// Upstream's forward declaration and definition of `D_DoomLoop` (the
+// `while(1)` console game loop) are gone. The browser host owns the event
+// loop and drives the engine via `D_DoomLoopTick` (defined below) one frame
+// at a time, so a blocking in-engine loop cannot exist.
 
 char *wadfiles[MAXWADFILES];
 
-boolean devparm;     // started game with -devparm
+// @REMOVAL
+// `boolean devparm` (the `-devparm` dev-mode flag) is gone. wasmdoom has no
+// developer console mode; the F1 screenshot shortcut, dev IWAD paths
+// (`-shdev`/`-regdev`/`-comdev`), the dev-only deathmatch-spawn cheat, and
+// the dev banner were all removed alongside it.
 boolean nomonsters;  // checkparm of -nomonsters
 boolean respawnparm; // checkparm of -respawn
 boolean fastparm;    // checkparm of -fast
@@ -316,29 +315,6 @@ void D_Display(void) {
   wipe_in_progress = true;
 }
 
-//
-//  D_DoomLoop
-//
-extern boolean demorecording;
-
-void D_DoomLoop(void) {
-  if (demorecording)
-    G_BeginRecording();
-
-  if (M_CheckParm("-debugfile")) {
-    char filename[20];
-    sprintf(filename, "debug%i.txt", consoleplayer);
-    printf("debug output to: %s\n", filename);
-    debugfile = fopen(filename, "w");
-  }
-
-  I_InitGraphics();
-
-  while (1) {
-    D_DoomLoopTick();
-  }
-}
-
 // @ADDITION
 // Runs a single iteration of the DOOM game loop: input, ticking, display and
 // sound. Extracted from D_DoomLoop's while(1) so a host that owns the event
@@ -511,171 +487,41 @@ void D_AddFile(char *file) {
 // to determine whether registered/commercial features
 // should be executed (notably loading PWAD's).
 //
+
+// @EDIT IdentifyVersion
+// Body rewritten: the host stages the IWAD into linear memory and declares its
+// gamemode (via wasmdoom_init), so there's no filesystem probing of IWAD
+// filenames anymore. We only take the staged gamemode and set up the
+// config-file path. Upstream's $DOOMWADDIR probing, the -shdev/-regdev/-comdev
+// developer paths, the French-edition special-case, and the Freedoom fallback
+// chain are all gone.
 void IdentifyVersion(void) {
-
-  char *doom1wad;
-  char *doomwad;
-  char *doomuwad;
-  char *doom2wad;
-
-  char *doom2fwad;
-  char *plutoniawad;
-  char *tntwad;
-
-  char *freedoom1wad;
-  char *freedoom2wad;
-
-#ifdef NORMALUNIX
   char *home;
-  char *doomwaddir;
-  doomwaddir = getenv("DOOMWADDIR");
-  if (!doomwaddir)
-    doomwaddir = ".";
 
-  // Commercial.
-  doom2wad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
-  sprintf(doom2wad, "%s/doom2.wad", doomwaddir);
-
-  // Retail.
-  doomuwad = malloc(strlen(doomwaddir) + 1 + 8 + 1);
-  sprintf(doomuwad, "%s/doomu.wad", doomwaddir);
-
-  // Registered.
-  doomwad = malloc(strlen(doomwaddir) + 1 + 8 + 1);
-  sprintf(doomwad, "%s/doom.wad", doomwaddir);
-
-  // Shareware.
-  doom1wad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
-  sprintf(doom1wad, "%s/doom1.wad", doomwaddir);
-
-  // Bug, dear Shawn.
-  // Insufficient malloc, caused spurious realloc errors.
-  plutoniawad = malloc(strlen(doomwaddir) + 1 + /*9*/ 12 + 1);
-  sprintf(plutoniawad, "%s/plutonia.wad", doomwaddir);
-
-  tntwad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
-  sprintf(tntwad, "%s/tnt.wad", doomwaddir);
-
-  // French stuff.
-  doom2fwad = malloc(strlen(doomwaddir) + 1 + 10 + 1);
-  sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
-
-  // Freedoom Phase 1 (retail-equivalent, 4 episodes) and Phase 2
-  // (commercial-equivalent, MAP01-MAP32). BSD-licensed drop-in IWADs.
-  freedoom1wad = malloc(strlen(doomwaddir) + 1 + 13 + 1);
-  sprintf(freedoom1wad, "%s/freedoom1.wad", doomwaddir);
-
-  freedoom2wad = malloc(strlen(doomwaddir) + 1 + 13 + 1);
-  sprintf(freedoom2wad, "%s/freedoom2.wad", doomwaddir);
-
-  home = getenv("HOME");
-  if (!home)
-    I_Error("Please set $HOME to your home directory");
-  sprintf(basedefault, "%s/.doomrc", home);
-#endif
-
-  if (M_CheckParm("-shdev")) {
-    gamemode = shareware;
-    devparm = true;
-    D_AddFile(DEVDATA "doom1.wad");
-    D_AddFile(DEVMAPS "data_se/texture1.lmp");
-    D_AddFile(DEVMAPS "data_se/pnames.lmp");
-    strcpy(basedefault, DEVDATA "default.cfg");
-    return;
-  }
-
-  if (M_CheckParm("-regdev")) {
-    gamemode = registered;
-    devparm = true;
-    D_AddFile(DEVDATA "doom.wad");
-    D_AddFile(DEVMAPS "data_se/texture1.lmp");
-    D_AddFile(DEVMAPS "data_se/texture2.lmp");
-    D_AddFile(DEVMAPS "data_se/pnames.lmp");
-    strcpy(basedefault, DEVDATA "default.cfg");
-    return;
-  }
-
-  if (M_CheckParm("-comdev")) {
-    gamemode = commercial;
-    devparm = true;
-    /* I don't bother
-    if(plutonia)
-        D_AddFile (DEVDATA"plutonia.wad");
-    else if(tnt)
-        D_AddFile (DEVDATA"tnt.wad");
-    else*/
-    D_AddFile(DEVDATA "doom2.wad");
-
-    D_AddFile(DEVMAPS "cdata/texture1.lmp");
-    D_AddFile(DEVMAPS "cdata/pnames.lmp");
-    strcpy(basedefault, DEVDATA "default.cfg");
-    return;
-  }
-
-  if (M_FileExists(doom2fwad)) {
-    gamemode = commercial;
-    // C'est ridicule!
-    // Let's handle languages in config files, okay?
-    language = french;
-    printf("French version\n");
-    D_AddFile(doom2fwad);
-    return;
-  }
-
-  if (M_FileExists(doom2wad)) {
-    gamemode = commercial;
-    D_AddFile(doom2wad);
-    return;
-  }
-
-  if (M_FileExists(plutoniawad)) {
-    gamemode = commercial;
-    D_AddFile(plutoniawad);
-    return;
-  }
-
-  if (M_FileExists(tntwad)) {
-    gamemode = commercial;
-    D_AddFile(tntwad);
-    return;
-  }
-
-  if (M_FileExists(freedoom2wad)) {
-    gamemode = commercial;
-    D_AddFile(freedoom2wad);
-    return;
-  }
-
-  if (M_FileExists(doomuwad)) {
-    gamemode = retail;
-    D_AddFile(doomuwad);
-    return;
-  }
-
-  if (M_FileExists(doomwad)) {
-    gamemode = registered;
-    D_AddFile(doomwad);
-    return;
-  }
-
-  if (M_FileExists(doom1wad)) {
-    gamemode = shareware;
-    D_AddFile(doom1wad);
-    return;
-  }
-
-  if (M_FileExists(freedoom1wad)) {
-    gamemode = retail;
-    D_AddFile(freedoom1wad);
-    return;
-  }
-
-  printf("Game mode indeterminate.\n");
   gamemode = indetermined;
 
-  // We don't abort. Let's see what the PWAD contains.
-  // exit(1);
-  // I_Error ("Game mode indeterminate\n");
+  int p = M_CheckParm("-mode");
+  if (p && p < myargc - 1) {
+    if (strcmp(myargv[p + 1], "shareware") == 0) {
+      gamemode = shareware;
+    } else if (strcmp(myargv[p + 1], "registered") == 0) {
+      gamemode = registered;
+    } else if (strcmp(myargv[p + 1], "commercial") == 0) {
+      gamemode = commercial;
+    } else if (strcmp(myargv[p + 1], "retail") == 0) {
+      gamemode = retail;
+    }
+  }
+
+  if (gamemode == indetermined) {
+    printf("Game mode indeterminate.\n");
+  }
+
+  home = getenv("HOME");
+  if (!home) {
+    home = "/";
+  }
+  sprintf(basedefault, "%s/.doomrc", home);
 }
 
 //
@@ -749,6 +595,28 @@ void FindResponseFile(void) {
 //
 // D_DoomMain
 //
+// @REMOVAL src/i_main.c
+// The upstream `i_main.c` (which defined `main(argc, argv)` and called
+// `D_DoomMain`) was deleted. The WebAssembly host calls `D_DoomMain` directly
+// through the wasmdoom exports in `src/wasmdoom.c`; there is no C-level
+// `main` entry point and the host populates `myargc`/`myargv`.
+//
+// @REMOVAL D_DoomMain CLI handling
+// Several upstream command-line blocks have been dropped from this function:
+//   - `-devparm` / `-altdeath` / `-deathmatch`  (no dev mode, no CLI
+//   deathmatch)
+//   - `-cdrom`                                  (no $HOME, no c:\doomdata)
+//   - `-wart` / `-file` / `-playdemo` / `-timedemo`
+//                                               (no filesystem PWAD/demo load)
+//   - `-timer` / `-avg`                         (no deathmatch round timers)
+//   - `-statcopy`                               (no external stats driver)
+//   - `-record` / `-loadgame`                   (no record; saves go through
+//                                                the host I_SaveGame hook, not
+//                                                a startup-time filename)
+//   - trailing `D_DoomLoop()` calls             (host owns the loop and pumps
+//                                                `D_DoomLoopTick` itself)
+// What remains is the engine-init pipeline plus a host-driven
+// `G_InitNew` / `D_StartTitle` branch at the bottom.
 void D_DoomMain(void) {
   int p;
   char file[256];
@@ -763,11 +631,6 @@ void D_DoomMain(void) {
   nomonsters = M_CheckParm("-nomonsters");
   respawnparm = M_CheckParm("-respawn");
   fastparm = M_CheckParm("-fast");
-  devparm = M_CheckParm("-devparm");
-  if (M_CheckParm("-altdeath"))
-    deathmatch = 2;
-  else if (M_CheckParm("-deathmatch"))
-    deathmatch = 1;
 
   switch (gamemode) {
   case retail:
@@ -825,15 +688,6 @@ void D_DoomMain(void) {
 
   printf("%s\n", title);
 
-  if (devparm)
-    printf(D_DEVSTR);
-
-  if (M_CheckParm("-cdrom")) {
-    printf(D_CDROM);
-    mkdir("c:\\doomdata", 0);
-    strcpy(basedefault, "c:/doomdata/default.cfg");
-  }
-
   // turbo option
   if ((p = M_CheckParm("-turbo"))) {
     int scale = 200;
@@ -851,57 +705,6 @@ void D_DoomMain(void) {
     forwardmove[1] = forwardmove[1] * scale / 100;
     sidemove[0] = sidemove[0] * scale / 100;
     sidemove[1] = sidemove[1] * scale / 100;
-  }
-
-  // add any files specified on the command line with -file wadfile
-  // to the wad list
-  //
-  // convenience hack to allow -wart e m to add a wad file
-  // prepend a tilde to the filename so wadfile will be reloadable
-  p = M_CheckParm("-wart");
-  if (p) {
-    myargv[p][4] = 'p'; // big hack, change to -warp
-
-    // Map name handling.
-    switch (gamemode) {
-    case shareware:
-    case retail:
-    case registered:
-      sprintf(file, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0],
-              myargv[p + 2][0]);
-      printf("Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
-      break;
-
-    case commercial:
-    default:
-      p = atoi(myargv[p + 1]);
-      if (p < 10)
-        sprintf(file, "~" DEVMAPS "cdata/map0%i.wad", p);
-      else
-        sprintf(file, "~" DEVMAPS "cdata/map%i.wad", p);
-      break;
-    }
-    D_AddFile(file);
-  }
-
-  p = M_CheckParm("-file");
-  if (p) {
-    // the parms after p are wadfile/lump names,
-    // until end of parms or another - preceded parm
-    modifiedgame = true; // homebrew levels
-    while (++p != myargc && myargv[p][0] != '-')
-      D_AddFile(myargv[p]);
-  }
-
-  p = M_CheckParm("-playdemo");
-
-  if (!p)
-    p = M_CheckParm("-timedemo");
-
-  if (p && p < myargc - 1) {
-    sprintf(file, "%s.lmp", myargv[p + 1]);
-    D_AddFile(file);
-    printf("Playing demo %s.lmp.\n", myargv[p + 1]);
   }
 
   // get skill / episode / map from parms
@@ -923,25 +726,11 @@ void D_DoomMain(void) {
     autostart = true;
   }
 
-  p = M_CheckParm("-timer");
-  if (p && p < myargc - 1 && deathmatch) {
-    int time;
-    time = atoi(myargv[p + 1]);
-    printf("Levels will end after %d minute", time);
-    if (time > 1)
-      printf("s");
-    printf(".\n");
-  }
-
-  p = M_CheckParm("-avg");
-  if (p && p < myargc - 1 && deathmatch)
-    printf("Austin Virtual Gaming: Levels will end after 20 minutes\n");
-
   p = M_CheckParm("-warp");
   if (p && p < myargc - 1) {
-    if (gamemode == commercial)
+    if (gamemode == commercial) {
       startmap = atoi(myargv[p + 1]);
-    else {
+    } else {
       startepisode = myargv[p + 1][0] - '0';
       startmap = myargv[p + 2][0] - '0';
     }
@@ -959,7 +748,10 @@ void D_DoomMain(void) {
   Z_Init();
 
   printf("W_Init: Init WADfiles.\n");
-  W_InitMultipleFiles(wadfiles);
+  // @EDIT W_InitMultipleFiles -> W_InitFromMemory
+  // The IWAD is staged in linear memory by the host (no filesystem). Any
+  // PWADs in `wadfiles` are still loaded by name afterwards.
+  W_InitFromMemory(wadfiles);
 
   // Check for -file in shareware
   if (modifiedgame) {
@@ -972,16 +764,20 @@ void D_DoomMain(void) {
                         "heada1", "cybra1", "spida1d1"};
     int i;
 
-    if (gamemode == shareware)
+    if (gamemode == shareware) {
       I_Error("\nYou cannot -file with the shareware "
               "version. Register!");
+    }
 
     // Check for fake IWAD with right name,
     // but w/o all the lumps of the registered version.
-    if (gamemode == registered)
-      for (i = 0; i < 23; i++)
-        if (W_CheckNumForName(name[i]) < 0)
+    if (gamemode == registered) {
+      for (i = 0; i < 23; i++) {
+        if (W_CheckNumForName(name[i]) < 0) {
           I_Error("\nThis is not the registered version.");
+        }
+      }
+    }
   }
 
   // Iff additonal PWAD files are used, print modified banner
@@ -1050,52 +846,9 @@ void D_DoomMain(void) {
   printf("ST_Init: Init status bar.\n");
   ST_Init();
 
-  // check for a driver that wants intermission stats
-  p = M_CheckParm("-statcopy");
-  if (p && p < myargc - 1) {
-    // for statistics driver
-    extern void *statcopy;
-
-    statcopy = (void *)atoi(myargv[p + 1]);
-    printf("External statistics registered.\n");
+  if (autostart || netgame) {
+    G_InitNew(startskill, startepisode, startmap);
+  } else {
+    D_StartTitle(); // start up intro loop
   }
-
-  // start the apropriate game based on parms
-  p = M_CheckParm("-record");
-
-  if (p && p < myargc - 1) {
-    G_RecordDemo(myargv[p + 1]);
-    autostart = true;
-  }
-
-  p = M_CheckParm("-playdemo");
-  if (p && p < myargc - 1) {
-    singledemo = true; // quit after one demo
-    G_DeferedPlayDemo(myargv[p + 1]);
-    D_DoomLoop(); // never returns
-  }
-
-  p = M_CheckParm("-timedemo");
-  if (p && p < myargc - 1) {
-    G_TimeDemo(myargv[p + 1]);
-    D_DoomLoop(); // never returns
-  }
-
-  p = M_CheckParm("-loadgame");
-  if (p && p < myargc - 1) {
-    if (M_CheckParm("-cdrom"))
-      sprintf(file, "c:\\doomdata\\" SAVEGAMENAME "%c.dsg", myargv[p + 1][0]);
-    else
-      sprintf(file, SAVEGAMENAME "%c.dsg", myargv[p + 1][0]);
-    G_LoadGame(file);
-  }
-
-  if (gameaction != ga_loadgame) {
-    if (autostart || netgame)
-      G_InitNew(startskill, startepisode, startmap);
-    else
-      D_StartTitle(); // start up intro loop
-  }
-
-  // D_DoomLoop(); // never returns
 }

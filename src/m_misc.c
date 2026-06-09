@@ -332,13 +332,12 @@ void M_LoadDefaults(void) {
   for (i = 0; i < numdefaults; i++)
     *defaults[i].location = defaults[i].defaultvalue;
 
-  // check for a custom default file
-  i = M_CheckParm("-config");
-  if (i && i < myargc - 1) {
-    defaultfile = myargv[i + 1];
-    printf("	default file: %s\n", defaultfile);
-  } else
-    defaultfile = basedefault;
+  // @REMOVAL -config override
+  // Upstream parsed `-config <path>` here to redirect `defaultfile`. wasmdoom
+  // has no user filesystem to point at; the host decides the defaults path
+  // via `basedefault` (set in d_main.c's IdentifyVersion), so the override
+  // has nowhere useful to go.
+  defaultfile = basedefault;
 
   // read the file in, overriding any set defaults
   f = fopen(defaultfile, "r");

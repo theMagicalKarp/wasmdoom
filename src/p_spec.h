@@ -24,11 +24,10 @@
 #ifndef __P_SPEC__
 #define __P_SPEC__
 
-//
-// End-level timer (-TIMER option)
-//
-extern boolean levelTimer;
-extern int levelTimeCount;
+// @REMOVAL level-timer externs
+// `extern boolean levelTimer;` / `extern int levelTimeCount;` were deleted.
+// See p_spec.c's @REMOVAL above `P_UpdateSpecials` — the `-timer`/`-avg`
+// deathmatch round timer has no entry path in wasmdoom.
 
 //      Define values for map objects
 #define MO_TELEPORTMAN 14

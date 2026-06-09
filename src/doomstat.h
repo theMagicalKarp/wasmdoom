@@ -45,7 +45,10 @@ extern boolean nomonsters;  // checkparm of -nomonsters
 extern boolean respawnparm; // checkparm of -respawn
 extern boolean fastparm;    // checkparm of -fast
 
-extern boolean devparm; // DEBUG: launched with -devparm
+// @REMOVAL devparm
+// `extern boolean devparm` (the `-devparm` dev-console flag) is gone — see
+// the matching @REMOVAL in d_main.c. wasmdoom has no developer mode, so no
+// translation unit needs to read it.
 
 // -----------------------------------------------------
 // Game Mode - identify IWAD as shareware, retail etc.
@@ -162,7 +165,11 @@ extern boolean usergame;
 
 //?
 extern boolean demoplayback;
-extern boolean demorecording;
+// @REMOVAL demorecording
+// `extern boolean demorecording` is gone. wasmdoom only plays demos (for the
+// intro attract loop); it does not record them. `-record`, `G_RecordDemo`,
+// `G_BeginRecording`, `G_WriteDemoTiccmd`, and the recording-finalise branch
+// of `G_CheckDemoStatus` were all removed.
 
 // Quit after playing a demo from cmdline.
 extern boolean singledemo;

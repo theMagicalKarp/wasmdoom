@@ -259,8 +259,11 @@ void GetPackets(void) {
       strcpy(exitmsg, "Player 1 left the game");
       exitmsg[7] += netconsole;
       players[consoleplayer].message = exitmsg;
-      if (demorecording)
-        G_CheckDemoStatus();
+      // @REMOVAL demorecording check
+      // Upstream finalised demo recording on player-leave via
+      // `if (demorecording) G_CheckDemoStatus();`. wasmdoom doesn't record
+      // demos (no `-record`, no `G_BeginRecording`), so there is nothing to
+      // flush here.
       continue;
     }
 

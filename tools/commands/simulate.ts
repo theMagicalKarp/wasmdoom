@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import type { Command } from "commander";
 
 import {
@@ -7,6 +7,7 @@ import {
   loadHeadlessDoom,
   readFramebuffer,
   tickSafely,
+  gameModeForWad,
 } from "#lib/wasmdoom-headless.ts";
 import { encodePpm } from "#lib/ppm.ts";
 import { parseSimScript, type SimCommand } from "#lib/sim-commands.ts";
@@ -76,10 +77,10 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
   const doom = await loadHeadlessDoom({
     wadPath,
     wasmPath: opts.wasm,
+    flags: ["-mode", gameModeForWad(basename(wadPath))],
     onStdout: (line) => log(`[stdout] ${line}`),
     onStderr: (line) => console.warn(`[stderr] ${line}`),
   });
-  doom.exports.wasmdoom_init();
 
   const byTick = groupByTick(script.commands);
   const snapshots: SnapshotRecord[] = [];

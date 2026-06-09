@@ -36,7 +36,12 @@ void I_Init(void);
 // for the zone management.
 byte *I_ZoneBase(int *size);
 
-// Called by D_DoomLoop,
+// @EDIT D_DoomLoop -> D_DoomLoopTick in doc comments
+// The three doc strings below referenced the upstream `D_DoomLoop`; they were
+// retargeted to wasmdoom's per-frame `D_DoomLoopTick` (see d_main.c). Pure
+// doc-comment change — none of these function signatures changed.
+
+// Called by D_DoomLoopTick,
 // returns current time in tics.
 int I_GetTime(void);
 
@@ -45,7 +50,7 @@ int I_GetTime(void);
 void I_AdvanceTime(void);
 
 //
-// Called by D_DoomLoop,
+// Called by D_DoomLoopTick,
 // called before processing any tics in a frame
 // (just after displaying a frame).
 // Time consuming syncronous operations
@@ -55,7 +60,7 @@ void I_AdvanceTime(void);
 void I_StartFrame(void);
 
 //
-// Called by D_DoomLoop,
+// Called by D_DoomLoopTick,
 // called before processing each tic in a frame.
 // Quick syncronous operations are performed here.
 // Can call D_PostEvent.

@@ -1,7 +1,6 @@
 // Node-side host that loads the Doom wasm and a WAD into a WASI sandbox.
 
 import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
 import {
   WASI,
   WASIProcExit,
@@ -11,10 +10,73 @@ import {
   PreopenDirectory,
 } from "@bjorn3/browser_wasi_shim";
 
+// Mirrors GameMode_t in src/doomdef.h. The host declares the IWAD's mode; the
+// engine no longer probes a filesystem to identify it.
+export type GameMode =
+  | "shareware"
+  | "registered"
+  | "commercial"
+  | "retail"
+  | "indetermined";
+
+// Maps a known IWAD filename to its game mode. Replaces the old filesystem
+// IdentifyVersion probe: the host now tells the engine which IWAD this is.
+export function gameModeForWad(filename: string): GameMode {
+  switch (filename.toLowerCase()) {
+    case "doom2.wad":
+    case "doom2f.wad":
+    case "plutonia.wad":
+    case "tnt.wad":
+    case "freedoom2.wad":
+      return "commercial";
+    case "doomu.wad":
+    case "freedoom1.wad":
+      return "retail";
+    case "doom.wad":
+      return "registered";
+    case "doom1.wad":
+      return "shareware";
+    default:
+      return "indetermined";
+  }
+}
+
+// Mirrors WD_ARGV_BUF_CAP in src/wasmdoom.c (kept in sync by hand, like the
+// event tags). The flag tokens written into the argv buffer must fit here.
+export const ARGV_BUF_CAP = 4096;
+
+// Writes Doom command-line flags into the engine's argv staging buffer as
+// NUL-separated tokens followed by an extra trailing NUL (the empty token
+// that terminates the self-terminating list).
+export function stageArgv(
+  memory: WebAssembly.Memory,
+  argvPtr: number,
+  flags: readonly string[],
+): void {
+  const encoder = new TextEncoder();
+  const parts = flags.map((token) => encoder.encode(token));
+  const total = parts.reduce((n, p) => n + p.length + 1, 0) + 1;
+  if (total > ARGV_BUF_CAP) {
+    throw new Error(
+      `flags need ${total} bytes, exceeds ARGV_BUF_CAP (${ARGV_BUF_CAP})`,
+    );
+  }
+  const buf = new Uint8Array(memory.buffer, argvPtr, ARGV_BUF_CAP);
+  let off = 0;
+  for (const part of parts) {
+    buf.set(part, off);
+    off += part.length;
+    buf[off++] = 0; // NUL separator
+  }
+  buf[off] = 0; // empty token terminates the list
+}
+
 export type WasmdoomExports = {
   memory: WebAssembly.Memory;
-  _start: () => unknown;
+  _initialize: () => void;
   wasmdoom_init: () => void;
+  wasmdoom_argv_ptr: () => number;
+  wasmdoom_wad_alloc: (len: number) => number;
   wasmdoom_tick: () => void;
   wasmdoom_keydown: (keycode: number) => void;
   wasmdoom_keyup: (keycode: number) => void;
@@ -29,6 +91,8 @@ export type WasmdoomExports = {
 
 const REQUIRED_FUNCTIONS = [
   "wasmdoom_init",
+  "wasmdoom_argv_ptr",
+  "wasmdoom_wad_alloc",
   "wasmdoom_tick",
   "wasmdoom_keydown",
   "wasmdoom_keyup",
@@ -44,12 +108,12 @@ const REQUIRED_FUNCTIONS = [
 function assertWasmdoomExports(
   exports: WebAssembly.Exports,
 ): asserts exports is WasmdoomExports {
-  const { memory, _start } = exports;
+  const { memory, _initialize } = exports;
   if (!(memory instanceof WebAssembly.Memory)) {
     throw new Error("wasm module is missing a `memory` export");
   }
-  if (typeof _start !== "function") {
-    throw new Error("wasm module is missing a `_start` export");
+  if (typeof _initialize !== "function") {
+    throw new Error("wasm module is missing an `_initialize` export");
   }
   for (const name of REQUIRED_FUNCTIONS) {
     if (typeof exports[name] !== "function") {
@@ -119,6 +183,8 @@ export type HeadlessDoom = {
 export async function loadHeadlessDoom(opts: {
   wadPath: string;
   wasmPath: string;
+  // Doom command-line flags (excluding argv[0]), e.g. ["-warp", "1"].
+  flags?: string[];
   onStdout?: (line: string) => void;
   onStderr?: (line: string) => void;
 }): Promise<HeadlessDoom> {
@@ -136,17 +202,10 @@ export async function loadHeadlessDoom(opts: {
   const stderr = ConsoleStdout.lineBuffered((line) => {
     opts.onStderr?.(line);
   });
-  // Expose the WAD inside the sandbox under its real basename so the engine's
-  // IdentifyVersion picks the right gamemode (doom1.wad → shareware,
-  // freedoom2.wad → commercial, etc.).
-  const wadName = basename(opts.wadPath).toLowerCase();
-  const cwd = new PreopenDirectory(
-    "/",
-    new Map<string, File>([
-      [wadName, new File(new Uint8Array(wadBytes), { readonly: true })],
-    ]),
-  );
-  const env = ["HOME=/", "DOOMWADDIR=/"];
+  // Empty writable root, kept only for the optional .doomrc config file; the
+  // WAD is no longer exposed through the filesystem.
+  const cwd = new PreopenDirectory("/", new Map<string, File>());
+  const env = ["HOME=/"];
   const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
 
   const module = new WebAssembly.Module(wasmBytes);
@@ -156,38 +215,46 @@ export async function loadHeadlessDoom(opts: {
   assertWasmdoomExports(instance.exports);
   const exports = instance.exports;
 
-  let startCode: number;
+  // Reactor: run libc constructors, no main. Engine setup happens in
+  // wasmdoom_init below.
+  wasi.initialize(instance as Parameters<typeof wasi.initialize>[0]);
+
+  // Stage the IWAD straight into linear memory.
+  const wadPtr = exports.wasmdoom_wad_alloc(wadBytes.length);
+  if (wadPtr === 0) {
+    throw new EngineCrashError(
+      -1,
+      `wasmdoom_wad_alloc(${wadBytes.length}) failed`,
+    );
+  }
+  new Uint8Array(exports.memory.buffer, wadPtr, wadBytes.length).set(wadBytes);
+
+  // Stage flag tokens as NUL-separated argv into the engine's buffer.
   try {
-    startCode = wasi.start(instance as Parameters<typeof wasi.start>[0]);
+    stageArgv(exports.memory, exports.wasmdoom_argv_ptr(), opts.flags ?? []);
   } catch (err) {
-    // wasi.start catches WASIProcExit internally and returns the code, so
-    // anything thrown here is either a host-import throw or a wasm trap.
+    const message = err instanceof Error ? err.message : String(err);
+    throw new EngineCrashError(-1, message);
+  }
+
+  // Run engine setup. Like a tick, it can I_Error → exit() mid-call, throwing
+  // WASIProcExit out of the wasm; convert that to an EngineCrashError.
+  try {
+    exports.wasmdoom_init();
+  } catch (err) {
     if (err instanceof WASIProcExit) {
       const engineError = readEngineError(exports);
       const message =
-        engineError ?? `process exited during _start with code ${err.code}`;
+        engineError ?? `process exited during init with code ${err.code}`;
       errors.push({ source: "exit", message });
-      throw new EngineCrashError(
-        err.code,
-        engineError ?? `wasm exited during init (code ${err.code})`,
-      );
+      throw new EngineCrashError(err.code, message);
     }
     const message = err instanceof Error ? err.message : String(err);
     errors.push({
       source: "exit",
-      message: `wasm trap during _start: ${message}`,
+      message: `wasm trap during init: ${message}`,
     });
     throw new EngineCrashError(-1, `wasm trapped during init: ${message}`);
-  }
-  if (startCode !== 0) {
-    const engineError = readEngineError(exports);
-    const message =
-      engineError ?? `process exited during _start with code ${startCode}`;
-    errors.push({ source: "exit", message });
-    throw new EngineCrashError(
-      startCode,
-      engineError ?? `wasm exited during init (code ${startCode})`,
-    );
   }
 
   return { exports, errors };

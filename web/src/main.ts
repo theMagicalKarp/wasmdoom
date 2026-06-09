@@ -1,7 +1,7 @@
 import { createDoomAudio } from "./doom-audio.ts";
 import { EVENT, createEventDispatcher } from "./doom-events.ts";
 import { createDoomSaver } from "./doom-save.ts";
-import { loadDoom } from "./doom-runtime.ts";
+import { gameModeForWad, loadDoom } from "./doom-runtime.ts";
 import { runGameLoop } from "./game-loop.ts";
 import { createInput } from "./input.ts";
 import { createDoomRenderer } from "./doom-renderer.ts";
@@ -20,9 +20,14 @@ async function main() {
   const audio = createDoomAudio();
 
   const doom = await loadDoom({
-    wadUrl: pathJoin(BASE_URL, `wads/${wad}`),
     wasmUrl: pathJoin(BASE_URL, "wasmdoom.wasm"),
   });
+
+  // Push the IWAD bytes straight into linear memory (no WASI filesystem) and
+  // declare its game mode.
+  const wadResp = await fetch(pathJoin(BASE_URL, `wads/${wad}`));
+  const wadBytes = new Uint8Array(await wadResp.arrayBuffer());
+  doom.loadWad(wadBytes);
 
   // Front-load persisted saves before any tick runs so I_LoadGame is a pure
   // in-memory lookup with no host round-trip.
@@ -38,9 +43,7 @@ async function main() {
     console.error(`[doom_engine] ${new TextDecoder().decode(bytes)}`);
   });
 
-  doom.exports.wasmdoom_init();
-  // _start and wasmdoom_init emit setup events (GENMIDI, etc); drain them
-  // before the loop starts.
+  doom.init(["-mode", gameModeForWad(wad)]);
   events.drain();
 
   const input = createInput({ canvas, doom: doom.exports, audio });

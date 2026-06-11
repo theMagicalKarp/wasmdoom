@@ -78,8 +78,6 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
     wadPath,
     wasmPath: opts.wasm,
     flags: ["-mode", gameModeForWad(basename(wadPath))],
-    onStdout: (line) => log(`[stdout] ${line}`),
-    onStderr: (line) => console.warn(`[stderr] ${line}`),
   });
 
   const byTick = groupByTick(script.commands);

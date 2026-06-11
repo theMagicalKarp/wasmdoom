@@ -24,10 +24,6 @@
 #include "d_event.h"
 #include "d_ticcmd.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 // Called by DoomMain.
 void I_Init(void);
 
@@ -80,13 +76,14 @@ ticcmd_t *I_BaseTiccmd(void);
 // Clean exit, displays sell blurb.
 void I_Quit(void);
 
-// Allocates from low memory under dos,
-// just mallocs under unix
-byte *I_AllocLow(int length);
-
 void I_Tactile(int on, int off, int total);
 
 void I_Error(char *error, ...);
+
+// Diagnostic log sinks routed to the host (console.log / console.warn). Replace
+// the engine's old fprintf(stdout/stderr, ...) calls.
+void I_Info(char *fmt, ...);
+void I_Warning(char *fmt, ...);
 
 int I_SaveGame(char const *name, void *source, int length);
 int I_LoadGame(char const *name, byte **buffer);

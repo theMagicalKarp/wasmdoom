@@ -1,8 +1,9 @@
 # wasmdoom web frontend
 
-Tiny Vite app that loads `zig-out/bin/wasmdoom.wasm` in the browser via a WASI
-polyfill ([`@bjorn3/browser_wasi_shim`](https://github.com/bjorn3/browser_wasi_shim)),
-runs it in a Web Worker, and shows stdout/stderr on the page.
+Tiny Vite app that loads the freestanding `zig-out/bin/wasmdoom.wasm` (zero
+imports — no WASI shim) in the browser, pushes the IWAD and command-line flags
+straight into linear memory, and drives the engine via its exported tick/draw
+functions. Engine logs surface as events and are written to the browser console.
 
 ## Run it
 
@@ -15,7 +16,8 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (default `http://localhost:5173`) and click **Run**.
+Open the URL Vite prints (default `http://localhost:5173`); the game starts
+automatically.
 
 The wasm artifact is served live from `../zig-out/bin/wasmdoom.wasm` by a small
 dev-server middleware in [vite.config.ts](vite.config.ts); rebuilding with

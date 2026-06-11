@@ -15,9 +15,6 @@
 //
 //-----------------------------------------------------------------------------
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "d_event.h"
 #include "d_net.h"
 #include "i_system.h"
@@ -25,17 +22,14 @@
 
 #include "doomstat.h"
 
-#ifdef __GNUG__
-#pragma implementation "i_net.h"
-#endif
 #include "i_net.h"
 
 //
 // I_InitNetwork
 //
 void I_InitNetwork(void) {
-  doomcom = malloc(sizeof(*doomcom));
-  memset(doomcom, 0, sizeof(*doomcom));
+  static doomcom_t singleplayer;
+  doomcom = &singleplayer;
 
   doomcom->id = DOOMCOM_ID;
   doomcom->ticdup = 1;

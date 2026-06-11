@@ -23,8 +23,6 @@
 
 static const char rcsid[] = "$Id: p_setup.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
-#include <math.h>
-
 #include "z_zone.h"
 
 #include "m_bbox.h"
@@ -538,21 +536,9 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill) {
   // Make sure all sounds are stopped before Z_FreeTags.
   S_Start();
 
-#if 0 // UNUSED
-    if (debugfile)
-    {
-	Z_FreeTags (PU_LEVEL, MAXINT);
-	Z_FileDumpHeap (debugfile);
-    }
-    else
-#endif
   Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
 
-  // UNUSED W_Profile ();
   P_InitThinkers();
-
-  // if working with a devlopment map, reload it
-  W_Reload();
 
   // find map name
   if (gamemode == commercial) {

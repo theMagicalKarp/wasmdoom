@@ -1,14 +1,12 @@
-// Node-side host that loads the Doom wasm and a WAD into a WASI sandbox.
+// Node-side host that loads the Doom wasm and a WAD into linear memory.
+//
+// The engine wasm is freestanding: it has zero imports and is instantiated with
+// an empty import object (mirroring web/src/doom-runtime.ts). There is no WASI
+// layer and no `_initialize`; the host stages the WAD + argv into linear memory
+// and calls `wasmdoom_init`. Engine crashes (I_Error -> __builtin_trap) surface
+// as a wasm trap, which we convert to an EngineCrashError below.
 
 import { readFile } from "node:fs/promises";
-import {
-  WASI,
-  WASIProcExit,
-  ConsoleStdout,
-  OpenFile,
-  File,
-  PreopenDirectory,
-} from "@bjorn3/browser_wasi_shim";
 
 // Mirrors GameMode_t in src/doomdef.h. The host declares the IWAD's mode; the
 // engine no longer probes a filesystem to identify it.
@@ -73,7 +71,6 @@ export function stageArgv(
 
 export type WasmdoomExports = {
   memory: WebAssembly.Memory;
-  _initialize: () => void;
   wasmdoom_init: () => void;
   wasmdoom_argv_ptr: () => number;
   wasmdoom_wad_alloc: (len: number) => number;
@@ -108,12 +105,9 @@ const REQUIRED_FUNCTIONS = [
 function assertWasmdoomExports(
   exports: WebAssembly.Exports,
 ): asserts exports is WasmdoomExports {
-  const { memory, _initialize } = exports;
+  const { memory } = exports;
   if (!(memory instanceof WebAssembly.Memory)) {
     throw new Error("wasm module is missing a `memory` export");
-  }
-  if (typeof _initialize !== "function") {
-    throw new Error("wasm module is missing an `_initialize` export");
   }
   for (const name of REQUIRED_FUNCTIONS) {
     if (typeof exports[name] !== "function") {
@@ -122,9 +116,9 @@ function assertWasmdoomExports(
   }
 }
 
-// Thrown when the wasm process calls exit() or aborts mid-tick. We rebrand
-// the upstream WASIProcExit so callers can distinguish engine crashes from
-// other thrown values without importing the wasi shim.
+// Thrown when the wasm process calls exit() or aborts mid-tick. The engine's
+// exit() traps the wasm, so callers see this instead of a raw RuntimeError and
+// can distinguish engine crashes from other thrown values.
 export class EngineCrashError extends Error {
   readonly exitCode: number;
   constructor(exitCode: number, message?: string) {
@@ -139,10 +133,13 @@ export type ErrorRecord = {
   message: string;
 };
 
-// Event tag for I_Error's EV_ERROR record. Kept in sync with EV_ERROR in
-// src/wd_events.h; the headless host only cares about this one tag, so we scan
-// for it directly rather than pulling in the full web-side dispatcher.
+// Log tags, kept in sync with src/wd_events.h. All three carry their message
+// bytes inline in the payload. The headless host only cares about these tags,
+// so we scan for them directly rather than pulling in the full web-side
+// dispatcher.
 const EV_ERROR = 1;
+const EV_INFO = 14;
+const EV_WARNING = 15;
 
 // Scan the outbound event buffer for the EV_ERROR record I_Error emits right
 // before exit(), and decode its message. Safe to call after the tick/_start has
@@ -164,15 +161,53 @@ function readEngineError(exports: WasmdoomExports): string | null {
     if (payloadStart + payloadLen > len) {
       break;
     }
-    if (tag === EV_ERROR && payloadLen >= 8) {
-      const msgPtr = view.getUint32(payloadStart, true);
-      const msgLen = view.getUint32(payloadStart + 4, true);
-      const bytes = new Uint8Array(exports.memory.buffer, msgPtr, msgLen);
+    if (tag === EV_ERROR) {
+      const bytes = new Uint8Array(
+        exports.memory.buffer,
+        base + payloadStart,
+        payloadLen,
+      );
       return new TextDecoder().decode(bytes);
     }
     offset = payloadStart + payloadLen;
   }
   return null;
+}
+
+// Walk the outbound event buffer and print EV_INFO/EV_WARNING records, whose
+// payloads are the message bytes inline. Call once per tick (the buffer is
+// cleared at the start of the next tick) and after init. EV_ERROR is handled
+// separately by readEngineError, so it is skipped here.
+export function drainLogs(exports: WasmdoomExports): void {
+  const len = exports.wasmdoom_events_len();
+  if (len === 0) {
+    return;
+  }
+  const base = exports.wasmdoom_events_ptr();
+  const view = new DataView(exports.memory.buffer, base, len);
+  let offset = 0;
+  while (offset + 4 <= len) {
+    const tag = view.getUint16(offset, true);
+    const payloadLen = view.getUint16(offset + 2, true);
+    const payloadStart = offset + 4;
+    if (payloadStart + payloadLen > len) {
+      break;
+    }
+    if (tag === EV_INFO || tag === EV_WARNING) {
+      const bytes = new Uint8Array(
+        exports.memory.buffer,
+        base + payloadStart,
+        payloadLen,
+      );
+      const message = new TextDecoder().decode(bytes);
+      if (tag === EV_WARNING) {
+        console.warn(`[doom_engine] ${message}`);
+      } else {
+        console.log(`[doom_engine] ${message}`);
+      }
+    }
+    offset = payloadStart + payloadLen;
+  }
 }
 
 export type HeadlessDoom = {
@@ -185,8 +220,6 @@ export async function loadHeadlessDoom(opts: {
   wasmPath: string;
   // Doom command-line flags (excluding argv[0]), e.g. ["-warp", "1"].
   flags?: string[];
-  onStdout?: (line: string) => void;
-  onStderr?: (line: string) => void;
 }): Promise<HeadlessDoom> {
   const [wadBytes, wasmBytes] = await Promise.all([
     readFile(opts.wadPath),
@@ -195,29 +228,11 @@ export async function loadHeadlessDoom(opts: {
 
   const errors: ErrorRecord[] = [];
 
-  const stdin = new OpenFile(new File([]));
-  const stdout = ConsoleStdout.lineBuffered((line) => {
-    opts.onStdout?.(line);
-  });
-  const stderr = ConsoleStdout.lineBuffered((line) => {
-    opts.onStderr?.(line);
-  });
-  // Empty writable root, kept only for the optional .doomrc config file; the
-  // WAD is no longer exposed through the filesystem.
-  const cwd = new PreopenDirectory("/", new Map<string, File>());
-  const env = ["HOME=/"];
-  const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
-
-  const module = new WebAssembly.Module(wasmBytes);
-  const instance = new WebAssembly.Instance(module, {
-    wasi_snapshot_preview1: wasi.wasiImport,
-  });
+  // Freestanding wasm: no imports, no WASI. Instantiate with an empty import
+  // object, just like the web runtime.
+  const { instance } = await WebAssembly.instantiate(wasmBytes, {});
   assertWasmdoomExports(instance.exports);
   const exports = instance.exports;
-
-  // Reactor: run libc constructors, no main. Engine setup happens in
-  // wasmdoom_init below.
-  wasi.initialize(instance as Parameters<typeof wasi.initialize>[0]);
 
   // Stage the IWAD straight into linear memory.
   const wadPtr = exports.wasmdoom_wad_alloc(wadBytes.length);
@@ -237,44 +252,38 @@ export async function loadHeadlessDoom(opts: {
     throw new EngineCrashError(-1, message);
   }
 
-  // Run engine setup. Like a tick, it can I_Error → exit() mid-call, throwing
-  // WASIProcExit out of the wasm; convert that to an EngineCrashError.
+  // Run engine setup. Like a tick, it can I_Error → exit() mid-call, which traps
+  // the wasm; convert any throw into an EngineCrashError, decoding the engine's
+  // own error message from the event buffer when present.
   try {
     exports.wasmdoom_init();
+    drainLogs(exports);
   } catch (err) {
-    if (err instanceof WASIProcExit) {
-      const engineError = readEngineError(exports);
-      const message =
-        engineError ?? `process exited during init with code ${err.code}`;
-      errors.push({ source: "exit", message });
-      throw new EngineCrashError(err.code, message);
-    }
-    const message = err instanceof Error ? err.message : String(err);
-    errors.push({
-      source: "exit",
-      message: `wasm trap during init: ${message}`,
-    });
-    throw new EngineCrashError(-1, `wasm trapped during init: ${message}`);
+    const engineError = readEngineError(exports);
+    const message =
+      engineError ??
+      `wasm trapped during init: ${err instanceof Error ? err.message : String(err)}`;
+    errors.push({ source: "exit", message });
+    throw new EngineCrashError(-1, message);
   }
 
   return { exports, errors };
 }
 
-// Run a single tick, converting WASIProcExit into an EngineCrashError so the
-// caller doesn't have to import the wasi shim. wasmdoom_tick clears the event
-// buffer itself at the start of each tick.
+// Run a single tick, converting a wasm trap (the engine's exit()) into an
+// EngineCrashError. wasmdoom_tick clears the event buffer itself at the start of
+// each tick, so the EV_ERROR record from a crash survives for readEngineError.
 export function tickSafely(doom: HeadlessDoom): void {
   try {
     doom.exports.wasmdoom_tick();
+    drainLogs(doom.exports);
   } catch (err) {
-    if (err instanceof WASIProcExit) {
-      const engineError = readEngineError(doom.exports);
-      const message =
-        engineError ?? `process exited during tick with code ${err.code}`;
-      doom.errors.push({ source: "exit", message });
-      throw new EngineCrashError(err.code, message);
-    }
-    throw err;
+    const engineError = readEngineError(doom.exports);
+    const message =
+      engineError ??
+      `wasm trapped during tick: ${err instanceof Error ? err.message : String(err)}`;
+    doom.errors.push({ source: "exit", message });
+    throw new EngineCrashError(-1, message);
   }
 }
 

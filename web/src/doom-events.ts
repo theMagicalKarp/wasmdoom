@@ -21,6 +21,8 @@ export const EVENT = {
   MUSIC_UNREGISTER: 11,
   MUSIC_SET_VOLUME: 12,
   SAVE_WRITTEN: 13,
+  INFO: 14,
+  WARNING: 15,
 } as const;
 
 export type EventHandler = (view: DataView) => void;

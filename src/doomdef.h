@@ -22,9 +22,6 @@
 #ifndef __DOOMDEF__
 #define __DOOMDEF__
 
-#include <stdio.h>
-#include <string.h>
-
 //
 // Global parameters/defines.
 //
@@ -67,16 +64,6 @@ typedef enum {
 // If rangecheck is undefined,
 // most parameter validation debugging code will not be compiled
 #define RANGECHECK
-
-// Do or do not use external soundserver.
-// The sndserver binary to be run separately
-//  has been introduced by Dave Taylor.
-// The integrated sound support is experimental,
-//  and unfinished. Default is synchronous.
-// Experimental asynchronous timer based is
-//  handled by SNDINTR.
-#define SNDSERV 1
-// #define SNDINTR  1
 
 // This one switches between MIT SHM (no proper mouse)
 // and XFree86 DGA (mickey sampling). The original

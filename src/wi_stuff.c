@@ -23,8 +23,6 @@
 static const char rcsid[] =
     "$Id: wi_stuff.c,v 1.7 1997/02/03 22:45:13 b1 Exp $";
 
-#include <stdio.h>
-
 #include "z_zone.h"
 
 #include "m_random.h"
@@ -430,7 +428,7 @@ void WI_drawOnLnode(int n, patch_t *c[]) {
     V_DrawPatch(lnodes[wbs->epsd][n].x, lnodes[wbs->epsd][n].y, FB, c[i]);
   } else {
     // DEBUG
-    printf("Could not place patch on level %d", n + 1);
+    I_Info("Could not place patch on level %d", n + 1);
   }
 }
 

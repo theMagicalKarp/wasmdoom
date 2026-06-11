@@ -1,5 +1,5 @@
+#include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "d_main.h"
 #include "doomdef.h"
@@ -63,8 +63,16 @@ uint8_t *EXPORT(wasmdoom_wad_alloc)(int len) {
   if (wd_wad_buf) {
     I_Error("wasmdoom_wad_alloc: WAD already staged");
   }
-  wd_wad_buf = malloc(len);
-  wd_wad_len = wd_wad_buf ? len : 0;
+  // memory.grow counts 64 KiB pages and returns the old size in pages (the
+  // grown region starts at the old end of memory), or -1 on failure. This is
+  // the engine's only dynamic allocation, so no general allocator is needed.
+  size_t pages = ((size_t)len + 0xFFFF) >> 16;
+  size_t old_pages = __builtin_wasm_memory_grow(0, pages);
+  if (old_pages == (size_t)-1) {
+    return NULL;
+  }
+  wd_wad_buf = (uint8_t *)(old_pages << 16);
+  wd_wad_len = len;
   return wd_wad_buf;
 }
 

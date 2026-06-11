@@ -9,7 +9,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "dstrings.h"
 #include "wd_events.h"

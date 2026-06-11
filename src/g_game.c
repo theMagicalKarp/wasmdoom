@@ -21,9 +21,6 @@
 
 static const char rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
-#include <stdlib.h>
-#include <string.h>
-
 #include "doomdef.h"
 #include "doomstat.h"
 
@@ -577,7 +574,6 @@ void G_Ticker(void) {
       G_DoWorldDone();
       break;
     case ga_screenshot:
-      M_ScreenShot();
       gameaction = ga_nothing;
       break;
     case ga_nothing:
@@ -1356,7 +1352,7 @@ void G_DoPlayDemo(void) {
   gameaction = ga_nothing;
   demobuffer = demo_p = W_CacheLumpName(defdemoname, PU_STATIC);
   if (*demo_p++ != VERSION) {
-    fprintf(stderr, "Demo is from a different game version!\n");
+    I_Warning("Demo is from a different game version!");
     gameaction = ga_nothing;
     return;
   }

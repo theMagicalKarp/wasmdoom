@@ -18,12 +18,22 @@
 #define EV_MUSIC_UNREGISTER 11
 #define EV_MUSIC_SET_VOLUME 12
 #define EV_SAVE_WRITTEN 13
+#define EV_INFO 14
+#define EV_WARNING 15
 
 uint8_t *event_buffer_ptr(void);
 int event_buffer_len(void);
 void event_buffer_clear(void);
 
-void emit_error(const char *msg, int32_t len);
+// Largest log message emit_log copies inline. payload_len is a u16 on the
+// wire, and log lines are short; longer messages are truncated. Callers
+// formatting into a local buffer should size it EV_LOG_MAX + 1 so their
+// truncation point matches the sink's.
+#define EV_LOG_MAX 512
+// emit_log carries the message bytes inline in the payload, so multiple log
+// records can coexist in one tick's buffer without aliasing a shared
+// sender-side scratch buffer. tag is EV_ERROR/EV_INFO/EV_WARNING.
+void emit_log(uint16_t tag, const char *msg, int32_t len);
 void emit_sound_start(int32_t handle, int32_t sfx_id, const uint8_t *data,
                       int32_t data_len, int32_t vol, int32_t sep,
                       int32_t pitch);

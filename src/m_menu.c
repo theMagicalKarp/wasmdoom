@@ -23,13 +23,6 @@
 
 static const char rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
 
-#include <ctype.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include "doomdef.h"
 #include "dstrings.h"
 
@@ -693,7 +686,7 @@ void M_Episode(int choice) {
 
   // Yet another hack...
   if ((gamemode == registered) && (choice > 2)) {
-    fprintf(stderr, "M_Episode: 4th episode requires UltimateDOOM\n");
+    I_Warning("M_Episode: 4th episode requires UltimateDOOM");
     choice = 0;
   }
 
@@ -838,7 +831,7 @@ void M_ChangeDetail(int choice) {
   detailLevel = 1 - detailLevel;
 
   // FIXME - does not work. Remove anyway?
-  fprintf(stderr, "M_ChangeDetail: low detail mode n.a.\n");
+  I_Warning("M_ChangeDetail: low detail mode n.a.");
 
   return;
 

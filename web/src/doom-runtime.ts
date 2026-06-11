@@ -1,20 +1,11 @@
 // Loads and instantiates the Doom wasm module.
 //
-// The wasm is a WASI "reactor": it does not auto-run a `main`. We instantiate
-// it, call `_initialize` (libc constructors), then the caller stages the WAD
-// bytes and any command-line flags directly into linear memory and calls
-// `init()`, which runs the engine setup. The WASI shim only backs printf,
-// exit, the clock, and the (optional) .doomrc config file now — the WAD and
-// argv no longer go through it. The engine accumulates outbound events into a
-// static buffer the caller drains after each tick.
-
-import {
-  WASI,
-  ConsoleStdout,
-  OpenFile,
-  File,
-  PreopenDirectory,
-} from "@bjorn3/browser_wasi_shim";
+// The wasm is freestanding: it has zero imports and is instantiated with no
+// import object (mirroring tools/lib/wasmdoom-headless.ts). There is no WASI
+// layer and no `_initialize`; the caller stages the WAD bytes and any
+// command-line flags directly into linear memory and calls `init()`, which
+// runs the engine setup. All engine output — including logs — flows through
+// the static event buffer the caller drains after each tick.
 
 // Mirrors GameMode_t in src/doomdef.h. The host declares the IWAD's mode; the
 // engine no longer probes a filesystem to identify it.
@@ -79,7 +70,6 @@ export function stageArgv(
 
 export type WasmdoomExports = {
   memory: WebAssembly.Memory;
-  _initialize: () => void;
   wasmdoom_init: () => void;
   wasmdoom_argv_ptr: () => number;
   wasmdoom_wad_alloc: (len: number) => number;
@@ -118,12 +108,9 @@ const REQUIRED_FUNCTIONS = [
 function assertWasmdoomInstance(
   instance: WebAssembly.Instance,
 ): asserts instance is WasmdoomInstance {
-  const { memory, _initialize } = instance.exports;
+  const { memory } = instance.exports;
   if (!(memory instanceof WebAssembly.Memory)) {
     throw new Error("wasm module is missing a `memory` export");
-  }
-  if (typeof _initialize !== "function") {
-    throw new Error("wasm module is missing an `_initialize` export");
   }
   for (const name of REQUIRED_FUNCTIONS) {
     if (typeof instance.exports[name] !== "function") {
@@ -145,23 +132,10 @@ export type Doom = {
 };
 
 export async function loadDoom(opts: { wasmUrl: string }): Promise<Doom> {
-  const stdin = new OpenFile(new File([]));
-  const stdout = ConsoleStdout.lineBuffered((line) => console.log(line));
-  const stderr = ConsoleStdout.lineBuffered((line) => console.warn(line));
-  // An empty writable root is kept only for the optional .doomrc config file;
-  // the WAD is no longer exposed here.
-  const cwd = new PreopenDirectory("/", new Map());
-  const env = ["HOME=/"];
-  const wasi = new WASI(["wasmdoom"], env, [stdin, stdout, stderr, cwd]);
-
   const { instance } = await WebAssembly.instantiateStreaming(
     fetch(opts.wasmUrl),
-    { wasi_snapshot_preview1: wasi.wasiImport },
   );
   assertWasmdoomInstance(instance);
-  // Reactor: run libc constructors but do not run a main. Engine setup happens
-  // later in init().
-  wasi.initialize(instance);
   const { exports } = instance;
 
   return {

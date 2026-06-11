@@ -21,10 +21,6 @@
 #ifndef __W_WAD__
 #define __W_WAD__
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 //
 // TYPES
 //
@@ -62,9 +58,7 @@ extern void **lumpcache;
 extern lumpinfo_t *lumpinfo;
 extern int numlumps;
 
-void W_InitMultipleFiles(char **filenames);
 void W_InitFromMemory(char **filenames);
-void W_Reload(void);
 
 int W_CheckNumForName(char *name);
 int W_GetNumForName(char *name);

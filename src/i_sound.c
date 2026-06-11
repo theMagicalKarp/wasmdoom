@@ -25,11 +25,6 @@
 #include "w_wad.h"
 #include "wd_events.h"
 
-#ifdef SNDSERV
-FILE *sndserver = 0;
-char *sndserver_filename = "./sndserver";
-#endif
-
 // Opaque play handles; 0 is reserved to mean "failed to start".
 static int next_handle = 1;
 

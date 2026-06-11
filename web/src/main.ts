@@ -23,8 +23,7 @@ async function main() {
     wasmUrl: pathJoin(BASE_URL, "wasmdoom.wasm"),
   });
 
-  // Push the IWAD bytes straight into linear memory (no WASI filesystem) and
-  // declare its game mode.
+  // Push the IWAD bytes straight into linear memory and declare its game mode.
   const wadResp = await fetch(pathJoin(BASE_URL, `wads/${wad}`));
   const wadBytes = new Uint8Array(await wadResp.arrayBuffer());
   doom.loadWad(wadBytes);
@@ -36,12 +35,21 @@ async function main() {
   const events = createEventDispatcher(doom.exports);
   audio.register(events, doom.exports);
   saver.register(events, doom.exports);
-  events.register(EVENT.ERROR, (view) => {
-    const ptr = view.getUint32(0, true);
-    const len = view.getUint32(4, true);
-    const bytes = new Uint8Array(doom.exports.memory.buffer, ptr, len);
-    console.error(`[doom_engine] ${new TextDecoder().decode(bytes)}`);
-  });
+  // EV_ERROR/EV_INFO/EV_WARNING carry their message bytes inline in the
+  // payload, so decode the view directly.
+  const decodeLog = (view: DataView) =>
+    new TextDecoder().decode(
+      new Uint8Array(view.buffer, view.byteOffset, view.byteLength),
+    );
+  events.register(EVENT.ERROR, (view) =>
+    console.error(`[doom_engine] ${decodeLog(view)}`),
+  );
+  events.register(EVENT.INFO, (view) =>
+    console.log(`[doom_engine] ${decodeLog(view)}`),
+  );
+  events.register(EVENT.WARNING, (view) =>
+    console.warn(`[doom_engine] ${decodeLog(view)}`),
+  );
 
   doom.init(["-mode", gameModeForWad(wad)]);
   events.drain();
@@ -60,8 +68,8 @@ async function main() {
     fps: 35,
     tick: () => {
       input.flushFrame();
-      // Drain in finally so an I_Error (which emits EV_ERROR then exit()s,
-      // throwing WASIProcExit out of the tick) still gets its event logged
+      // Drain in finally so an I_Error (which emits EV_ERROR then traps,
+      // throwing a RuntimeError out of the tick) still gets its event logged
       // before the throw latches the loop off.
       try {
         doom.exports.wasmdoom_tick();

@@ -14,12 +14,7 @@
 // DESCRIPTION:
 //
 //-----------------------------------------------------------------------------
-
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "doomdef.h"
 #include "i_sound.h"
@@ -30,25 +25,28 @@
 #include "d_net.h"
 #include "g_game.h"
 
-#ifdef __GNUG__
-#pragma implementation "i_system.h"
-#endif
 #include "i_system.h"
 #include "wd_save.h"
 #include "z_zone.h"
-
-int mb_used = 32;
 
 void I_Tactile(int on, int off, int total) {}
 
 ticcmd_t emptycmd;
 ticcmd_t *I_BaseTiccmd(void) { return &emptycmd; }
 
-int I_GetHeapSize(void) { return mb_used * 1024 * 1024; }
+#define MB_USED 32
+// The zone heap lives in BSS rather than coming from malloc: it exists for
+// the lifetime of the module, so there is nothing to free, and a static
+// buffer keeps it out of the wd_libc bump heap. Aligned to match the bump
+// allocator's guarantee since zone memory subdivides this block.
+#define ZONE_HEAP_SIZE (MB_USED * 1024 * 1024)
+static byte zone_heap[ZONE_HEAP_SIZE] __attribute__((aligned(16)));
+
+int I_GetHeapSize(void) { return ZONE_HEAP_SIZE; }
 
 byte *I_ZoneBase(int *size) {
-  *size = mb_used * 1024 * 1024;
-  return (byte *)malloc(*size);
+  *size = ZONE_HEAP_SIZE;
+  return zone_heap;
 }
 
 // Host-driven tick counter. Advanced once per wasmdoom_tick so the
@@ -70,46 +68,55 @@ void I_Quit(void) {
   D_QuitNetGame();
   I_ShutdownSound();
   I_ShutdownMusic();
-  M_SaveDefaults();
   I_ShutdownGraphics();
-  exit(0);
 }
 
-void I_WaitVBL(int count) { usleep(count * (1000000 / 70)); }
+void I_WaitVBL(int count) {}
 
 void I_BeginRead(void) {}
 
 void I_EndRead(void) {}
 
-byte *I_AllocLow(int length) {
-  byte *mem;
-
-  mem = (byte *)malloc(length);
-  memset(mem, 0, length);
-  return mem;
-}
-
 //
-// I_Error
+// I_Error / I_Info / I_Warning
 //
-void I_Error(char *error, ...) {
-  // static so the buffer outlives this frame: emit_error stores a pointer into
-  // it, and the host reads from wasm memory after exit() unwinds.
-  static char msg[1024];
-  va_list ap;
-  va_start(ap, error);
-  int len = vsnprintf(msg, sizeof(msg), error, ap);
-  va_end(ap);
+// Log sinks that replace the old fprintf(stdout/stderr, ...) calls. The
+// message is formatted into a stack buffer and emit_log copies the bytes
+// inline into the event buffer, so several records can fire within one tick
+// before the host drains without aliasing a shared buffer.
+static void log_vformat(uint16_t tag, char *fmt, va_list ap) {
+  char msg[EV_LOG_MAX + 1];
+  int len = vsnprintf(msg, sizeof(msg), fmt, ap);
   if (len < 0) {
     len = 0;
   }
   if (len > (int)sizeof(msg) - 1) {
     len = (int)sizeof(msg) - 1;
   }
+  emit_log(tag, msg, len);
+}
 
-  emit_error(msg, len);
+void I_Error(char *error, ...) {
+  va_list ap;
+  va_start(ap, error);
+  log_vformat(EV_ERROR, error, ap);
+  va_end(ap);
 
-  exit(1);
+  __builtin_trap();
+}
+
+void I_Info(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  log_vformat(EV_INFO, fmt, ap);
+  va_end(ap);
+}
+
+void I_Warning(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  log_vformat(EV_WARNING, fmt, ap);
+  va_end(ap);
 }
 
 int I_SaveGame(char const *name, void *source, int length) {

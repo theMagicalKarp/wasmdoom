@@ -38,10 +38,6 @@ static const char rcsid[] = "$Id: r_data.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
 #include "doomstat.h"
 #include "r_sky.h"
 
-#ifdef LINUX
-#include <alloca.h>
-#endif
-
 #include "r_data.h"
 
 //
@@ -304,7 +300,7 @@ void R_GenerateLookup(int texnum) {
 
   for (x = 0; x < texture->width; x++) {
     if (!patchcount[x]) {
-      printf("R_GenerateLookup: column without a patch (%s)\n", texture->name);
+      I_Info("R_GenerateLookup: column without a patch (%s)", texture->name);
       return;
     }
     // I_Error ("R_GenerateLookup: column without a patch");
@@ -427,17 +423,8 @@ void R_InitTextures(void) {
   temp1 = W_GetNumForName("S_START"); // P_???????
   temp2 = W_GetNumForName("S_END") - 1;
   temp3 = ((temp2 - temp1 + 63) / 64) + ((numtextures + 63) / 64);
-  printf("[");
-  for (i = 0; i < temp3; i++)
-    printf(" ");
-  printf("         ]");
-  for (i = 0; i < temp3; i++)
-    printf("\x8");
-  printf("\x8\x8\x8\x8\x8\x8\x8\x8\x8\x8");
 
   for (i = 0; i < numtextures; i++, directory++) {
-    if (!(i & 63))
-      printf(".");
 
     if (i == numtextures1) {
       // Start looking in second texture file.
@@ -538,9 +525,6 @@ void R_InitSpriteLumps(void) {
   spritetopoffset = Z_Malloc(numspritelumps * 4, PU_STATIC, 0);
 
   for (i = 0; i < numspritelumps; i++) {
-    if (!(i & 63))
-      printf(".");
-
     patch = W_CacheLumpNum(firstspritelump + i, PU_CACHE);
     spritewidth[i] = SHORT(patch->width) << FRACBITS;
     spriteoffset[i] = SHORT(patch->leftoffset) << FRACBITS;
@@ -571,13 +555,13 @@ void R_InitColormaps(void) {
 //
 void R_InitData(void) {
   R_InitTextures();
-  printf("\nInitTextures");
+  I_Info("InitTextures");
   R_InitFlats();
-  printf("\nInitFlats");
+  I_Info("InitFlats");
   R_InitSpriteLumps();
-  printf("\nInitSprites");
+  I_Info("InitSprites");
   R_InitColormaps();
-  printf("\nInitColormaps");
+  I_Info("InitColormaps");
 }
 
 //

@@ -28,15 +28,6 @@ static const char rcsid[] = "$Id: d_main.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #define BGCOLOR 7
 #define FGCOLOR 8
 
-#ifdef NORMALUNIX
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#endif
-
 #include "doomdef.h"
 #include "doomstat.h"
 
@@ -103,13 +94,10 @@ int startepisode;
 int startmap;
 boolean autostart;
 
-FILE *debugfile;
-
 boolean advancedemo;
 
-char wadfile[1024];     // primary wad file
-char mapdir[1024];      // directory of development maps
-char basedefault[1024]; // default file
+char wadfile[1024]; // primary wad file
+char mapdir[1024];  // directory of development maps
 
 void D_CheckNetGame(void);
 void D_ProcessEvents(void);
@@ -347,16 +335,6 @@ void D_DoomLoopTick(void) {
 
   // Update display, next frame, with current state.
   D_Display();
-
-#ifndef SNDSERV
-  // Sound mixing for the buffer is snychronous.
-  I_UpdateSound();
-#endif
-  // Synchronous sound output is explicitly called.
-#ifndef SNDINTR
-  // Update sound output.
-  I_SubmitSound();
-#endif
 }
 
 //
@@ -466,22 +444,6 @@ void D_StartTitle(void) {
 char title[128];
 
 //
-// D_AddFile
-//
-void D_AddFile(char *file) {
-  int numwadfiles;
-  char *newfile;
-
-  for (numwadfiles = 0; wadfiles[numwadfiles]; numwadfiles++)
-    ;
-
-  newfile = malloc(strlen(file) + 1);
-  strcpy(newfile, file);
-
-  wadfiles[numwadfiles] = newfile;
-}
-
-//
 // IdentifyVersion
 // Checks availability of IWAD files by name,
 // to determine whether registered/commercial features
@@ -514,82 +476,8 @@ void IdentifyVersion(void) {
   }
 
   if (gamemode == indetermined) {
-    printf("Game mode indeterminate.\n");
+    I_Info("Game mode indeterminate.");
   }
-
-  home = getenv("HOME");
-  if (!home) {
-    home = "/";
-  }
-  sprintf(basedefault, "%s/.doomrc", home);
-}
-
-//
-// Find a Response File
-//
-void FindResponseFile(void) {
-  int i;
-#define MAXARGVS 100
-
-  for (i = 1; i < myargc; i++)
-    if (myargv[i][0] == '@') {
-      FILE *handle;
-      int size;
-      int k;
-      int index;
-      int indexinfile;
-      char *infile;
-      char *file;
-      char *moreargs[20];
-      char *firstargv;
-
-      // READ THE RESPONSE FILE INTO MEMORY
-      handle = fopen(&myargv[i][1], "rb");
-      if (!handle) {
-        printf("\nNo such response file!");
-        exit(1);
-      }
-      printf("Found response file %s!\n", &myargv[i][1]);
-      fseek(handle, 0, SEEK_END);
-      size = ftell(handle);
-      fseek(handle, 0, SEEK_SET);
-      file = malloc(size);
-      fread(file, size, 1, handle);
-      fclose(handle);
-
-      // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
-      for (index = 0, k = i + 1; k < myargc; k++)
-        moreargs[index++] = myargv[k];
-
-      firstargv = myargv[0];
-      myargv = malloc(sizeof(char *) * MAXARGVS);
-      memset(myargv, 0, sizeof(char *) * MAXARGVS);
-      myargv[0] = firstargv;
-
-      infile = file;
-      indexinfile = k = 0;
-      indexinfile++; // SKIP PAST ARGV[0] (KEEP IT)
-      do {
-        myargv[indexinfile++] = infile + k;
-        while (k < size &&
-               ((*(infile + k) >= ' ' + 1) && (*(infile + k) <= 'z')))
-          k++;
-        *(infile + k) = 0;
-        while (k < size && ((*(infile + k) <= ' ') || (*(infile + k) > 'z')))
-          k++;
-      } while (k < size);
-
-      for (k = 0; k < index; k++)
-        myargv[indexinfile++] = moreargs[k];
-      myargc = indexinfile;
-
-      // DISPLAY ARGS
-      printf("%d command-line args:\n", myargc);
-      for (k = 1; k < myargc; k++)
-        printf("%s\n", myargv[k]);
-
-      break;
-    }
 }
 
 //
@@ -619,13 +507,9 @@ void FindResponseFile(void) {
 // `G_InitNew` / `D_StartTitle` branch at the bottom.
 void D_DoomMain(void) {
   int p;
-  char file[256];
-
-  FindResponseFile();
 
   IdentifyVersion();
 
-  setbuf(stdout, NULL);
   modifiedgame = false;
 
   nomonsters = M_CheckParm("-nomonsters");
@@ -686,7 +570,7 @@ void D_DoomMain(void) {
     break;
   }
 
-  printf("%s\n", title);
+  I_Info("%s", title);
 
   // turbo option
   if ((p = M_CheckParm("-turbo"))) {
@@ -700,7 +584,7 @@ void D_DoomMain(void) {
       scale = 10;
     if (scale > 400)
       scale = 400;
-    printf("turbo scale: %i%%\n", scale);
+    I_Info("turbo scale: %i%%", scale);
     forwardmove[0] = forwardmove[0] * scale / 100;
     forwardmove[1] = forwardmove[1] * scale / 100;
     sidemove[0] = sidemove[0] * scale / 100;
@@ -738,16 +622,16 @@ void D_DoomMain(void) {
   }
 
   // init subsystems
-  printf("V_Init: allocate screens.\n");
+  I_Info("V_Init: allocate screens.");
   V_Init();
 
-  printf("M_LoadDefaults: Load system defaults.\n");
+  I_Info("M_LoadDefaults: Load system defaults.");
   M_LoadDefaults(); // load before initing other systems
 
-  printf("Z_Init: Init zone memory allocation daemon. \n");
+  I_Info("Z_Init: Init zone memory allocation daemon.");
   Z_Init();
 
-  printf("W_Init: Init WADfiles.\n");
+  I_Info("W_Init: Init WADfiles.");
   // @EDIT W_InitMultipleFiles -> W_InitFromMemory
   // The IWAD is staged in linear memory by the host (no filesystem). Any
   // PWADs in `wadfiles` are still loaded by name afterwards.
@@ -765,7 +649,7 @@ void D_DoomMain(void) {
     int i;
 
     if (gamemode == shareware) {
-      I_Error("\nYou cannot -file with the shareware "
+      I_Error("You cannot -file with the shareware "
               "version. Register!");
     }
 
@@ -774,7 +658,7 @@ void D_DoomMain(void) {
     if (gamemode == registered) {
       for (i = 0; i < 23; i++) {
         if (W_CheckNumForName(name[i]) < 0) {
-          I_Error("\nThis is not the registered version.");
+          I_Error("This is not the registered version.");
         }
       }
     }
@@ -782,7 +666,7 @@ void D_DoomMain(void) {
 
   // Iff additonal PWAD files are used, print modified banner
   if (modifiedgame) {
-    /*m*/ printf(
+    I_Info(
         "======================================================================"
         "=====\n"
         "ATTENTION:  This version of DOOM has been modified.  If you would "
@@ -792,29 +676,28 @@ void D_DoomMain(void) {
         "        You will not receive technical support for modified games.\n"
         "                      press enter to continue\n"
         "======================================================================"
-        "=====\n");
-    getchar();
+        "=====");
   }
 
   // Check and print which version is executed.
   switch (gamemode) {
   case shareware:
   case indetermined:
-    printf("==================================================================="
+    I_Info("==================================================================="
            "========\n"
            "                                Shareware!\n"
            "==================================================================="
-           "========\n");
+           "========");
     break;
   case registered:
   case retail:
   case commercial:
-    printf("==================================================================="
+    I_Info("==================================================================="
            "========\n"
            "                 Commercial product - do not distribute!\n"
            "         Please report software piracy to the SPA: 1-800-388-PIR8\n"
            "==================================================================="
-           "========\n");
+           "========");
     break;
 
   default:
@@ -822,28 +705,28 @@ void D_DoomMain(void) {
     break;
   }
 
-  printf("M_Init: Init miscellaneous info.\n");
+  I_Info("M_Init: Init miscellaneous info.");
   M_Init();
 
-  printf("R_Init: Init DOOM refresh daemon - ");
+  I_Info("R_Init: Init DOOM refresh daemon - ");
   R_Init();
 
-  printf("\nP_Init: Init Playloop state.\n");
+  I_Info("P_Init: Init Playloop state.");
   P_Init();
 
-  printf("I_Init: Setting up machine state.\n");
+  I_Info("I_Init: Setting up machine state.");
   I_Init();
 
-  printf("D_CheckNetGame: Checking network game status.\n");
+  I_Info("D_CheckNetGame: Checking network game status.");
   D_CheckNetGame();
 
-  printf("S_Init: Setting up sound.\n");
+  I_Info("S_Init: Setting up sound.");
   S_Init(snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/);
 
-  printf("HU_Init: Setting up heads up display.\n");
+  I_Info("HU_Init: Setting up heads up display.");
   HU_Init();
 
-  printf("ST_Init: Init status bar.\n");
+  I_Info("ST_Init: Init status bar.");
   ST_Init();
 
   if (autostart || netgame) {

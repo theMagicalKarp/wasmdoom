@@ -66,6 +66,7 @@ const engine_sources = [_][]const u8{
     "src/v_video.c",
     "src/w_wad.c",
     "src/wasmdoom.c",
+    "src/wd_libc.c",
     "src/wi_stuff.c",
     "src/z_zone.c",
 };
@@ -81,11 +82,12 @@ const music_sources = [_][]const u8{
 };
 
 const c_flags = [_][]const u8{
-    "-std=gnu99",
+    "-std=c17",
     "-DNORMALUNIX",
     "-DLINUX",
     "-Wno-everything",
-    "-DSNDSRV",
+    "-include",
+    "src/wd_libc.h",
     // The 1993 DOOM source leans on behavior the C standard calls undefined
     // (signed integer overflow, type-punned/aliased reads, unaligned access,
     // etc). Zig enables LLVM's UndefinedBehaviorSanitizer by default for Debug
@@ -101,7 +103,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{
         .default_target = .{
             .cpu_arch = .wasm32,
-            .os_tag = .wasi,
+            .os_tag = .freestanding,
         },
     });
     const optimize = b.standardOptimizeOption(.{});
@@ -110,7 +112,7 @@ pub fn build(b: *std.Build) void {
     const mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
-        .link_libc = true, // wasi-libc when targeting wasm32-wasi
+        .link_libc = false,
     });
     mod.addCSourceFiles(.{
         .files = &engine_sources,
@@ -122,10 +124,7 @@ pub fn build(b: *std.Build) void {
         .name = "wasmdoom",
         .root_module = mod,
     });
-    // Reactor model: no auto-running `main`/`_start`. wasi-libc exports
-    // `_initialize` (runs __wasm_call_ctors) instead; the host calls it once,
-    // stages flags + the WAD into linear memory, then calls `wasmdoom_init`.
-    exe.wasi_exec_model = .reactor;
+    exe.entry = .disabled;
     exe.rdynamic = true;
 
     b.installArtifact(exe);

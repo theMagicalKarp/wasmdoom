@@ -34,10 +34,6 @@
 // We need the playr data structure as well.
 #include "d_player.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 // ------------------------
 // Command line parameters.
 //
@@ -210,10 +206,6 @@ extern int maxammo[NUMAMMO];
 //-----------------------------------------
 // Internal parameters, used for engine.
 //
-
-// File handling stuff.
-extern char basedefault[1024];
-extern FILE *debugfile;
 
 // if true, load all graphics at level load
 extern boolean precache;

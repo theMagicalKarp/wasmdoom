@@ -6,8 +6,6 @@
 // catches up every tick.
 
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "wd_events.h"
 
@@ -17,7 +15,6 @@
 
 static uint8_t buffer[EVENT_BUFFER_CAP];
 static int cursor = 0;
-static int overflow_logged = 0;
 
 uint8_t *event_buffer_ptr(void) { return buffer; }
 int event_buffer_len(void) { return cursor; }
@@ -27,12 +24,7 @@ void event_buffer_clear(void) { cursor = 0; }
 // pointer into the buffer, or NULL on overflow.
 static uint8_t *reserve(int len) {
   if (cursor + len > EVENT_BUFFER_CAP) {
-    if (!overflow_logged) {
-      fprintf(stderr,
-              "wasmdoom: event buffer overflow (cap=%d, want=%d); dropping\n",
-              EVENT_BUFFER_CAP, cursor + len);
-      overflow_logged = 1;
-    }
+    // TODO: Handle overflow
     return NULL;
   }
   uint8_t *out = buffer + cursor;
@@ -62,14 +54,18 @@ static uint8_t *begin_record(uint16_t tag, uint16_t payload_len) {
   return rec + 4;
 }
 
-void emit_error(const char *msg, int32_t len) {
-  uint8_t *p = begin_record(EV_ERROR, 8);
+void emit_log(uint16_t tag, const char *msg, int32_t len) {
+  if (len < 0) {
+    len = 0;
+  }
+  if (len > EV_LOG_MAX) {
+    len = EV_LOG_MAX;
+  }
+  uint8_t *p = begin_record(tag, (uint16_t)len);
   if (!p) {
     return;
   }
-
-  write_u32(p, (uint32_t)(uintptr_t)msg);
-  write_u32(p + 4, (uint32_t)len);
+  memcpy(p, msg, (size_t)len);
 }
 
 void emit_sound_start(int32_t handle, int32_t sfx_id, const uint8_t *data,

@@ -195,9 +195,9 @@ void V_DrawPatch(int x, int y, int scrn, patch_t *patch) {
 #ifdef RANGECHECK
   if (x < 0 || x + SHORT(patch->width) > SCREENWIDTH || y < 0 ||
       y + SHORT(patch->height) > SCREENHEIGHT || (unsigned)scrn > 4) {
-    fprintf(stderr, "Patch at %d,%d exceeds LFB\n", x, y);
+    I_Warning("Patch at %d,%d exceeds LFB", x, y);
     // No I_Error abort - what is up with TNT.WAD?
-    fprintf(stderr, "V_DrawPatch: bad patch (ignored)\n");
+    I_Warning("V_DrawPatch: bad patch (ignored)");
     return;
   }
 #endif
@@ -248,7 +248,7 @@ void V_DrawPatchFlipped(int x, int y, int scrn, patch_t *patch) {
 #ifdef RANGECHECK
   if (x < 0 || x + SHORT(patch->width) > SCREENWIDTH || y < 0 ||
       y + SHORT(patch->height) > SCREENHEIGHT || (unsigned)scrn > 4) {
-    fprintf(stderr, "Patch origin %d,%d exceeds LFB\n", x, y);
+    I_Warning("Patch origin %d,%d exceeds LFB", x, y);
     I_Error("Bad V_DrawPatch in V_DrawPatchFlipped");
   }
 #endif
@@ -390,14 +390,11 @@ void V_GetBlock(int x, int y, int scrn, int width, int height, byte *dest) {
 //
 // V_Init
 //
+// Framebuffer backing store lives in BSS, not the heap: the screens
+// persist for the program's lifetime and wasm zero-initializes it.
+static byte screenbuf[4 * SCREENWIDTH * SCREENHEIGHT];
 void V_Init(void) {
-  int i;
-  byte *base;
-
-  // stick these in low dos memory on PCs
-
-  base = I_AllocLow(SCREENWIDTH * SCREENHEIGHT * 4);
-
-  for (i = 0; i < 4; i++)
-    screens[i] = base + i * SCREENWIDTH * SCREENHEIGHT;
+  for (int i = 0; i < 4; i++) {
+    screens[i] = screenbuf + i * SCREENWIDTH * SCREENHEIGHT;
+  }
 }

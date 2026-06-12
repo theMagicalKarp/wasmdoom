@@ -2,10 +2,13 @@
 #include <stdint.h>
 
 #include "d_main.h"
+#include "d_player.h"
 #include "doomdef.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "m_argv.h"
+#include "p_local.h"
+#include "r_state.h"
 #include "v_video.h"
 #include "wasmdoom.h"
 #include "wd_events.h"
@@ -88,7 +91,6 @@ void EXPORT(wasmdoom_init)(void) {
 }
 
 void EXPORT(wasmdoom_tick)(void) {
-  event_buffer_clear();
   I_AdvanceTime();
 
   while (event_head != event_tail) {
@@ -103,6 +105,7 @@ void EXPORT(wasmdoom_tick)(void) {
 
 uint8_t *EXPORT(wasmdoom_events_ptr)(void) { return event_buffer_ptr(); }
 int EXPORT(wasmdoom_events_len)(void) { return event_buffer_len(); }
+void EXPORT(wasmdoom_events_clear)(void) { event_buffer_clear(); }
 
 // Save install: host writes a save's bytes directly into a slot's buffer
 // (save_slot_data_ptr), then calls wasmdoom_save_commit(slot, data_len) to
@@ -142,3 +145,64 @@ extern byte doom_palette[768];
 
 // 768-byte RGB palette (256 entries) the host applies to the 8bpp framebuffer.
 uint8_t *EXPORT(wasmdoom_get_palette)(void) { return doom_palette; }
+
+// --- Player -----------------------------------------------------------------
+#define WD_PLAYER_GET(name, expr)                                              \
+  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
+    return viewplayer ? (int)(expr) : 0;                                       \
+  }
+#define WD_PLAYER_GET_IDX(name, field, count)                                  \
+  int EXPORT(wasmdoom_get_player_##name)(int i) {                              \
+    if (!viewplayer || i < 0 || i >= (count))                                  \
+      return 0;                                                                \
+    return (int)viewplayer->field[i];                                          \
+  }
+#define WD_PLAYER_GET_MO(name, expr)                                           \
+  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
+    return (viewplayer && viewplayer->mo) ? (int)(expr) : 0;                   \
+  }
+// Boolean arrays packed into one int: bit i mirrors the array's enum value i
+// (same shape as the cheats flags). Safe only while count <= 32 bits.
+#define WD_PLAYER_GET_MASK(name, field, count)                                 \
+  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
+    if (!viewplayer)                                                           \
+      return 0;                                                                \
+    int m = 0;                                                                 \
+    for (int i = 0; i < (count); i++)                                          \
+      m |= (viewplayer->field[i] ? 1 : 0) << i;                                \
+    return m;                                                                  \
+  }
+
+WD_PLAYER_GET(health, viewplayer->health)
+WD_PLAYER_GET(armorpoints, viewplayer->armorpoints)
+WD_PLAYER_GET(armortype, viewplayer->armortype)
+WD_PLAYER_GET(readyweapon, viewplayer->readyweapon)
+WD_PLAYER_GET(pendingweapon, viewplayer->pendingweapon)
+WD_PLAYER_GET(backpack, viewplayer->backpack)
+WD_PLAYER_GET(cheats, viewplayer->cheats)
+WD_PLAYER_GET(killcount, viewplayer->killcount)
+WD_PLAYER_GET(itemcount, viewplayer->itemcount)
+WD_PLAYER_GET(secretcount, viewplayer->secretcount)
+WD_PLAYER_GET(playerstate, viewplayer->playerstate)
+WD_PLAYER_GET(damagecount, viewplayer->damagecount)
+WD_PLAYER_GET(bonuscount, viewplayer->bonuscount)
+WD_PLAYER_GET(attackdown, viewplayer->attackdown)
+WD_PLAYER_GET(usedown, viewplayer->usedown)
+WD_PLAYER_GET(refire, viewplayer->refire)
+
+// bit = card_t (it_bluecard…) / weapontype_t (wp_fist…)
+WD_PLAYER_GET_MASK(cards, cards, NUMCARDS)
+WD_PLAYER_GET_MASK(weapons, weaponowned, NUMWEAPONS)
+
+WD_PLAYER_GET_IDX(ammo, ammo, NUMAMMO)
+WD_PLAYER_GET_IDX(maxammo, maxammo, NUMAMMO)
+WD_PLAYER_GET_IDX(power, powers, NUMPOWERS)
+WD_PLAYER_GET_IDX(frag, frags, MAXPLAYERS)
+
+WD_PLAYER_GET_MO(x, viewplayer->mo->x)
+WD_PLAYER_GET_MO(y, viewplayer->mo->y)
+WD_PLAYER_GET_MO(z, viewplayer->mo->z)
+WD_PLAYER_GET_MO(angle, viewplayer->mo->angle)
+WD_PLAYER_GET_MO(momx, viewplayer->mo->momx)
+WD_PLAYER_GET_MO(momy, viewplayer->mo->momy)
+WD_PLAYER_GET_MO(momz, viewplayer->mo->momz)

@@ -82,8 +82,42 @@ export type WasmdoomExports = {
   wasmdoom_get_palette: () => number;
   wasmdoom_events_ptr: () => number;
   wasmdoom_events_len: () => number;
+  wasmdoom_events_clear: () => void;
   wasmdoom_save_slot_ptr: (slot: number) => number;
   wasmdoom_save_commit: (slot: number, dataLen: number) => number;
+  wasmdoom_get_player_health: () => number;
+  wasmdoom_get_player_armorpoints: () => number;
+  wasmdoom_get_player_armortype: () => number;
+  wasmdoom_get_player_readyweapon: () => number;
+  wasmdoom_get_player_pendingweapon: () => number;
+  wasmdoom_get_player_backpack: () => number;
+  wasmdoom_get_player_cheats: () => number;
+  wasmdoom_get_player_killcount: () => number;
+  wasmdoom_get_player_itemcount: () => number;
+  wasmdoom_get_player_secretcount: () => number;
+  wasmdoom_get_player_playerstate: () => number;
+  wasmdoom_get_player_damagecount: () => number;
+  wasmdoom_get_player_bonuscount: () => number;
+  wasmdoom_get_player_attackdown: () => number;
+  wasmdoom_get_player_usedown: () => number;
+  wasmdoom_get_player_refire: () => number;
+  wasmdoom_get_player_cards: () => number;
+  wasmdoom_get_player_weapons: () => number;
+  wasmdoom_get_player_ammo: (type: number) => number;
+  wasmdoom_get_player_maxammo: (type: number) => number;
+  wasmdoom_get_player_power: (power: number) => number;
+  wasmdoom_get_player_frag: (player: number) => number;
+  wasmdoom_get_player_x: () => number;
+  wasmdoom_get_player_y: () => number;
+  wasmdoom_get_player_z: () => number;
+  wasmdoom_get_player_angle: () => number;
+  wasmdoom_get_player_momx: () => number;
+  wasmdoom_get_player_momy: () => number;
+  wasmdoom_get_player_momz: () => number;
+};
+
+export type WasmdoomInstance = WebAssembly.Instance & {
+  exports: WasmdoomExports;
 };
 
 const REQUIRED_FUNCTIONS = [
@@ -98,8 +132,38 @@ const REQUIRED_FUNCTIONS = [
   "wasmdoom_get_palette",
   "wasmdoom_events_ptr",
   "wasmdoom_events_len",
+  "wasmdoom_events_clear",
   "wasmdoom_save_slot_ptr",
   "wasmdoom_save_commit",
+  "wasmdoom_get_player_health",
+  "wasmdoom_get_player_armorpoints",
+  "wasmdoom_get_player_armortype",
+  "wasmdoom_get_player_readyweapon",
+  "wasmdoom_get_player_pendingweapon",
+  "wasmdoom_get_player_backpack",
+  "wasmdoom_get_player_cheats",
+  "wasmdoom_get_player_killcount",
+  "wasmdoom_get_player_itemcount",
+  "wasmdoom_get_player_secretcount",
+  "wasmdoom_get_player_playerstate",
+  "wasmdoom_get_player_damagecount",
+  "wasmdoom_get_player_bonuscount",
+  "wasmdoom_get_player_attackdown",
+  "wasmdoom_get_player_usedown",
+  "wasmdoom_get_player_refire",
+  "wasmdoom_get_player_cards",
+  "wasmdoom_get_player_weapons",
+  "wasmdoom_get_player_ammo",
+  "wasmdoom_get_player_maxammo",
+  "wasmdoom_get_player_power",
+  "wasmdoom_get_player_frag",
+  "wasmdoom_get_player_x",
+  "wasmdoom_get_player_y",
+  "wasmdoom_get_player_z",
+  "wasmdoom_get_player_angle",
+  "wasmdoom_get_player_momx",
+  "wasmdoom_get_player_momy",
+  "wasmdoom_get_player_momz",
 ] as const;
 
 function assertWasmdoomExports(
@@ -208,6 +272,7 @@ export function drainLogs(exports: WasmdoomExports): void {
     }
     offset = payloadStart + payloadLen;
   }
+  exports.wasmdoom_events_clear();
 }
 
 export type HeadlessDoom = {

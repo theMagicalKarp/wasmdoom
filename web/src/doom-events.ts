@@ -36,6 +36,7 @@ export type EventBufferExports = {
   memory: WebAssembly.Memory;
   wasmdoom_events_ptr(): number;
   wasmdoom_events_len(): number;
+  wasmdoom_events_clear(): void;
 };
 
 export function createEventDispatcher(
@@ -70,6 +71,7 @@ export function createEventDispatcher(
       }
       offset = payloadStart + payloadLen;
     }
+    doom.wasmdoom_events_clear();
   }
 
   return {

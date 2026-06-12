@@ -20,6 +20,7 @@ function makeFakeDoom(): {
     memory,
     wasmdoom_events_ptr: () => bufferBase,
     wasmdoom_events_len: () => length,
+    wasmdoom_events_clear: () => {},
   };
   return {
     doom,

@@ -1109,13 +1109,12 @@ boolean M_Responder(event_t *ev) {
     return true;
   }
 
-  // @EDIT Outside save-name entry, ev_typechar is not consumed by any menu
-  // path; drop it so it doesn't fall through to keydown logic below.
-  if (ev->type == ev_typechar) {
-    return false;
-  }
-
   // Take care of any messages that need input
+  // @EDIT Handled before the ev_typechar drop below: the y/n/space responses
+  // are character-semantic and arrive as ev_typechar (the host only emits
+  // ev_keydown for keys in its KEY_MAP, which excludes 'y'/'n'). Both event
+  // types reach here so keydown keys (space, KEY_ESCAPE) and typed chars
+  // (y/n/space) all work.
   if (messageToPrint) {
     if (messageNeedsInput == true &&
         !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE))
@@ -1129,6 +1128,13 @@ boolean M_Responder(event_t *ev) {
     menuactive = false;
     S_StartSound(NULL, sfx_swtchx);
     return true;
+  }
+
+  // @EDIT Outside save-name entry and message prompts, ev_typechar is not
+  // consumed by any menu path; drop it so it doesn't fall through to keydown
+  // logic below.
+  if (ev->type == ev_typechar) {
+    return false;
   }
 
   // @REMOVAL devparm F1 screenshot

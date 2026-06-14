@@ -294,29 +294,50 @@ function attachMobileControls(doom: WasmdoomExports): MobileControls | null {
     }
   };
 
+  let leftStart: Vector2 | null = null;
   leftJoystick.on("move", (evt) => {
     const data = evt.data;
-    if (!data || !data.vector) return;
-    const { x, y } = data.vector;
-    joystick = joystick.setY(y);
-    setStrafe("left", WASMDOOM_KEYS.STRAFE_LEFT, x < -TURN_THRESHOLD);
-    setStrafe("right", WASMDOOM_KEYS.STRAFE_RIGHT, x > TURN_THRESHOLD);
+    if (!data || !data.vector) {
+      return;
+    }
+
+    const current = Vector2.from(data.vector);
+    if (leftStart === null) {
+      leftStart = current;
+    }
+    const distance = current.sub(leftStart);
+
+    joystick = joystick.setY(distance.y);
+    setStrafe("left", WASMDOOM_KEYS.STRAFE_LEFT, distance.x < -TURN_THRESHOLD);
+    setStrafe("right", WASMDOOM_KEYS.STRAFE_RIGHT, distance.x > TURN_THRESHOLD);
   });
 
   leftJoystick.on("end", () => {
     joystick = joystick.setY(0);
     setStrafe("left", WASMDOOM_KEYS.STRAFE_LEFT, false);
     setStrafe("right", WASMDOOM_KEYS.STRAFE_RIGHT, false);
+    leftStart = null;
   });
 
+  let rightStart: Vector2 | null = null;
   rightJoystick.on("move", (evt) => {
     const data = evt.data;
-    if (!data || !data.vector) return;
-    joystick = joystick.setX(data.vector.x);
+    if (!data || !data.vector) {
+      return;
+    }
+
+    const current = Vector2.from(data.vector);
+
+    if (rightStart === null) {
+      rightStart = current;
+    }
+
+    joystick = joystick.setX(current.sub(rightStart).x);
   });
 
   rightJoystick.on("end", () => {
     joystick = joystick.setX(0);
+    rightStart = null;
   });
 
   return {

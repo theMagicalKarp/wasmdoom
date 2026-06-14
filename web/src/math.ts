@@ -11,6 +11,10 @@ export class Vector2 {
     return new Vector2(0, 0);
   }
 
+  static from(coordinates: { x: number; y: number }): Vector2 {
+    return new Vector2(coordinates.x, coordinates.y);
+  }
+
   add(v: Vector2): Vector2 {
     return new Vector2(this.x + v.x, this.y + v.y);
   }

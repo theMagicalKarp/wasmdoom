@@ -1,0 +1,6 @@
+# Release profile. Merged on top of `mise.toml` when `MISE_ENV=release` is set
+# (e.g. `MISE_ENV=release mise run wasm`). Only the optimize level changes;
+# tools and tasks are inherited from the base config.
+
+[env]
+ZIG_OPTIMIZE = "ReleaseSmall"

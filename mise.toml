@@ -1,0 +1,169 @@
+[tools]
+zig = "0.16.0"
+node = "24"
+"pipx:clang-format" = "22.1.5"
+
+[settings]
+# Record tool checksums in mise.lock — replaces the manual tarball shasum
+# verification the old setup-zig action did by hand.
+lockfile = true
+
+[env]
+# Default is a Debug build for fast local iteration. CI overrides per-run with
+# `ZIG_OPTIMIZE=ReleaseSmall mise run wasm`.
+ZIG_OPTIMIZE = "Debug"
+
+# --- Build -----------------------------------------------------------------
+
+[tasks.wasm]
+description = "Build engine + music wasm artifacts"
+sources = ["src/**/*.c", "src/**/*.h", "build.zig"]
+outputs = ["zig-out/bin/wasmdoom.wasm", "zig-out/bin/wasmdoom.music.wasm"]
+run = "zig build -Doptimize=${ZIG_OPTIMIZE:-Debug}"
+
+# --- C formatting ----------------------------------------------------------
+
+[tasks.fmt]
+description = "Format C sources in place"
+run = "find src -type f \\( -name '*.c' -o -name '*.h' \\) -exec clang-format -i {} +"
+
+[tasks."fmt:check"]
+description = "Check C source formatting (CI-friendly dry run)"
+run = "find src -type f \\( -name '*.c' -o -name '*.h' \\) -exec clang-format --dry-run --Werror {} +"
+
+# --- Web frontend ----------------------------------------------------------
+
+[tasks."web:install"]
+description = "Install web deps (re-runs only when the lockfile changes)"
+dir = "web"
+sources = ["web/package-lock.json"]
+outputs = ["web/node_modules"]
+run = "npm ci"
+
+[tasks."web:format"]
+depends = ["web:install"]
+dir = "web"
+run = "npm run format"
+
+[tasks."web:format:check"]
+depends = ["web:install"]
+dir = "web"
+run = "npm run format:check"
+
+[tasks."web:typecheck"]
+depends = ["web:install"]
+dir = "web"
+run = "npm run typecheck"
+
+[tasks."web:test"]
+depends = ["web:install"]
+dir = "web"
+run = "npm run test"
+
+[tasks."web:check"]
+description = "Static checks for the web frontend"
+depends = ["web:format:check", "web:typecheck", "web:test"]
+
+[tasks."web:dev"]
+description = "Run the Vite dev server"
+depends = ["wasm", "web:install"]
+dir = "web"
+run = "npm run dev"
+
+[tasks."web:build"]
+description = "Build the web bundle"
+depends = ["wasm", "web:install"]
+dir = "web"
+run = "npm run build"
+
+# --- Tools workspace -------------------------------------------------------
+
+[tasks."tools:install"]
+description = "Install tools deps (re-runs only when the lockfile changes)"
+dir = "tools"
+sources = ["tools/package-lock.json"]
+outputs = ["tools/node_modules"]
+run = "npm ci"
+
+[tasks."tools:format"]
+depends = ["tools:install"]
+dir = "tools"
+run = "npm run format"
+
+[tasks."tools:format:check"]
+depends = ["tools:install"]
+dir = "tools"
+run = "npm run format:check"
+
+[tasks."tools:typecheck"]
+depends = ["tools:install"]
+dir = "tools"
+run = "npm run typecheck"
+
+[tasks."tools:test"]
+depends = ["tools:install"]
+dir = "tools"
+run = "npm run test"
+
+[tasks."tools:check"]
+description = "Static checks for the tools workspace"
+depends = ["tools:format:check", "tools:typecheck", "tools:test"]
+
+[tasks."tools:render-music"]
+description = "Smoke-test the music pipeline by rendering one short track"
+depends = ["wasm", "tools:install"]
+run = """
+node tools/cli.ts render-music ./wads/doom1.wad \
+  --wasm ./zig-out/bin/wasmdoom.music.wasm \
+  --track E1M1 --out ci-out/music
+"""
+
+[tasks."tools:render-music-all"]
+description = "Render every track from the WAD"
+depends = ["wasm", "tools:install"]
+run = """
+node tools/cli.ts render-music ./wads/doom1.wad \
+  --wasm ./zig-out/bin/wasmdoom.music.wasm \
+  --out ci-out/music
+"""
+
+[tasks."tools:simulate"]
+description = "Replay every scripted simulation under ci/simulations/<wad>/*.json"
+depends = ["wasm", "tools:install"]
+run = """
+for wad_dir in ci/simulations/*/; do
+  wad=$(basename "$wad_dir")
+  for script in "$wad_dir"*.json; do
+    [ -e "$script" ] || continue
+    name=$(basename "$script" .json)
+    echo ">>> simulate: $wad/$name"
+    node tools/cli.ts simulate ./wads/$wad.wad \
+      --wasm ./zig-out/bin/wasmdoom.wasm \
+      --commands "$script" \
+      --out ci-out/simulations/$wad/$name \
+      --quiet || exit 1
+  done
+done
+"""
+
+# --- Aggregates ------------------------------------------------------------
+
+[tasks.check]
+description = "Run the full local/CI check suite"
+depends = [
+  "fmt:check",
+  "wasm",
+  "tools:check",
+  "tools:render-music",
+  "tools:simulate",
+  "web:check",
+  "web:build",
+]
+
+[tasks.fix]
+description = "Rewrite C, web, and tools sources in place"
+depends = ["fmt", "web:format", "tools:format"]
+
+[tasks.clean]
+description = "Remove build artifacts and installed deps"
+run = "rm -rf zig-out .zig-cache ci-out web/dist web/node_modules tools/node_modules"

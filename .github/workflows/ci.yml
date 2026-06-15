@@ -12,19 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - run: pip install 'clang-format==22.1.5'
-
-      - name: Set up Zig
-        uses: ./.github/actions/setup-zig
-        with:
-          version: 0.16.0
-          shasum: 70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
+      - name: Set up toolchain
+        uses: jdx/mise-action@v4
 
       - name: clang-format
-        run: make fmt-check
+        run: mise run fmt:check
 
       - name: zig build (release)
-        run: make wasm ZIG_OPTIMIZE=ReleaseSmall
+        run: ZIG_OPTIMIZE=ReleaseSmall mise run wasm
 
       - name: Upload wasm artifact
         uses: actions/upload-artifact@v7
@@ -40,15 +35,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
+      - name: Set up toolchain
+        uses: jdx/mise-action@v4
+
+      - name: Cache npm
+        uses: actions/cache@v4
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: tools/package-lock.json
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('tools/package-lock.json') }}
 
       - name: Static checks
-        run: make tools-check
+        run: mise run tools:check
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v8
@@ -56,8 +53,13 @@ jobs:
           name: wasmdoom-wasm
           path: zig-out/bin
 
+      # Mark the downloaded artifact newer than the C sources so the `wasm`
+      # task dependency is treated as up-to-date and not rebuilt.
+      - name: Mark wasm artifact fresh
+        run: touch zig-out/bin/*.wasm
+
       - name: Render WAD music
-        run: make tools-render-music-all
+        run: mise run tools:render-music-all
 
       - name: Upload `D_E1M1.wav` Music Sample
         uses: actions/upload-artifact@v7
@@ -68,7 +70,7 @@ jobs:
           retention-days: 5
 
       - name: Run scripted simulations
-        run: make tools-simulate
+        run: mise run tools:simulate
 
       - name: Upload simulation snapshots
         uses: actions/upload-artifact@v7
@@ -90,16 +92,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Node
-        uses: actions/setup-node@v6
+      - name: Set up toolchain
+        uses: jdx/mise-action@v4
+
+      - name: Cache npm
+        uses: actions/cache@v4
         with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
 
       - name: Static checks
         working-directory: ${{ github.workspace }}
-        run: make web-check
+        run: mise run web:check
 
       - name: Download wasm artifact
         uses: actions/download-artifact@v8

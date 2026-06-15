@@ -31,19 +31,21 @@ _View the full working demo at
 
 ## Requirements
 
-- [Zig 0.16](https://ziglang.org/)
-- [Node.js](https://nodejs.org/) — for the web frontend and the `tools/` CLI
-- `clang-format` — only needed for the `fmt` / `fmt-check` build steps
+- [mise](https://mise.jdx.dev/) — manages the toolchain and runs project tasks
+
+`mise install` provisions everything else (Zig 0.16, Node.js, and clang-format)
+at the versions pinned in [`mise.toml`](mise.toml) and verified against
+[`mise.lock`](mise.lock). List available tasks with `mise tasks`.
 
 ## Build
 
 ```sh
-make wasm
+mise run wasm
 ```
 
 Produces `zig-out/bin/wasmdoom.wasm` (engine) and
 `zig-out/bin/wasmdoom.music.wasm` (music synth). Builds are `Debug` by default;
-override with `ZIG_OPTIMIZE=ReleaseFast make wasm`.
+override with `ZIG_OPTIMIZE=ReleaseFast mise run wasm`.
 
 ## Run locally
 
@@ -59,7 +61,7 @@ The dev server serves the wasm artifacts live from `zig-out/bin/`, so a
 ## Test
 
 ```sh
-make check
+mise run check
 ```
 
 Runs formatting checks, builds the wasm artifacts, runs the web and tools test
@@ -80,8 +82,8 @@ frames/state — the same harness CI uses to validate WADs.
 ## Formatting
 
 ```sh
-make fix         # rewrite C, web, and tools sources in place
-make fmt-check   # CI-friendly dry run (C only)
+mise run fix         # rewrite C, web, and tools sources in place
+mise run fmt:check   # CI-friendly dry run (C only)
 ```
 
 ## WADs

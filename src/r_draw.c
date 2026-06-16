@@ -102,12 +102,14 @@ void R_DrawColumn(void) {
   count = dc_yh - dc_yl;
 
   // Zero length, column does not exceed a pixel.
-  if (count < 0)
+  if (count < 0) {
     return;
+  }
 
 #ifdef RANGECHECK
-  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
     I_Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+  }
 #endif
 
   // Framebuffer destination address.
@@ -202,8 +204,9 @@ void R_DrawColumnLow(void) {
   count = dc_yh - dc_yl;
 
   // Zero length.
-  if (count < 0)
+  if (count < 0) {
     return;
+  }
 
 #ifdef RANGECHECK
   if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
@@ -264,18 +267,21 @@ void R_DrawFuzzColumn(void) {
   fixed_t fracstep;
 
   // Adjust borders. Low...
-  if (!dc_yl)
+  if (!dc_yl) {
     dc_yl = 1;
+  }
 
   // .. and high.
-  if (dc_yh == viewheight - 1)
+  if (dc_yh == viewheight - 1) {
     dc_yh = viewheight - 2;
+  }
 
   count = dc_yh - dc_yl;
 
   // Zero length.
-  if (count < 0)
+  if (count < 0) {
     return;
+  }
 
 #ifdef RANGECHECK
   if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
@@ -325,8 +331,9 @@ void R_DrawFuzzColumn(void) {
     *dest = colormaps[6 * 256 + dest[fuzzoffset[fuzzpos]]];
 
     // Clamp table lookup index.
-    if (++fuzzpos == FUZZTABLE)
+    if (++fuzzpos == FUZZTABLE) {
       fuzzpos = 0;
+    }
 
     dest += SCREENWIDTH;
 
@@ -353,8 +360,9 @@ void R_DrawTranslatedColumn(void) {
   fixed_t fracstep;
 
   count = dc_yh - dc_yl;
-  if (count < 0)
+  if (count < 0) {
     return;
+  }
 
 #ifdef RANGECHECK
   if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
@@ -628,18 +636,21 @@ void R_InitBuffer(int width, int height) {
   viewwindowx = (SCREENWIDTH - width) >> 1;
 
   // Column offset. For windows.
-  for (i = 0; i < width; i++)
+  for (i = 0; i < width; i++) {
     columnofs[i] = viewwindowx + i;
+  }
 
   // Samw with base row offset.
-  if (width == SCREENWIDTH)
+  if (width == SCREENWIDTH) {
     viewwindowy = 0;
-  else
+  } else {
     viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
+  }
 
   // Preclaculate all row offsets.
-  for (i = 0; i < height; i++)
+  for (i = 0; i < height; i++) {
     ylookup[i] = screens[0] + (i + viewwindowy) * SCREENWIDTH;
+  }
 }
 
 //
@@ -663,13 +674,15 @@ void R_FillBackScreen(void) {
 
   char *name;
 
-  if (scaledviewwidth == 320)
+  if (scaledviewwidth == 320) {
     return;
+  }
 
-  if (gamemode == commercial)
+  if (gamemode == commercial) {
     name = name2;
-  else
+  } else {
     name = name1;
+  }
 
   src = W_CacheLumpName(name, PU_CACHE);
   dest = screens[1];
@@ -688,20 +701,24 @@ void R_FillBackScreen(void) {
 
   patch = W_CacheLumpName("brdr_t", PU_CACHE);
 
-  for (x = 0; x < scaledviewwidth; x += 8)
+  for (x = 0; x < scaledviewwidth; x += 8) {
     V_DrawPatch(viewwindowx + x, viewwindowy - 8, 1, patch);
+  }
   patch = W_CacheLumpName("brdr_b", PU_CACHE);
 
-  for (x = 0; x < scaledviewwidth; x += 8)
+  for (x = 0; x < scaledviewwidth; x += 8) {
     V_DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
+  }
   patch = W_CacheLumpName("brdr_l", PU_CACHE);
 
-  for (y = 0; y < viewheight; y += 8)
+  for (y = 0; y < viewheight; y += 8) {
     V_DrawPatch(viewwindowx - 8, viewwindowy + y, 1, patch);
+  }
   patch = W_CacheLumpName("brdr_r", PU_CACHE);
 
-  for (y = 0; y < viewheight; y += 8)
+  for (y = 0; y < viewheight; y += 8) {
     V_DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1, patch);
+  }
 
   // Draw beveled edge.
   V_DrawPatch(viewwindowx - 8, viewwindowy - 8, 1,
@@ -742,8 +759,9 @@ void R_DrawViewBorder(void) {
   int ofs;
   int i;
 
-  if (scaledviewwidth == SCREENWIDTH)
+  if (scaledviewwidth == SCREENWIDTH) {
     return;
+  }
 
   top = ((SCREENHEIGHT - SBARHEIGHT) - viewheight) / 2;
   side = (SCREENWIDTH - scaledviewwidth) / 2;

@@ -45,8 +45,9 @@ void P_ArchivePlayers(void) {
   player_t *dest;
 
   for (i = 0; i < MAXPLAYERS; i++) {
-    if (!playeringame[i])
+    if (!playeringame[i]) {
       continue;
+    }
 
     PADSAVEP();
 
@@ -69,8 +70,9 @@ void P_UnArchivePlayers(void) {
   int j;
 
   for (i = 0; i < MAXPLAYERS; i++) {
-    if (!playeringame[i])
+    if (!playeringame[i]) {
       continue;
+    }
 
     PADSAVEP();
 
@@ -121,8 +123,9 @@ void P_ArchiveWorld(void) {
     *put++ = li->special;
     *put++ = li->tag;
     for (j = 0; j < 2; j++) {
-      if (li->sidenum[j] == -1)
+      if (li->sidenum[j] == -1) {
         continue;
+      }
 
       si = &sides[li->sidenum[j]];
 
@@ -169,8 +172,9 @@ void P_UnArchiveWorld(void) {
     li->special = *get++;
     li->tag = *get++;
     for (j = 0; j < 2; j++) {
-      if (li->sidenum[j] == -1)
+      if (li->sidenum[j] == -1) {
         continue;
+      }
       si = &sides[li->sidenum[j]];
       si->textureoffset = *get++ << FRACBITS;
       si->rowoffset = *get++ << FRACBITS;
@@ -208,8 +212,9 @@ void P_ArchiveThinkers(void) {
       save_p += sizeof(*mobj);
       mobj->state = (state_t *)(mobj->state - states);
 
-      if (mobj->player)
+      if (mobj->player) {
         mobj->player = (player_t *)((mobj->player - players) + 1);
+      }
       continue;
     }
 
@@ -234,10 +239,11 @@ void P_UnArchiveThinkers(void) {
   while (currentthinker != &thinkercap) {
     next = currentthinker->next;
 
-    if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+    if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker) {
       P_RemoveMobj((mobj_t *)currentthinker);
-    else
+    } else {
       Z_Free(currentthinker);
+    }
 
     currentthinker = next;
   }
@@ -315,9 +321,11 @@ void P_ArchiveSpecials(void) {
   // save off the current thinkers
   for (th = thinkercap.next; th != &thinkercap; th = th->next) {
     if (th->function.acv == (actionf_v)NULL) {
-      for (i = 0; i < MAXCEILINGS; i++)
-        if (activeceilings[i] == (ceiling_t *)th)
+      for (i = 0; i < MAXCEILINGS; i++) {
+        if (activeceilings[i] == (ceiling_t *)th) {
           break;
+        }
+      }
 
       if (i < MAXCEILINGS) {
         *save_p++ = tc_ceiling;
@@ -433,8 +441,9 @@ void P_UnArchiveSpecials(void) {
       ceiling->sector = &sectors[(int)ceiling->sector];
       ceiling->sector->specialdata = ceiling;
 
-      if (ceiling->thinker.function.acp1)
+      if (ceiling->thinker.function.acp1) {
         ceiling->thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+      }
 
       P_AddThinker(&ceiling->thinker);
       P_AddActiveCeiling(ceiling);
@@ -470,8 +479,9 @@ void P_UnArchiveSpecials(void) {
       plat->sector = &sectors[(int)plat->sector];
       plat->sector->specialdata = plat;
 
-      if (plat->thinker.function.acp1)
+      if (plat->thinker.function.acp1) {
         plat->thinker.function.acp1 = (actionf_p1)T_PlatRaise;
+      }
 
       P_AddThinker(&plat->thinker);
       P_AddActivePlat(plat);

@@ -166,10 +166,11 @@ void P_LoadSegs(int lump) {
     side = SHORT(ml->side);
     li->sidedef = &sides[ldef->sidenum[side]];
     li->frontsector = sides[ldef->sidenum[side]].sector;
-    if (ldef->flags & ML_TWOSIDED)
+    if (ldef->flags & ML_TWOSIDED) {
       li->backsector = sides[ldef->sidenum[side ^ 1]].sector;
-    else
+    } else {
       li->backsector = 0;
+    }
   }
 
   Z_Free(data);
@@ -255,8 +256,9 @@ void P_LoadNodes(int lump) {
     no->dy = SHORT(mn->dy) << FRACBITS;
     for (j = 0; j < 2; j++) {
       no->children[j] = SHORT(mn->children[j]);
-      for (k = 0; k < 4; k++)
+      for (k = 0; k < 4; k++) {
         no->bbox[j][k] = SHORT(mn->bbox[j][k]) << FRACBITS;
+      }
     }
   }
 
@@ -297,8 +299,9 @@ void P_LoadThings(int lump) {
         break;
       }
     }
-    if (spawn == false)
+    if (spawn == false) {
       break;
+    }
 
     // Do spawn all other stuff.
     mt->x = SHORT(mt->x);
@@ -341,15 +344,16 @@ void P_LoadLineDefs(int lump) {
     ld->dx = v2->x - v1->x;
     ld->dy = v2->y - v1->y;
 
-    if (!ld->dx)
+    if (!ld->dx) {
       ld->slopetype = ST_VERTICAL;
-    else if (!ld->dy)
+    } else if (!ld->dy) {
       ld->slopetype = ST_HORIZONTAL;
-    else {
-      if (FixedDiv(ld->dy, ld->dx) > 0)
+    } else {
+      if (FixedDiv(ld->dy, ld->dx) > 0) {
         ld->slopetype = ST_POSITIVE;
-      else
+      } else {
         ld->slopetype = ST_NEGATIVE;
+      }
     }
 
     if (v1->x < v2->x) {
@@ -371,15 +375,17 @@ void P_LoadLineDefs(int lump) {
     ld->sidenum[0] = SHORT(mld->sidenum[0]);
     ld->sidenum[1] = SHORT(mld->sidenum[1]);
 
-    if (ld->sidenum[0] != -1)
+    if (ld->sidenum[0] != -1) {
       ld->frontsector = sides[ld->sidenum[0]].sector;
-    else
+    } else {
       ld->frontsector = 0;
+    }
 
-    if (ld->sidenum[1] != -1)
+    if (ld->sidenum[1] != -1) {
       ld->backsector = sides[ld->sidenum[1]].sector;
-    else
+    } else {
       ld->backsector = 0;
+    }
   }
 
   Z_Free(data);
@@ -424,8 +430,9 @@ void P_LoadBlockMap(int lump) {
   blockmap = blockmaplump + 4;
   count = W_LumpLength(lump) / 2;
 
-  for (i = 0; i < count; i++)
+  for (i = 0; i < count; i++) {
     blockmaplump[i] = SHORT(blockmaplump[i]);
+  }
 
   bmaporgx = blockmaplump[0] << FRACBITS;
   bmaporgy = blockmaplump[1] << FRACBITS;
@@ -489,8 +496,9 @@ void P_GroupLines(void) {
         M_AddToBox(bbox, li->v2->x, li->v2->y);
       }
     }
-    if (linebuffer - sector->lines != sector->linecount)
+    if (linebuffer - sector->lines != sector->linecount) {
       I_Error("P_GroupLines: miscounted");
+    }
 
     // set the degenmobj_t to the middle of the bounding box
     sector->soundorg.x = (bbox[BOXRIGHT] + bbox[BOXLEFT]) / 2;
@@ -542,10 +550,11 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill) {
 
   // find map name
   if (gamemode == commercial) {
-    if (map < 10)
+    if (map < 10) {
       sprintf(lumpname, "map0%i", map);
-    else
+    } else {
       sprintf(lumpname, "map%i", map);
+    }
   } else {
     lumpname[0] = 'E';
     lumpname[1] = '0' + episode;
@@ -578,11 +587,12 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill) {
 
   // if deathmatch, randomly spawn the active players
   if (deathmatch) {
-    for (i = 0; i < MAXPLAYERS; i++)
+    for (i = 0; i < MAXPLAYERS; i++) {
       if (playeringame[i]) {
         players[i].mo = NULL;
         G_DeathMatchSpawnPlayer(i);
       }
+    }
   }
 
   // clear special respawning que
@@ -595,8 +605,9 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill) {
   //	UNUSED P_ConnectSubsectors ();
 
   // preload graphics
-  if (precache)
+  if (precache) {
     R_PrecacheLevel();
+  }
 
   // printf ("free memory: 0x%x\n", Z_FreeMemory());
 }

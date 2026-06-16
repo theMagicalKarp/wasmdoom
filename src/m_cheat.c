@@ -41,23 +41,26 @@ int cht_CheckCheat(cheatseq_t *cht, char key) {
 
   if (firsttime) {
     firsttime = 0;
-    for (i = 0; i < 256; i++)
+    for (i = 0; i < 256; i++) {
       cheat_xlate_table[i] = SCRAMBLE(i);
+    }
   }
 
-  if (!cht->p)
+  if (!cht->p) {
     cht->p = cht->sequence; // initialize if first time
+  }
 
-  if (*cht->p == 0)
+  if (*cht->p == 0) {
     *(cht->p++) = key;
-  else if (cheat_xlate_table[(unsigned char)key] == *cht->p)
+  } else if (cheat_xlate_table[(unsigned char)key] == *cht->p) {
     cht->p++;
-  else
+  } else {
     cht->p = cht->sequence;
+  }
 
-  if (*cht->p == 1)
+  if (*cht->p == 1) {
     cht->p++;
-  else if (*cht->p == 0xff) // end of sequence character
+  } else if (*cht->p == 0xff) // end of sequence character
   {
     cht->p = cht->sequence;
     rc = 1;
@@ -80,6 +83,7 @@ void cht_GetParam(cheatseq_t *cht, char *buffer) {
     *(p++) = 0;
   } while (c && *p != 0xff);
 
-  if (*p == 0xff)
+  if (*p == 0xff) {
     *buffer = 0;
+  }
 }

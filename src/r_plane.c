@@ -133,13 +133,14 @@ void R_MapPlane(int y, int x1, int x2) {
   ds_xfrac = viewx + FixedMul(finecosine[angle], length);
   ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
-  if (fixedcolormap)
+  if (fixedcolormap) {
     ds_colormap = fixedcolormap;
-  else {
+  } else {
     index = distance >> LIGHTZSHIFT;
 
-    if (index >= MAXLIGHTZ)
+    if (index >= MAXLIGHTZ) {
       index = MAXLIGHTZ - 1;
+    }
 
     ds_colormap = planezlight[index];
   }
@@ -198,11 +199,13 @@ visplane_t *R_FindPlane(fixed_t height, int picnum, int lightlevel) {
     }
   }
 
-  if (check < lastvisplane)
+  if (check < lastvisplane) {
     return check;
+  }
 
-  if (lastvisplane - visplanes == MAXVISPLANES)
+  if (lastvisplane - visplanes == MAXVISPLANES) {
     I_Error("R_FindPlane: no more visplanes");
+  }
 
   lastvisplane++;
 
@@ -243,9 +246,11 @@ visplane_t *R_CheckPlane(visplane_t *pl, int start, int stop) {
     intrh = stop;
   }
 
-  for (x = intrl; x <= intrh; x++)
-    if (pl->top[x] != 0xff)
+  for (x = intrl; x <= intrh; x++) {
+    if (pl->top[x] != 0xff) {
       break;
+    }
+  }
 
   if (x > intrh) {
     pl->minx = unionl;
@@ -304,19 +309,23 @@ void R_DrawPlanes(void) {
   int angle;
 
 #ifdef RANGECHECK
-  if (ds_p - drawsegs > MAXDRAWSEGS)
+  if (ds_p - drawsegs > MAXDRAWSEGS) {
     I_Error("R_DrawPlanes: drawsegs overflow (%i)", ds_p - drawsegs);
+  }
 
-  if (lastvisplane - visplanes > MAXVISPLANES)
+  if (lastvisplane - visplanes > MAXVISPLANES) {
     I_Error("R_DrawPlanes: visplane overflow (%i)", lastvisplane - visplanes);
+  }
 
-  if (lastopening - openings > MAXOPENINGS)
+  if (lastopening - openings > MAXOPENINGS) {
     I_Error("R_DrawPlanes: opening overflow (%i)", lastopening - openings);
+  }
 #endif
 
   for (pl = visplanes; pl < lastvisplane; pl++) {
-    if (pl->minx > pl->maxx)
+    if (pl->minx > pl->maxx) {
       continue;
+    }
 
     // sky flat
     if (pl->picnum == skyflatnum) {
@@ -349,11 +358,13 @@ void R_DrawPlanes(void) {
     planeheight = abs(pl->height - viewz);
     light = (pl->lightlevel >> LIGHTSEGSHIFT) + extralight;
 
-    if (light >= LIGHTLEVELS)
+    if (light >= LIGHTLEVELS) {
       light = LIGHTLEVELS - 1;
+    }
 
-    if (light < 0)
+    if (light < 0) {
       light = 0;
+    }
 
     planezlight = zlight[light];
 

@@ -131,13 +131,15 @@ void D_ProcessEvents(void) {
   event_t *ev;
 
   // IF STORE DEMO, DO NOT ACCEPT INPUT
-  if ((gamemode == commercial) && (W_CheckNumForName("map01") < 0))
+  if ((gamemode == commercial) && (W_CheckNumForName("map01") < 0)) {
     return;
+  }
 
   for (; eventtail != eventhead; eventtail = (++eventtail) & (MAXEVENTS - 1)) {
     ev = &events[eventtail];
-    if (M_Responder(ev))
+    if (M_Responder(ev)) {
       continue; // menu ate the event
+    }
     G_Responder(ev);
   }
 }
@@ -171,8 +173,9 @@ void D_Display(void) {
   boolean wipe;
   boolean redrawsbar;
 
-  if (nodrawers)
+  if (nodrawers) {
     return; // for comparative timing / profiling
+  }
 
   // A wipe is mid-animation: advance it, present frame, then yield.
   // We must skip the normal render path below, which would overwrite
@@ -207,23 +210,29 @@ void D_Display(void) {
   if (gamestate != wipegamestate) {
     wipe = true;
     wipe_StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
-  } else
+  } else {
     wipe = false;
+  }
 
-  if (gamestate == GS_LEVEL && gametic)
+  if (gamestate == GS_LEVEL && gametic) {
     HU_Erase();
+  }
 
   // do buffered drawing
   switch (gamestate) {
   case GS_LEVEL:
-    if (!gametic)
+    if (!gametic) {
       break;
-    if (automapactive)
+    }
+    if (automapactive) {
       AM_Drawer();
-    if (wipe || (viewheight != 200 && fullscreen))
+    }
+    if (wipe || (viewheight != 200 && fullscreen)) {
       redrawsbar = true;
-    if (inhelpscreensstate && !inhelpscreens)
+    }
+    if (inhelpscreensstate && !inhelpscreens) {
       redrawsbar = true; // just put away the help screen
+    }
     ST_Drawer(viewheight == 200, redrawsbar);
     fullscreen = viewheight == 200;
     break;
@@ -245,15 +254,18 @@ void D_Display(void) {
   I_UpdateNoBlit();
 
   // draw the view directly
-  if (gamestate == GS_LEVEL && !automapactive && gametic)
+  if (gamestate == GS_LEVEL && !automapactive && gametic) {
     R_RenderPlayerView(&players[displayplayer]);
+  }
 
-  if (gamestate == GS_LEVEL && gametic)
+  if (gamestate == GS_LEVEL && gametic) {
     HU_Drawer();
+  }
 
   // clean up border stuff
-  if (gamestate != oldgamestate && gamestate != GS_LEVEL)
+  if (gamestate != oldgamestate && gamestate != GS_LEVEL) {
     I_SetPalette(W_CacheLumpName("PLAYPAL", PU_CACHE));
+  }
 
   // see if the border needs to be initially drawn
   if (gamestate == GS_LEVEL && oldgamestate != GS_LEVEL) {
@@ -263,8 +275,9 @@ void D_Display(void) {
 
   // see if the border needs to be updated to the screen
   if (gamestate == GS_LEVEL && !automapactive && scaledviewwidth != 320) {
-    if (menuactive || menuactivestate || !viewactivestate)
+    if (menuactive || menuactivestate || !viewactivestate) {
       borderdrawcount = 3;
+    }
     if (borderdrawcount) {
       R_DrawViewBorder(); // erase old menu stuff
       borderdrawcount--;
@@ -278,10 +291,11 @@ void D_Display(void) {
 
   // draw pause pic
   if (paused) {
-    if (automapactive)
+    if (automapactive) {
       y = 4;
-    else
+    } else {
       y = viewwindowy + 4;
+    }
     V_DrawPatchDirect(viewwindowx + (scaledviewwidth - 68) / 2, y, 0,
                       W_CacheLumpName("M_PAUSE", PU_CACHE));
   }
@@ -350,8 +364,9 @@ char *pagename;
 // Handles timing for warped projection
 //
 void D_PageTicker(void) {
-  if (--pagetic < 0)
+  if (--pagetic < 0) {
     D_AdvanceDemo();
+  }
 }
 
 //
@@ -378,23 +393,26 @@ void D_DoAdvanceDemo(void) {
   paused = false;
   gameaction = ga_nothing;
 
-  if (gamemode == retail)
+  if (gamemode == retail) {
     demosequence = (demosequence + 1) % 7;
-  else
+  } else {
     demosequence = (demosequence + 1) % 6;
+  }
 
   switch (demosequence) {
   case 0:
-    if (gamemode == commercial)
+    if (gamemode == commercial) {
       pagetic = 35 * 11;
-    else
+    } else {
       pagetic = 170;
+    }
     gamestate = GS_DEMOSCREEN;
     pagename = "TITLEPIC";
-    if (gamemode == commercial)
+    if (gamemode == commercial) {
       S_StartMusic(mus_dm2ttl);
-    else
+    } else {
       S_StartMusic(mus_intro);
+    }
     break;
   case 1:
     G_DeferedPlayDemo("demo1");
@@ -416,10 +434,11 @@ void D_DoAdvanceDemo(void) {
     } else {
       pagetic = 200;
 
-      if (gamemode == retail)
+      if (gamemode == retail) {
         pagename = "CREDIT";
-      else
+      } else {
         pagename = "HELP2";
+      }
     }
     break;
   case 5:
@@ -579,12 +598,15 @@ void D_DoomMain(void) {
     extern int forwardmove[2];
     extern int sidemove[2];
 
-    if (p < myargc - 1)
+    if (p < myargc - 1) {
       scale = atoi(myargv[p + 1]);
-    if (scale < 10)
+    }
+    if (scale < 10) {
       scale = 10;
-    if (scale > 400)
+    }
+    if (scale > 400) {
       scale = 400;
+    }
     I_Info("turbo scale: %i%%", scale);
     forwardmove[0] = forwardmove[0] * scale / 100;
     forwardmove[1] = forwardmove[1] * scale / 100;

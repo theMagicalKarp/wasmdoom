@@ -179,8 +179,9 @@ void F_StartFinale(void) {
 }
 
 boolean F_Responder(event_t *event) {
-  if (finalestage == 2)
+  if (finalestage == 2) {
     return F_CastResponder(event);
+  }
 
   return false;
 }
@@ -194,15 +195,18 @@ void F_Ticker(void) {
   // check for skipping
   if ((gamemode == commercial) && (finalecount > 50)) {
     // go on to the next level
-    for (i = 0; i < MAXPLAYERS; i++)
-      if (players[i].cmd.buttons)
+    for (i = 0; i < MAXPLAYERS; i++) {
+      if (players[i].cmd.buttons) {
         break;
+      }
+    }
 
     if (i < MAXPLAYERS) {
-      if (gamemap == 30)
+      if (gamemap == 30) {
         F_StartCast();
-      else
+      } else {
         gameaction = ga_worlddone;
+      }
     }
   }
 
@@ -214,15 +218,17 @@ void F_Ticker(void) {
     return;
   }
 
-  if (gamemode == commercial)
+  if (gamemode == commercial) {
     return;
+  }
 
   if (!finalestage && finalecount > strlen(finaletext) * TEXTSPEED + TEXTWAIT) {
     finalecount = 0;
     finalestage = 1;
     wipegamestate = -1; // force a wipe
-    if (gameepisode == 3)
+    if (gameepisode == 3) {
       S_StartMusic(mus_bunny);
+    }
   }
 }
 
@@ -267,12 +273,14 @@ void F_TextWrite(void) {
   ch = finaletext;
 
   count = (finalecount - 10) / TEXTSPEED;
-  if (count < 0)
+  if (count < 0) {
     count = 0;
+  }
   for (; count; count--) {
     c = *ch++;
-    if (!c)
+    if (!c) {
       break;
+    }
     if (c == '\n') {
       cx = 10;
       cy += 11;
@@ -286,8 +294,9 @@ void F_TextWrite(void) {
     }
 
     w = SHORT(hu_font[c]->width);
-    if (cx + w > SCREENWIDTH)
+    if (cx + w > SCREENWIDTH) {
       break;
+    }
     V_DrawPatch(cx, cy, 0, hu_font[c]);
     cx += w;
   }
@@ -356,23 +365,27 @@ void F_CastTicker(void) {
   int st;
   int sfx;
 
-  if (--casttics > 0)
+  if (--casttics > 0) {
     return; // not time to change state yet
+  }
 
   if (caststate->tics == -1 || caststate->nextstate == S_NULL) {
     // switch from deathstate to next monster
     castnum++;
     castdeath = false;
-    if (castorder[castnum].name == NULL)
+    if (castorder[castnum].name == NULL) {
       castnum = 0;
-    if (mobjinfo[castorder[castnum].type].seesound)
+    }
+    if (mobjinfo[castorder[castnum].type].seesound) {
       S_StartSound(NULL, mobjinfo[castorder[castnum].type].seesound);
+    }
     caststate = &states[mobjinfo[castorder[castnum].type].seestate];
     castframes = 0;
   } else {
     // just advance to next state in animation
-    if (caststate == &states[S_PLAY_ATK1])
+    if (caststate == &states[S_PLAY_ATK1]) {
       goto stopattack; // Oh, gross hack!
+    }
     st = caststate->nextstate;
     caststate = &states[st];
     castframes++;
@@ -444,23 +457,26 @@ void F_CastTicker(void) {
       break;
     }
 
-    if (sfx)
+    if (sfx) {
       S_StartSound(NULL, sfx);
+    }
   }
 
   if (castframes == 12) {
     // go into attack frame
     castattacking = true;
-    if (castonmelee)
+    if (castonmelee) {
       caststate = &states[mobjinfo[castorder[castnum].type].meleestate];
-    else
+    } else {
       caststate = &states[mobjinfo[castorder[castnum].type].missilestate];
+    }
     castonmelee ^= 1;
     if (caststate == &states[S_NULL]) {
-      if (castonmelee)
+      if (castonmelee) {
         caststate = &states[mobjinfo[castorder[castnum].type].meleestate];
-      else
+      } else {
         caststate = &states[mobjinfo[castorder[castnum].type].missilestate];
+      }
     }
   }
 
@@ -475,8 +491,9 @@ void F_CastTicker(void) {
   }
 
   casttics = caststate->tics;
-  if (casttics == -1)
+  if (casttics == -1) {
     casttics = 15;
+  }
 }
 
 //
@@ -484,11 +501,13 @@ void F_CastTicker(void) {
 //
 
 boolean F_CastResponder(event_t *ev) {
-  if (ev->type != ev_keydown)
+  if (ev->type != ev_keydown) {
     return false;
+  }
 
-  if (castdeath)
+  if (castdeath) {
     return true; // already in dying frames
+  }
 
   // go into death frame
   castdeath = true;
@@ -496,8 +515,9 @@ boolean F_CastResponder(event_t *ev) {
   casttics = caststate->tics;
   castframes = 0;
   castattacking = false;
-  if (mobjinfo[castorder[castnum].type].deathsound)
+  if (mobjinfo[castorder[castnum].type].deathsound) {
     S_StartSound(NULL, mobjinfo[castorder[castnum].type].deathsound);
+  }
 
   return true;
 }
@@ -515,8 +535,9 @@ void F_CastPrint(char *text) {
 
   while (ch) {
     c = *ch++;
-    if (!c)
+    if (!c) {
       break;
+    }
     c = toupper(c) - HU_FONTSTART;
     if (c < 0 || c > HU_FONTSIZE) {
       width += 4;
@@ -532,8 +553,9 @@ void F_CastPrint(char *text) {
   ch = text;
   while (ch) {
     c = *ch++;
-    if (!c)
+    if (!c) {
       break;
+    }
     c = toupper(c) - HU_FONTSTART;
     if (c < 0 || c > HU_FONTSIZE) {
       cx += 4;
@@ -570,10 +592,11 @@ void F_CastDrawer(void) {
   flip = (boolean)sprframe->flip[0];
 
   patch = W_CacheLumpNum(lump + firstspritelump, PU_CACHE);
-  if (flip)
+  if (flip) {
     V_DrawPatchFlipped(160, 170, 0, patch);
-  else
+  } else {
     V_DrawPatch(160, 170, 0, patch);
+  }
 }
 
 //
@@ -621,20 +644,24 @@ void F_BunnyScroll(void) {
   V_MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
   scrolled = 320 - (finalecount - 230) / 2;
-  if (scrolled > 320)
+  if (scrolled > 320) {
     scrolled = 320;
-  if (scrolled < 0)
+  }
+  if (scrolled < 0) {
     scrolled = 0;
-
-  for (x = 0; x < SCREENWIDTH; x++) {
-    if (x + scrolled < 320)
-      F_DrawPatchCol(x, p1, x + scrolled);
-    else
-      F_DrawPatchCol(x, p2, x + scrolled - 320);
   }
 
-  if (finalecount < 1130)
+  for (x = 0; x < SCREENWIDTH; x++) {
+    if (x + scrolled < 320) {
+      F_DrawPatchCol(x, p1, x + scrolled);
+    } else {
+      F_DrawPatchCol(x, p2, x + scrolled - 320);
+    }
+  }
+
+  if (finalecount < 1130) {
     return;
+  }
   if (finalecount < 1180) {
     V_DrawPatch((SCREENWIDTH - 13 * 8) / 2, (SCREENHEIGHT - 8 * 8) / 2, 0,
                 W_CacheLumpName("END0", PU_CACHE));
@@ -643,8 +670,9 @@ void F_BunnyScroll(void) {
   }
 
   stage = (finalecount - 1180) / 5;
-  if (stage > 6)
+  if (stage > 6) {
     stage = 6;
+  }
   if (stage > laststage) {
     S_StartSound(NULL, sfx_pistol);
     laststage = stage;
@@ -664,15 +692,16 @@ void F_Drawer(void) {
     return;
   }
 
-  if (!finalestage)
+  if (!finalestage) {
     F_TextWrite();
-  else {
+  } else {
     switch (gameepisode) {
     case 1:
-      if (gamemode == retail)
+      if (gamemode == retail) {
         V_DrawPatch(0, 0, 0, W_CacheLumpName("CREDIT", PU_CACHE));
-      else
+      } else {
         V_DrawPatch(0, 0, 0, W_CacheLumpName("HELP2", PU_CACHE));
+      }
       break;
     case 2:
       V_DrawPatch(0, 0, 0, W_CacheLumpName("VICTORY2", PU_CACHE));

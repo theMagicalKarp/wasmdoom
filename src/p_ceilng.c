@@ -163,8 +163,9 @@ int EV_DoCeiling(line_t *line, ceiling_e type) {
 
   while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0) {
     sec = &sectors[secnum];
-    if (sec->specialdata)
+    if (sec->specialdata) {
       continue;
+    }
 
     // new door thinker
     rtn = 1;
@@ -191,8 +192,9 @@ int EV_DoCeiling(line_t *line, ceiling_e type) {
     case lowerAndCrush:
     case lowerToFloor:
       ceiling->bottomheight = sec->floorheight;
-      if (type != lowerToFloor)
+      if (type != lowerToFloor) {
         ceiling->bottomheight += 8 * FRACUNIT;
+      }
       ceiling->direction = -1;
       ceiling->speed = CEILSPEED;
       break;

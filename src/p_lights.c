@@ -43,15 +43,17 @@ static const char rcsid[] =
 void T_FireFlicker(fireflicker_t *flick) {
   int amount;
 
-  if (--flick->count)
+  if (--flick->count) {
     return;
+  }
 
   amount = (P_Random() & 3) * 16;
 
-  if (flick->sector->lightlevel - amount < flick->minlight)
+  if (flick->sector->lightlevel - amount < flick->minlight) {
     flick->sector->lightlevel = flick->minlight;
-  else
+  } else {
     flick->sector->lightlevel = flick->maxlight - amount;
+  }
 
   flick->count = 4;
 }
@@ -86,8 +88,9 @@ void P_SpawnFireFlicker(sector_t *sector) {
 // Do flashing lights.
 //
 void T_LightFlash(lightflash_t *flash) {
-  if (--flash->count)
+  if (--flash->count) {
     return;
+  }
 
   if (flash->sector->lightlevel == flash->maxlight) {
     flash->sector->lightlevel = flash->minlight;
@@ -131,8 +134,9 @@ void P_SpawnLightFlash(sector_t *sector) {
 // T_StrobeFlash
 //
 void T_StrobeFlash(strobe_t *flash) {
-  if (--flash->count)
+  if (--flash->count) {
     return;
+  }
 
   if (flash->sector->lightlevel == flash->minlight) {
     flash->sector->lightlevel = flash->maxlight;
@@ -162,16 +166,18 @@ void P_SpawnStrobeFlash(sector_t *sector, int fastOrSlow, int inSync) {
   flash->maxlight = sector->lightlevel;
   flash->minlight = P_FindMinSurroundingLight(sector, sector->lightlevel);
 
-  if (flash->minlight == flash->maxlight)
+  if (flash->minlight == flash->maxlight) {
     flash->minlight = 0;
+  }
 
   // nothing special about it during gameplay
   sector->special = 0;
 
-  if (!inSync)
+  if (!inSync) {
     flash->count = (P_Random() & 7) + 1;
-  else
+  } else {
     flash->count = 1;
+  }
 }
 
 //
@@ -184,8 +190,9 @@ void EV_StartLightStrobing(line_t *line) {
   secnum = -1;
   while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0) {
     sec = &sectors[secnum];
-    if (sec->specialdata)
+    if (sec->specialdata) {
       continue;
+    }
 
     P_SpawnStrobeFlash(sec, SLOWDARK, 0);
   }
@@ -210,10 +217,12 @@ void EV_TurnTagLightsOff(line_t *line) {
       for (i = 0; i < sector->linecount; i++) {
         templine = sector->lines[i];
         tsec = getNextSector(templine, sector);
-        if (!tsec)
+        if (!tsec) {
           continue;
-        if (tsec->lightlevel < min)
+        }
+        if (tsec->lightlevel < min) {
           min = tsec->lightlevel;
+        }
       }
       sector->lightlevel = min;
     }
@@ -242,11 +251,13 @@ void EV_LightTurnOn(line_t *line, int bright) {
           templine = sector->lines[j];
           temp = getNextSector(templine, sector);
 
-          if (!temp)
+          if (!temp) {
             continue;
+          }
 
-          if (temp->lightlevel > bright)
+          if (temp->lightlevel > bright) {
             bright = temp->lightlevel;
+          }
         }
       }
       sector->lightlevel = bright;

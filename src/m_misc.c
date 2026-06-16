@@ -68,12 +68,14 @@ int M_DrawText(int x, int y, boolean direct, char *string) {
     }
 
     w = SHORT(hu_font[c]->width);
-    if (x + w > SCREENWIDTH)
+    if (x + w > SCREENWIDTH) {
       break;
-    if (direct)
+    }
+    if (direct) {
       V_DrawPatchDirect(x, y, 0, hu_font[c]);
-    else
+    } else {
       V_DrawPatch(x, y, 0, hu_font[c]);
+    }
     x += w;
   }
 

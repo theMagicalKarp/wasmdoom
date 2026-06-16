@@ -49,9 +49,11 @@ void wipe_shittyColMajorXform(short *array, int width, int height) {
 
   dest = (short *)Z_Malloc(width * height * 2, PU_STATIC, 0);
 
-  for (y = 0; y < height; y++)
-    for (x = 0; x < width; x++)
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
       dest[x * height + y] = array[y * width + x];
+    }
+  }
 
   memcpy(array, dest, width * height * 2);
 
@@ -77,17 +79,19 @@ int wipe_doColorXForm(int width, int height, int ticks) {
     if (*w != *e) {
       if (*w > *e) {
         newval = *w - ticks;
-        if (newval < *e)
+        if (newval < *e) {
           *w = *e;
-        else
+        } else {
           *w = newval;
+        }
         changed = true;
       } else if (*w < *e) {
         newval = *w + ticks;
-        if (newval > *e)
+        if (newval > *e) {
           *w = *e;
-        else
+        } else {
           *w = newval;
+        }
         changed = true;
       }
     }
@@ -120,10 +124,11 @@ int wipe_initMelt(int width, int height, int ticks) {
   for (i = 1; i < width; i++) {
     r = (M_Random() % 3) - 1;
     y[i] = y[i - 1] + r;
-    if (y[i] > 0)
+    if (y[i] > 0) {
       y[i] = 0;
-    else if (y[i] == -16)
+    } else if (y[i] == -16) {
       y[i] = -15;
+    }
   }
 
   return 0;
@@ -148,8 +153,9 @@ int wipe_doMelt(int width, int height, int ticks) {
         done = false;
       } else if (y[i] < height) {
         dy = (y[i] < 16) ? y[i] + 1 : 8;
-        if (y[i] + dy >= height)
+        if (y[i] + dy >= height) {
           dy = height - y[i];
+        }
         s = &((short *)wipe_scr_end)[i * height + y[i]];
         d = &((short *)wipe_scr)[y[i] * width + i];
         idx = 0;

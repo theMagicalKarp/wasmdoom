@@ -87,8 +87,9 @@ void P_RunThinkers(void) {
       currentthinker->prev->next = currentthinker->next;
       Z_Free(currentthinker);
     } else {
-      if (currentthinker->function.acp1)
+      if (currentthinker->function.acp1) {
         currentthinker->function.acp1(currentthinker);
+      }
     }
     currentthinker = currentthinker->next;
   }
@@ -102,8 +103,9 @@ void P_Ticker(void) {
   int i;
 
   // run the tic
-  if (paused)
+  if (paused) {
     return;
+  }
 
   // pause if in menu and at least one tic has been run
   if (!netgame && menuactive && !demoplayback &&
@@ -111,9 +113,11 @@ void P_Ticker(void) {
     return;
   }
 
-  for (i = 0; i < MAXPLAYERS; i++)
-    if (playeringame[i])
+  for (i = 0; i < MAXPLAYERS; i++) {
+    if (playeringame[i]) {
       P_PlayerThink(&players[i]);
+    }
+  }
 
   P_RunThinkers();
   P_UpdateSpecials();

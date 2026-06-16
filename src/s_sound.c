@@ -147,15 +147,17 @@ void S_Init(int sfxVolume, int musicVolume) {
       (channel_t *)Z_Malloc(numChannels * sizeof(channel_t), PU_STATIC, 0);
 
   // Free all channels for use
-  for (i = 0; i < numChannels; i++)
+  for (i = 0; i < numChannels; i++) {
     channels[i].sfxinfo = 0;
+  }
 
   // no sounds are playing, and they are not mus_paused
   mus_paused = 0;
 
   // Note that sounds have not been cached (yet).
-  for (i = 1; i < NUMSFX; i++)
+  for (i = 1; i < NUMSFX; i++) {
     S_sfx[i].lumpnum = S_sfx[i].usefulness = -1;
+  }
 }
 
 //
@@ -169,16 +171,18 @@ void S_Start(void) {
 
   // kill all playing sounds at start of level
   //  (trust me - a good idea)
-  for (cnum = 0; cnum < numChannels; cnum++)
-    if (channels[cnum].sfxinfo)
+  for (cnum = 0; cnum < numChannels; cnum++) {
+    if (channels[cnum].sfxinfo) {
       S_StopChannel(cnum);
+    }
+  }
 
   // start new music for the level
   mus_paused = 0;
 
-  if (gamemode == commercial)
+  if (gamemode == commercial) {
     mnum = mus_runnin + gamemap - 1;
-  else {
+  } else {
     int spmus[] = {
         // Song - Who? - Where?
 
@@ -193,10 +197,11 @@ void S_Start(void) {
         mus_e1m9  // Tim		e4m9
     };
 
-    if (gameepisode < 4)
+    if (gameepisode < 4) {
       mnum = mus_e1m1 + (gameepisode - 1) * 9 + gamemap - 1;
-    else
+    } else {
       mnum = spmus[gamemap - 1];
+    }
   }
 
   // HACK FOR COMMERCIAL
@@ -225,8 +230,9 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
            sfx_id, S_sfx[sfx_id].name );*/
 
   // check for bogus sound #
-  if (sfx_id < 1 || sfx_id > NUMSFX)
+  if (sfx_id < 1 || sfx_id > NUMSFX) {
     I_Error("Bad sfx #: %d", sfx_id);
+  }
 
   sfx = &S_sfx[sfx_id];
 
@@ -236,11 +242,13 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
     priority = sfx->priority;
     volume += sfx->volume;
 
-    if (volume < 1)
+    if (volume < 1) {
       return;
+    }
 
-    if (volume > snd_SfxVolume)
+    if (volume > snd_SfxVolume) {
       volume = snd_SfxVolume;
+    }
   } else {
     pitch = NORM_PITCH;
     priority = NORM_PRIORITY;
@@ -257,8 +265,9 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
       sep = NORM_SEP;
     }
 
-    if (!rc)
+    if (!rc) {
       return;
+    }
   } else {
     sep = NORM_SEP;
   }
@@ -267,17 +276,19 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
   if (sfx_id >= sfx_sawup && sfx_id <= sfx_sawhit) {
     pitch += 8 - (M_Random() & 15);
 
-    if (pitch < 0)
+    if (pitch < 0) {
       pitch = 0;
-    else if (pitch > 255)
+    } else if (pitch > 255) {
       pitch = 255;
+    }
   } else if (sfx_id != sfx_itemup && sfx_id != sfx_tink) {
     pitch += 16 - (M_Random() & 31);
 
-    if (pitch < 0)
+    if (pitch < 0) {
       pitch = 0;
-    else if (pitch > 255)
+    } else if (pitch > 255) {
       pitch = 255;
+    }
   }
 
   // kill old sound
@@ -286,8 +297,9 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
   // try to find a channel
   cnum = S_getChannel(origin, sfx);
 
-  if (cnum < 0)
+  if (cnum < 0) {
     return;
+  }
 
   //
   // This is supposed to handle the loading/caching.
@@ -296,12 +308,14 @@ void S_StartSoundAtVolume(void *origin_p, int sfx_id, int volume) {
   //
 
   // get lumpnum if necessary
-  if (sfx->lumpnum < 0)
+  if (sfx->lumpnum < 0) {
     sfx->lumpnum = I_GetSfxLumpNum(sfx);
+  }
 
   // increase the usefulness
-  if (sfx->usefulness++ < 0)
+  if (sfx->usefulness++ < 0) {
     sfx->usefulness = 1;
+  }
 
   // Assigns the handle to one of the channels in the
   //  mix/output buffer.
@@ -386,8 +400,9 @@ void S_UpdateSounds(void *listener_p) {
 
           if (!audible) {
             S_StopChannel(cnum);
-          } else
+          } else {
             I_UpdateSoundParams(c->handle, volume, sep, pitch);
+          }
         }
       } else {
         // if channel is allocated but sound has stopped,
@@ -410,8 +425,9 @@ void S_SetMusicVolume(int volume) {
 
 void S_SetSfxVolume(int volume) {
 
-  if (volume < 0 || volume > 127)
+  if (volume < 0 || volume > 127) {
     I_Error("Attempt to set sfx volume at %d", volume);
+  }
 
   snd_SfxVolume = volume;
 }
@@ -427,11 +443,13 @@ void S_ChangeMusic(int musicnum, int looping) {
 
   if ((musicnum <= mus_None) || (musicnum >= NUMMUSIC)) {
     I_Error("Bad music number %d", musicnum);
-  } else
+  } else {
     music = &S_music[musicnum];
+  }
 
-  if (mus_playing == music)
+  if (mus_playing == music) {
     return;
+  }
 
   // shutdown old music
   S_StopMusic();
@@ -454,8 +472,9 @@ void S_ChangeMusic(int musicnum, int looping) {
 
 void S_StopMusic(void) {
   if (mus_playing) {
-    if (mus_paused)
+    if (mus_paused) {
       I_ResumeSong(mus_playing->handle);
+    }
 
     I_StopSong(mus_playing->handle);
     I_UnRegisterSong(mus_playing->handle);
@@ -520,10 +539,11 @@ int S_AdjustSoundParams(mobj_t *listener, mobj_t *source, int *vol, int *sep,
   // angle of source to listener
   angle = R_PointToAngle2(listener->x, listener->y, source->x, source->y);
 
-  if (angle > listener->angle)
+  if (angle > listener->angle) {
     angle = angle - listener->angle;
-  else
+  } else {
     angle = angle + (0xffffffff - listener->angle);
+  }
 
   angle >>= ANGLETOFINESHIFT;
 
@@ -534,8 +554,9 @@ int S_AdjustSoundParams(mobj_t *listener, mobj_t *source, int *vol, int *sep,
   if (approx_dist < S_CLOSE_DIST) {
     *vol = snd_SfxVolume;
   } else if (gamemap == 8) {
-    if (approx_dist > S_CLIPPING_DIST)
+    if (approx_dist > S_CLIPPING_DIST) {
       approx_dist = S_CLIPPING_DIST;
+    }
 
     *vol = 15 + ((snd_SfxVolume - 15) *
                  ((S_CLIPPING_DIST - approx_dist) >> FRACBITS)) /
@@ -561,9 +582,9 @@ int S_getChannel(void *origin, sfxinfo_t *sfxinfo) {
 
   // Find an open channel
   for (cnum = 0; cnum < numChannels; cnum++) {
-    if (!channels[cnum].sfxinfo)
+    if (!channels[cnum].sfxinfo) {
       break;
-    else if (origin && channels[cnum].origin == origin) {
+    } else if (origin && channels[cnum].origin == origin) {
       S_StopChannel(cnum);
       break;
     }
@@ -572,9 +593,11 @@ int S_getChannel(void *origin, sfxinfo_t *sfxinfo) {
   // None available
   if (cnum == numChannels) {
     // Look for lower priority
-    for (cnum = 0; cnum < numChannels; cnum++)
-      if (channels[cnum].sfxinfo->priority >= sfxinfo->priority)
+    for (cnum = 0; cnum < numChannels; cnum++) {
+      if (channels[cnum].sfxinfo->priority >= sfxinfo->priority) {
         break;
+      }
+    }
 
     if (cnum == numChannels) {
       // FUCK!  No lower priority.  Sorry, Charlie.

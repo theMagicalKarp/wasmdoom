@@ -459,8 +459,9 @@ void ST_refreshBackground(void) {
   if (st_statusbaron) {
     V_DrawPatch(ST_X, 0, BG, sbar);
 
-    if (netgame)
+    if (netgame) {
       V_DrawPatch(ST_FX, 0, BG, faceback);
+    }
 
     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
   }
@@ -498,24 +499,28 @@ boolean ST_Responder(event_t *ev) {
       if (cht_CheckCheat(&cheat_god, ev->data1)) {
         plyr->cheats ^= CF_GODMODE;
         if (plyr->cheats & CF_GODMODE) {
-          if (plyr->mo)
+          if (plyr->mo) {
             plyr->mo->health = 100;
+          }
 
           plyr->health = 100;
           plyr->message = STSTR_DQDON;
-        } else
+        } else {
           plyr->message = STSTR_DQDOFF;
+        }
       }
       // 'fa' cheat for killer fucking arsenal
       else if (cht_CheckCheat(&cheat_ammonokey, ev->data1)) {
         plyr->armorpoints = 200;
         plyr->armortype = 2;
 
-        for (i = 0; i < NUMWEAPONS; i++)
+        for (i = 0; i < NUMWEAPONS; i++) {
           plyr->weaponowned[i] = true;
+        }
 
-        for (i = 0; i < NUMAMMO; i++)
+        for (i = 0; i < NUMAMMO; i++) {
           plyr->ammo[i] = plyr->maxammo[i];
+        }
 
         plyr->message = STSTR_FAADDED;
       }
@@ -524,14 +529,17 @@ boolean ST_Responder(event_t *ev) {
         plyr->armorpoints = 200;
         plyr->armortype = 2;
 
-        for (i = 0; i < NUMWEAPONS; i++)
+        for (i = 0; i < NUMWEAPONS; i++) {
           plyr->weaponowned[i] = true;
+        }
 
-        for (i = 0; i < NUMAMMO; i++)
+        for (i = 0; i < NUMAMMO; i++) {
           plyr->ammo[i] = plyr->maxammo[i];
+        }
 
-        for (i = 0; i < NUMCARDS; i++)
+        for (i = 0; i < NUMCARDS; i++) {
           plyr->cards[i] = true;
+        }
 
         plyr->message = STSTR_KFAADDED;
       }
@@ -547,17 +555,19 @@ boolean ST_Responder(event_t *ev) {
         if (gamemode == commercial) {
           musnum = mus_runnin + (buf[0] - '0') * 10 + buf[1] - '0' - 1;
 
-          if (((buf[0] - '0') * 10 + buf[1] - '0') > 35)
+          if (((buf[0] - '0') * 10 + buf[1] - '0') > 35) {
             plyr->message = STSTR_NOMUS;
-          else
+          } else {
             S_ChangeMusic(musnum, 1);
+          }
         } else {
           musnum = mus_e1m1 + (buf[0] - '1') * 9 + (buf[1] - '1');
 
-          if (((buf[0] - '1') * 9 + buf[1] - '1') > 31)
+          if (((buf[0] - '1') * 9 + buf[1] - '1') > 31) {
             plyr->message = STSTR_NOMUS;
-          else
+          } else {
             S_ChangeMusic(musnum, 1);
+          }
         }
       }
       // Simplified, accepting both "noclip" and "idspispopd".
@@ -566,20 +576,22 @@ boolean ST_Responder(event_t *ev) {
                cht_CheckCheat(&cheat_commercial_noclip, ev->data1)) {
         plyr->cheats ^= CF_NOCLIP;
 
-        if (plyr->cheats & CF_NOCLIP)
+        if (plyr->cheats & CF_NOCLIP) {
           plyr->message = STSTR_NCON;
-        else
+        } else {
           plyr->message = STSTR_NCOFF;
+        }
       }
       // 'behold?' power-up cheats
       for (i = 0; i < 6; i++) {
         if (cht_CheckCheat(&cheat_powerup[i], ev->data1)) {
-          if (!plyr->powers[i])
+          if (!plyr->powers[i]) {
             P_GivePower(plyr, i);
-          else if (i != pw_strength)
+          } else if (i != pw_strength) {
             plyr->powers[i] = 1;
-          else
+          } else {
             plyr->powers[i] = 0;
+          }
 
           plyr->message = STSTR_BEHOLDX;
         }
@@ -622,24 +634,30 @@ boolean ST_Responder(event_t *ev) {
       }
 
       // Catch invalid maps.
-      if (epsd < 1)
+      if (epsd < 1) {
         return false;
+      }
 
-      if (map < 1)
+      if (map < 1) {
         return false;
+      }
 
       // Ohmygod - this is not going to work.
-      if ((gamemode == retail) && ((epsd > 4) || (map > 9)))
+      if ((gamemode == retail) && ((epsd > 4) || (map > 9))) {
         return false;
+      }
 
-      if ((gamemode == registered) && ((epsd > 3) || (map > 9)))
+      if ((gamemode == registered) && ((epsd > 3) || (map > 9))) {
         return false;
+      }
 
-      if ((gamemode == shareware) && ((epsd > 1) || (map > 9)))
+      if ((gamemode == shareware) && ((epsd > 1) || (map > 9))) {
         return false;
+      }
 
-      if ((gamemode == commercial) && ((epsd > 1) || (map > 34)))
+      if ((gamemode == commercial) && ((epsd > 1) || (map > 34))) {
         return false;
+      }
 
       // So be it.
       plyr->message = STSTR_CLEV;
@@ -763,16 +781,17 @@ void ST_updateFaceWidget(void) {
   if (priority < 6) {
     // rapid firing
     if (plyr->attackdown) {
-      if (lastattackdown == -1)
+      if (lastattackdown == -1) {
         lastattackdown = ST_RAMPAGEDELAY;
-      else if (!--lastattackdown) {
+      } else if (!--lastattackdown) {
         priority = 5;
         st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
         st_facecount = 1;
         lastattackdown = 1;
       }
-    } else
+    } else {
       lastattackdown = -1;
+    }
   }
 
   if (priority < 5) {
@@ -802,10 +821,11 @@ void ST_updateWidgets(void) {
   // must redirect the pointer if the ready weapon has changed.
   //  if (w_ready.data != plyr->readyweapon)
   //  {
-  if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+  if (weaponinfo[plyr->readyweapon].ammo == am_noammo) {
     w_ready.num = &largeammo;
-  else
+  } else {
     w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+  }
   //{
   // static int tic=0;
   // static int dir=-1;
@@ -826,8 +846,9 @@ void ST_updateWidgets(void) {
   for (i = 0; i < 3; i++) {
     keyboxes[i] = plyr->cards[i] ? i : -1;
 
-    if (plyr->cards[i + 3])
+    if (plyr->cards[i + 3]) {
       keyboxes[i] = i + 3;
+    }
   }
 
   // refresh everything if this is him coming back to life
@@ -844,15 +865,17 @@ void ST_updateWidgets(void) {
   st_fragscount = 0;
 
   for (i = 0; i < MAXPLAYERS; i++) {
-    if (i != consoleplayer)
+    if (i != consoleplayer) {
       st_fragscount += plyr->frags[i];
-    else
+    } else {
       st_fragscount -= plyr->frags[i];
+    }
   }
 
   // get rid of chat window if up because of message
-  if (!--st_msgcounter)
+  if (!--st_msgcounter) {
     st_chat = st_oldchat;
+  }
 }
 
 void ST_Ticker(void) {
@@ -878,15 +901,17 @@ void ST_doPaletteStuff(void) {
     // slowly fade the berzerk out
     bzc = 12 - (plyr->powers[pw_strength] >> 6);
 
-    if (bzc > cnt)
+    if (bzc > cnt) {
       cnt = bzc;
+    }
   }
 
   if (cnt) {
     palette = (cnt + 7) >> 3;
 
-    if (palette >= NUMREDPALS)
+    if (palette >= NUMREDPALS) {
       palette = NUMREDPALS - 1;
+    }
 
     palette += STARTREDPALS;
   }
@@ -894,16 +919,19 @@ void ST_doPaletteStuff(void) {
   else if (plyr->bonuscount) {
     palette = (plyr->bonuscount + 7) >> 3;
 
-    if (palette >= NUMBONUSPALS)
+    if (palette >= NUMBONUSPALS) {
       palette = NUMBONUSPALS - 1;
+    }
 
     palette += STARTBONUSPALS;
   }
 
-  else if (plyr->powers[pw_ironfeet] > 4 * 32 || plyr->powers[pw_ironfeet] & 8)
+  else if (plyr->powers[pw_ironfeet] > 4 * 32 ||
+           plyr->powers[pw_ironfeet] & 8) {
     palette = RADIATIONPAL;
-  else
+  } else {
     palette = 0;
+  }
 
   if (palette != st_palette) {
     st_palette = palette;
@@ -933,13 +961,15 @@ void ST_drawWidgets(boolean refresh) {
 
   STlib_updateBinIcon(&w_armsbg, refresh);
 
-  for (i = 0; i < 6; i++)
+  for (i = 0; i < 6; i++) {
     STlib_updateMultIcon(&w_arms[i], refresh);
+  }
 
   STlib_updateMultIcon(&w_faces, refresh);
 
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++) {
     STlib_updateMultIcon(&w_keyboxes[i], refresh);
+  }
 
   STlib_updateNum(&w_frags, refresh);
 }
@@ -969,11 +999,13 @@ void ST_Drawer(boolean fullscreen, boolean refresh) {
   ST_doPaletteStuff();
 
   // If just after ST_Start(), refresh all
-  if (st_firsttime)
+  if (st_firsttime) {
     ST_doRefresh();
+  }
   // Otherwise, update as little as possible
-  else
+  else {
     ST_diffDraw();
+  }
 }
 
 void ST_loadGraphics(void) {
@@ -1067,18 +1099,21 @@ void ST_unloadGraphics(void) {
   Z_ChangeTag(armsbg, PU_CACHE);
 
   // unload gray #'s
-  for (i = 0; i < 6; i++)
+  for (i = 0; i < 6; i++) {
     Z_ChangeTag(arms[i][0], PU_CACHE);
+  }
 
   // unload the key cards
-  for (i = 0; i < NUMCARDS; i++)
+  for (i = 0; i < NUMCARDS; i++) {
     Z_ChangeTag(keys[i], PU_CACHE);
+  }
 
   Z_ChangeTag(sbar, PU_CACHE);
   Z_ChangeTag(faceback, PU_CACHE);
 
-  for (i = 0; i < ST_NUMFACES; i++)
+  for (i = 0; i < ST_NUMFACES; i++) {
     Z_ChangeTag(faces[i], PU_CACHE);
+  }
 
   // Note: nobody ain't seen no unloading
   //   of stminus yet. Dude.
@@ -1106,11 +1141,13 @@ void ST_initData(void) {
 
   st_oldhealth = -1;
 
-  for (i = 0; i < NUMWEAPONS; i++)
+  for (i = 0; i < NUMWEAPONS; i++) {
     oldweaponsowned[i] = plyr->weaponowned[i];
+  }
 
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 3; i++) {
     keyboxes[i] = -1;
+  }
 
   STlib_init();
 }
@@ -1195,8 +1232,9 @@ static boolean st_stopped = true;
 
 void ST_Start(void) {
 
-  if (!st_stopped)
+  if (!st_stopped) {
     ST_Stop();
+  }
 
   ST_initData();
   ST_createWidgets();
@@ -1204,8 +1242,9 @@ void ST_Start(void) {
 }
 
 void ST_Stop(void) {
-  if (st_stopped)
+  if (st_stopped) {
     return;
+  }
 
   I_SetPalette(W_CacheLumpNum(lu_palette, PU_CACHE));
 

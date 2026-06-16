@@ -163,8 +163,9 @@ const float *EXPORT(wasmdoom_music_render)(int frames) {
   if (ticks > 0) {
     g_tick_accum -= (double)ticks;
     mus_sequencer_advance(&g_seq, ticks, g_loop, event_callback, &g_player);
-    if (mus_sequencer_ended(&g_seq))
+    if (mus_sequencer_ended(&g_seq)) {
       g_current_handle = 0;
+    }
   }
 
   // Render OPL samples (configured to native sample_rate via OPL3_Reset, so

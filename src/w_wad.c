@@ -65,8 +65,9 @@ void ExtractFileBase(char *path, char *dest) {
   length = 0;
 
   while (*src && *src != '.') {
-    if (++length == 9)
+    if (++length == 9) {
       I_Error("Filename base of %s >8 chars", path);
+    }
 
     *dest++ = toupper((int)*src++);
   }
@@ -201,8 +202,9 @@ int W_GetNumForName(char *name) {
 
   i = W_CheckNumForName(name);
 
-  if (i == -1)
+  if (i == -1) {
     I_Error("W_GetNumForName: %s not found!", name);
+  }
 
   return i;
 }
@@ -212,8 +214,9 @@ int W_GetNumForName(char *name) {
 // Returns the buffer size needed to load the given lump.
 //
 int W_LumpLength(int lump) {
-  if (lump >= numlumps)
+  if (lump >= numlumps) {
     I_Error("W_LumpLength: %i >= numlumps", lump);
+  }
 
   return lumpinfo[lump].size;
 }
@@ -228,8 +231,9 @@ void W_ReadLump(int lump, void *dest) {
   lumpinfo_t *l;
   int handle;
 
-  if (lump >= numlumps)
+  if (lump >= numlumps) {
     I_Error("W_ReadLump: %i >= numlumps", lump);
+  }
 
   l = lumpinfo + lump;
 
@@ -250,8 +254,9 @@ void W_ReadLump(int lump, void *dest) {
 void *W_CacheLumpNum(int lump, int tag) {
   byte *ptr;
 
-  if ((unsigned)lump >= numlumps)
+  if ((unsigned)lump >= numlumps) {
     I_Error("W_CacheLumpNum: %i >= numlumps", lump);
+  }
 
   if (!lumpcache[lump]) {
     // read the lump in

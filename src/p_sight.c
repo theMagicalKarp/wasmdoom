@@ -54,21 +54,25 @@ int P_DivlineSide(fixed_t x, fixed_t y, divline_t *node) {
   fixed_t right;
 
   if (!node->dx) {
-    if (x == node->x)
+    if (x == node->x) {
       return 2;
+    }
 
-    if (x <= node->x)
+    if (x <= node->x) {
       return node->dy > 0;
+    }
 
     return node->dy < 0;
   }
 
   if (!node->dy) {
-    if (x == node->y)
+    if (x == node->y) {
       return 2;
+    }
 
-    if (y <= node->y)
+    if (y <= node->y) {
       return node->dx < 0;
+    }
 
     return node->dx > 0;
   }
@@ -79,11 +83,13 @@ int P_DivlineSide(fixed_t x, fixed_t y, divline_t *node) {
   left = (node->dy >> FRACBITS) * (dx >> FRACBITS);
   right = (dy >> FRACBITS) * (node->dx >> FRACBITS);
 
-  if (right < left)
+  if (right < left) {
     return 0; // front side
+  }
 
-  if (left == right)
+  if (left == right) {
     return 2;
+  }
   return 1; // back side
 }
 
@@ -100,8 +106,9 @@ fixed_t P_InterceptVector2(divline_t *v2, divline_t *v1) {
 
   den = FixedMul(v1->dy >> 8, v2->dx) - FixedMul(v1->dx >> 8, v2->dy);
 
-  if (den == 0)
+  if (den == 0) {
     return 0;
+  }
   //	I_Error ("P_InterceptVector: parallel");
 
   num = FixedMul((v1->x - v2->x) >> 8, v1->dy) +
@@ -134,8 +141,9 @@ boolean P_CrossSubsector(int num) {
   fixed_t slope;
 
 #ifdef RANGECHECK
-  if (num >= numsubsectors)
+  if (num >= numsubsectors) {
     I_Error("P_CrossSubsector: ss %i with numss = %i", num, numsubsectors);
+  }
 #endif
 
   sub = &subsectors[num];
@@ -148,8 +156,9 @@ boolean P_CrossSubsector(int num) {
     line = seg->linedef;
 
     // allready checked other side?
-    if (line->validcount == validcount)
+    if (line->validcount == validcount) {
       continue;
+    }
 
     line->validcount = validcount;
 
@@ -159,8 +168,9 @@ boolean P_CrossSubsector(int num) {
     s2 = P_DivlineSide(v2->x, v2->y, &strace);
 
     // line isn't crossed?
-    if (s1 == s2)
+    if (s1 == s2) {
       continue;
+    }
 
     divl.x = v1->x;
     divl.y = v1->y;
@@ -170,13 +180,15 @@ boolean P_CrossSubsector(int num) {
     s2 = P_DivlineSide(t2x, t2y, &divl);
 
     // line isn't crossed?
-    if (s1 == s2)
+    if (s1 == s2) {
       continue;
+    }
 
     // stop because it is not two sided anyway
     // might do this after updating validcount?
-    if (!(line->flags & ML_TWOSIDED))
+    if (!(line->flags & ML_TWOSIDED)) {
       return false;
+    }
 
     // crosses a two sided line
     front = seg->frontsector;
@@ -184,42 +196,49 @@ boolean P_CrossSubsector(int num) {
 
     // no wall to block sight with?
     if (front->floorheight == back->floorheight &&
-        front->ceilingheight == back->ceilingheight)
+        front->ceilingheight == back->ceilingheight) {
       continue;
+    }
 
     // possible occluder
     // because of ceiling height differences
-    if (front->ceilingheight < back->ceilingheight)
+    if (front->ceilingheight < back->ceilingheight) {
       opentop = front->ceilingheight;
-    else
+    } else {
       opentop = back->ceilingheight;
+    }
 
     // because of ceiling height differences
-    if (front->floorheight > back->floorheight)
+    if (front->floorheight > back->floorheight) {
       openbottom = front->floorheight;
-    else
+    } else {
       openbottom = back->floorheight;
+    }
 
     // quick test for totally closed doors
-    if (openbottom >= opentop)
+    if (openbottom >= opentop) {
       return false; // stop
+    }
 
     frac = P_InterceptVector2(&strace, &divl);
 
     if (front->floorheight != back->floorheight) {
       slope = FixedDiv(openbottom - sightzstart, frac);
-      if (slope > bottomslope)
+      if (slope > bottomslope) {
         bottomslope = slope;
+      }
     }
 
     if (front->ceilingheight != back->ceilingheight) {
       slope = FixedDiv(opentop - sightzstart, frac);
-      if (slope < topslope)
+      if (slope < topslope) {
         topslope = slope;
+      }
     }
 
-    if (topslope <= bottomslope)
+    if (topslope <= bottomslope) {
       return false; // stop
+    }
   }
   // passed the subsector ok
   return true;
@@ -235,22 +254,25 @@ boolean P_CrossBSPNode(int bspnum) {
   int side;
 
   if (bspnum & NF_SUBSECTOR) {
-    if (bspnum == -1)
+    if (bspnum == -1) {
       return P_CrossSubsector(0);
-    else
+    } else {
       return P_CrossSubsector(bspnum & (~NF_SUBSECTOR));
+    }
   }
 
   bsp = &nodes[bspnum];
 
   // decide which side the start point is on
   side = P_DivlineSide(strace.x, strace.y, (divline_t *)bsp);
-  if (side == 2)
+  if (side == 2) {
     side = 0; // an "on" should cross both sides
+  }
 
   // cross the starting side
-  if (!P_CrossBSPNode(bsp->children[side]))
+  if (!P_CrossBSPNode(bsp->children[side])) {
     return false;
+  }
 
   // the partition plane is crossed here
   if (side == P_DivlineSide(t2x, t2y, (divline_t *)bsp)) {

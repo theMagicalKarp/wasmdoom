@@ -70,11 +70,20 @@ export const WASMDOOM_MOUSE_BUTTONS = {
 
 export type WasmdoomKeyName = keyof typeof WASMDOOM_KEYS;
 
+// Sentinel bit on a keydown value: when set, the low byte is delivered as a
+// typed ASCII character (ev_typechar) rather than a game key. Mirrors
+// WASMDOOM_TYPECHAR_FLAG in src/wasmdoom.h.
+export const WASMDOOM_TYPECHAR_FLAG = 0x100;
+
 // Resolve a symbolic name ("FIRE", "fire", "Enter") or numeric key to the
 // raw integer the wasm engine expects. Returns null for unknown names.
+// Numeric values may carry the typechar sentinel (0x100..0x1ff), so recorded
+// typed-character events round-trip.
 export function resolveKey(input: string | number): number | null {
   if (typeof input === "number") {
-    return Number.isInteger(input) && input >= 0 && input <= 0xff
+    return Number.isInteger(input) &&
+      input >= 0 &&
+      input <= (WASMDOOM_TYPECHAR_FLAG | 0xff)
       ? input
       : null;
   }

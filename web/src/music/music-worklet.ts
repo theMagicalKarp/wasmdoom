@@ -11,6 +11,11 @@
 // rendering, `wasmdoom_music_render(frames)` returns a pointer to an interleaved
 // stereo float32 block of length 2*frames that we deinterleave into the output.
 //
+import {
+  assertWasmdoomMusicExports,
+  type WasmDoomMusicExports,
+} from "@wasmdoom/lib/wasmdoom-music-exports.ts";
+
 // AudioWorkletGlobalScope provides `sampleRate`, `AudioWorkletProcessor`, and
 // `registerProcessor`; declare them locally since the DOM lib isn't loaded.
 declare const sampleRate: number;
@@ -33,57 +38,6 @@ export type MusicWorkletMessage =
   | { type: "stop"; handle: number }
   | { type: "unregister"; handle: number }
   | { type: "setVolume"; volume: number };
-
-type WasmDoomMusicExports = {
-  memory: WebAssembly.Memory;
-  wasmdoom_music_init(sampleRate: number): void;
-  wasmdoom_music_alloc(len: number): number;
-  wasmdoom_music_set_genmidi(ptr: number, len: number): void;
-  wasmdoom_music_register(handle: number, ptr: number, len: number): void;
-  wasmdoom_music_play(handle: number, looping: number): void;
-  wasmdoom_music_pause(handle: number): void;
-  wasmdoom_music_resume(handle: number): void;
-  wasmdoom_music_stop(handle: number): void;
-  wasmdoom_music_unregister(handle: number): void;
-  wasmdoom_music_set_volume(volume: number): void;
-  wasmdoom_music_render(frames: number): number;
-};
-
-// Runtime source of truth for the function exports. `satisfies` rejects a name
-// that isn't on WasmDoomMusicExports; it can't enforce completeness, so a future
-// export must be added here too.
-const MUSIC_EXPORT_FNS = [
-  "wasmdoom_music_init",
-  "wasmdoom_music_alloc",
-  "wasmdoom_music_set_genmidi",
-  "wasmdoom_music_register",
-  "wasmdoom_music_play",
-  "wasmdoom_music_pause",
-  "wasmdoom_music_resume",
-  "wasmdoom_music_stop",
-  "wasmdoom_music_unregister",
-  "wasmdoom_music_set_volume",
-  "wasmdoom_music_render",
-] as const;
-
-// Validate the wasm instance's exports against WasmDoomMusicExports before we
-// trust the shape. The `asserts` signature narrows the argument in place, so the
-// caller gets a typed `inst.exports` with no cast. Without this a renamed/dropped
-// C export surfaces as a cryptic failure deep inside process(); throwing here is
-// caught by the constructor's onmessage handler, which reports it to the main
-// thread.
-function assertMusicExports(
-  exports: WebAssembly.Exports,
-): asserts exports is WasmDoomMusicExports {
-  if (!(exports.memory instanceof WebAssembly.Memory)) {
-    throw new Error("music wasm: missing `memory` export");
-  }
-  for (const name of MUSIC_EXPORT_FNS) {
-    if (typeof exports[name] !== "function") {
-      throw new Error(`music wasm: missing export \`${name}\``);
-    }
-  }
-}
 
 class MusicProcessor extends AudioWorkletProcessor {
   private wasmDoomMusic: WasmDoomMusicExports | null = null;
@@ -113,7 +67,7 @@ class MusicProcessor extends AudioWorkletProcessor {
       // raw wasm bytes and we compile here.
       const mod = new WebAssembly.Module(msg.wasm);
       const inst = new WebAssembly.Instance(mod, {});
-      assertMusicExports(inst.exports);
+      assertWasmdoomMusicExports(inst.exports);
       this.wasmDoomMusic = inst.exports;
       this.wasmDoomMusic.wasmdoom_music_init(sampleRate);
       for (const queued of this.pending) {

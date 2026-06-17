@@ -10,81 +10,18 @@
 import nipplejs from "nipplejs";
 import type { DoomAudio } from "./doom-audio.ts";
 import type { WasmdoomExports } from "./doom-runtime.ts";
+import type { Recorder } from "./recorder.ts";
 import { isMobileDevice } from "./utils.ts";
 import { Vector2 } from "./math.ts";
-
-// Sentinel bit on wasmdoom_keydown's argument: when set, the low byte is
-// delivered as a typed ASCII character (ev_typechar) rather than a game key
-// (ev_keydown). Mirrors WASMDOOM_TYPECHAR_FLAG in src/wasmdoom.h.
-const WASMDOOM_TYPECHAR_FLAG = 0x100;
-
-// Key codes Doom's C side recognises. These mirror the values produced by
-// the wasm module's input layer; treat them as a wire protocol.
-const WASMDOOM_KEYS = {
-  // Movement / view
-  RIGHT: 0xae,
-  LEFT: 0xac,
-  UP: 0xad,
-  DOWN: 0xaf,
-
-  MOVE_FORWARD: 0xad,
-  MOVE_BACKWARD: 0xaf,
-  TURN_LEFT: 0xac,
-  TURN_RIGHT: 0xae,
-  STRAFE_LEFT: 0x2c,
-  STRAFE_RIGHT: 0x2e,
-  STRAFE_ON: 0x80 + 0x38,
-
-  // Combat / interaction
-  FIRE: 0x80 + 0x1d,
-  USE: 0x20,
-  RUN: 0x80 + 0x36,
-
-  // Weapon select
-  WEAPON_1: 0x31, // fist / chainsaw
-  WEAPON_2: 0x32, // pistol
-  WEAPON_3: 0x33, // shotgun
-  WEAPON_4: 0x34, // chaingun
-  WEAPON_5: 0x35, // rocket launcher
-  WEAPON_6: 0x36, // plasma rifle
-  WEAPON_7: 0x37, // BFG 9000
-
-  // Menu / system
-  MENU_OPEN: 0x1b,
-  MENU_CONFIRM: 0xd,
-  MENU_BACK: 0x7f,
-  PAUSE: 0xff,
-  VIEW_SIZE_UP: 0x3d,
-  VIEW_SIZE_DOWN: 0x2d,
-
-  // Automap
-  AUTOMAP_TOGGLE: 0x9,
-  AUTOMAP_FOLLOW: 0x66,
-  AUTOMAP_GRID: 0x67,
-  AUTOMAP_MARK: 0x6d,
-  AUTOMAP_CLEARMARK: 0x63,
-  AUTOMAP_GOBIG: 0x30,
-
-  // Function-key features (F1-F12)
-  HELP: 0x80 + 0x3b, // F1
-  SAVE: 0x80 + 0x3c, // F2
-  LOAD: 0x80 + 0x3d, // F3
-  SOUND_VOLUME: 0x80 + 0x3e, // F4
-  DETAIL: 0x80 + 0x3f, // F5
-  QUICKSAVE: 0x80 + 0x40, // F6
-  END_GAME: 0x80 + 0x41, // F7
-  MESSAGES: 0x80 + 0x42, // F8
-  QUICKLOAD: 0x80 + 0x43, // F9
-  QUIT: 0x80 + 0x44, // F10
-  GAMMA: 0x80 + 0x57, // F11
-  SPY: 0x80 + 0x58, // F12
-} as const;
-
-const WASMDOOM_MOUSE_BUTTONS = {
-  FIRE: 1 << 0,
-  STRAFE: 1 << 1,
-  USE: 1 << 2,
-} as const;
+// Key codes, the typechar sentinel, and mouse-button bits are the wire protocol
+// shared with the headless tools/simulator — sourced from @wasmdoom/lib so the
+// browser and the simulator can never drift. (WASMDOOM_TYPECHAR_FLAG also mirrors
+// the C side in src/wasmdoom.h.)
+import {
+  WASMDOOM_KEYS,
+  WASMDOOM_MOUSE_BUTTONS,
+  WASMDOOM_TYPECHAR_FLAG,
+} from "@wasmdoom/lib/wasmdoom-keys.ts";
 
 const KEY_MAP = new Map([
   ["KeyW", WASMDOOM_KEYS.MOVE_FORWARD],
@@ -152,8 +89,9 @@ export function createInput(opts: {
   canvas: HTMLCanvasElement;
   doom: WasmdoomExports;
   audio: DoomAudio;
+  recorder?: Recorder | null;
 }): Input {
-  const { canvas, doom, audio } = opts;
+  const { canvas, doom, audio, recorder } = opts;
   const mobile = isMobileDevice(
     typeof navigator === "undefined" ? undefined : navigator,
   );
@@ -166,12 +104,14 @@ export function createInput(opts: {
     const doomkey = KEY_MAP.get(event.code);
     if (doomkey !== undefined) {
       doom.wasmdoom_keydown(doomkey);
+      recorder?.key("keydown", doomkey);
       consumed = true;
     }
     if (event.key.length === 1) {
       const code = event.key.charCodeAt(0);
       if (code >= 32 && code <= 126) {
         doom.wasmdoom_keydown(WASMDOOM_TYPECHAR_FLAG | code);
+        recorder?.key("keydown", WASMDOOM_TYPECHAR_FLAG | code);
         consumed = true;
       }
     }
@@ -187,6 +127,7 @@ export function createInput(opts: {
     }
     event.preventDefault();
     doom.wasmdoom_keyup(doomkey);
+    recorder?.key("keyup", doomkey);
   });
 
   canvas.addEventListener("click", () => {
@@ -230,6 +171,7 @@ export function createInput(opts: {
         mouse = mouse.add(mobileControls.fetchJoystick());
       }
       doom.wasmdoom_send_mouse(mouseButtons, mouse.x, mouse.y);
+      recorder?.mouse(mouseButtons, mouse.x, mouse.y);
       mouse = Vector2.zero();
     },
   };

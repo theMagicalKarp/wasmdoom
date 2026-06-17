@@ -45,7 +45,10 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('tools/package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ hashFiles('lib/package-lock.json', 'tools/package-lock.json') }}
+
+      - name: Shared lib checks
+        run: mise run lib:check
 
       - name: Static checks
         run: mise run tools:check
@@ -102,7 +105,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.npm
-          key: npm-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+          key: npm-${{ runner.os }}-${{ hashFiles('lib/package-lock.json', 'web/package-lock.json') }}
 
       - name: Static checks
         working-directory: ${{ github.workspace }}

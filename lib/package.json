@@ -1,24 +1,16 @@
 {
-  "name": "wasmdoom-tools",
+  "name": "@wasmdoom/lib",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "imports": {
-    "#lib/*": "./lib/*"
-  },
-  "bin": {
-    "wasmdoom-tools": "./cli.ts"
+  "exports": {
+    "./*": "./*"
   },
   "scripts": {
-    "cli": "node cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
-  },
-  "dependencies": {
-    "@wasmdoom/lib": "file:../lib",
-    "commander": "^14.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.7.0",

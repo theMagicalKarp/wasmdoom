@@ -31,6 +31,39 @@ run = "find src -type f \\( -name '*.c' -o -name '*.h' \\) -exec clang-format -i
 description = "Check C source formatting (CI-friendly dry run)"
 run = "find src -type f \\( -name '*.c' -o -name '*.h' \\) -exec clang-format --dry-run --Werror {} +"
 
+# --- Shared lib ------------------------------------------------------------
+
+[tasks."lib:install"]
+description = "Install shared lib deps (re-runs only when the lockfile changes)"
+dir = "lib"
+sources = ["lib/package-lock.json"]
+outputs = ["lib/node_modules"]
+run = "npm ci"
+
+[tasks."lib:format"]
+depends = ["lib:install"]
+dir = "lib"
+run = "npm run format"
+
+[tasks."lib:format:check"]
+depends = ["lib:install"]
+dir = "lib"
+run = "npm run format:check"
+
+[tasks."lib:typecheck"]
+depends = ["lib:install"]
+dir = "lib"
+run = "npm run typecheck"
+
+[tasks."lib:test"]
+depends = ["lib:install"]
+dir = "lib"
+run = "npm run test"
+
+[tasks."lib:check"]
+description = "Static checks for the shared lib"
+depends = ["lib:format:check", "lib:typecheck", "lib:test"]
+
 # --- Web frontend ----------------------------------------------------------
 
 [tasks."web:install"]
@@ -130,17 +163,24 @@ node tools/cli.ts render-music ./wads/doom1.wad \
 [tasks."tools:simulate"]
 description = "Replay every scripted simulation under ci/simulations/<wad>/*.json"
 depends = ["wasm", "tools:install"]
+usage = 'flag "--dump" help="write a per-frame report dir (player/mobjs/screenshot) for every tick"'
 run = """
 for wad_dir in ci/simulations/*/; do
   wad=$(basename "$wad_dir")
   for script in "$wad_dir"*.json; do
     [ -e "$script" ] || continue
     name=$(basename "$script" .json)
+    out=ci-out/simulations/$wad/$name
+    dump_arg=""
+    if [ "$usage_dump" = "true" ]; then
+      dump_arg="--dump $out/frames"
+    fi
     echo ">>> simulate: $wad/$name"
     node tools/cli.ts simulate ./wads/$wad.wad \
       --wasm ./zig-out/bin/wasmdoom.wasm \
       --commands "$script" \
-      --out ci-out/simulations/$wad/$name \
+      --out "$out" \
+      $dump_arg \
       --quiet || exit 1
   done
 done
@@ -153,6 +193,7 @@ description = "Run the full local/CI check suite"
 depends = [
   "fmt:check",
   "wasm",
+  "lib:check",
   "tools:check",
   "tools:render-music",
   "tools:simulate",
@@ -162,8 +203,8 @@ depends = [
 
 [tasks.fix]
 description = "Rewrite C, web, and tools sources in place"
-depends = ["fmt", "web:format", "tools:format"]
+depends = ["fmt", "lib:format", "web:format", "tools:format"]
 
 [tasks.clean]
 description = "Remove build artifacts and installed deps"
-run = "rm -rf zig-out .zig-cache ci-out web/dist web/node_modules tools/node_modules"
+run = "rm -rf zig-out .zig-cache ci-out web/dist web/node_modules tools/node_modules lib/node_modules"

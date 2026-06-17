@@ -6,6 +6,10 @@
 // render in 2048-frame blocks until wasmdoom_music_active() goes false.
 
 import { readFile } from "node:fs/promises";
+import {
+  assertWasmdoomMusicExports,
+  type WasmdoomMusicInstance,
+} from "@wasmdoom/lib/wasmdoom-music-exports.ts";
 import type { Lump } from "./wad";
 
 export const SAMPLE_RATE = 44100;
@@ -14,46 +18,6 @@ export const MAX_RENDER_FRAMES = 2048; // WASMDOOM_MUSIC_MAX_RENDER_FRAMES
 export const SONG_MAX_SIZE = 128 * 1024; // WASMDOOM_MUSIC_SONG_MAX_SIZE
 export const SAFETY_CAP_SECONDS = 600; // guard against a song that never ends
 export const SILENCE_THRESHOLD = 1e-4; // peak below this counts as silent
-
-export type WasmDoomMusicExports = {
-  memory: WebAssembly.Memory;
-  wasmdoom_music_init: (sampleRate: number) => void;
-  wasmdoom_music_alloc: (len: number) => number;
-  wasmdoom_music_set_genmidi: (ptr: number, len: number) => void;
-  wasmdoom_music_register: (handle: number, ptr: number, len: number) => void;
-  wasmdoom_music_play: (handle: number, looping: number) => void;
-  wasmdoom_music_render: (frames: number) => number;
-  wasmdoom_music_active: () => number;
-};
-
-export type WasmdoomMusicInstance = WebAssembly.Instance & {
-  exports: WasmDoomMusicExports;
-};
-
-const REQUIRED_FUNCTIONS = [
-  "wasmdoom_music_init",
-  "wasmdoom_music_alloc",
-  "wasmdoom_music_set_genmidi",
-  "wasmdoom_music_register",
-  "wasmdoom_music_play",
-  "wasmdoom_music_render",
-  "wasmdoom_music_active",
-] as const;
-
-function assertWasmdoomMusicInstance(
-  instance: WebAssembly.Instance,
-): asserts instance is WasmdoomMusicInstance {
-  const { memory } = instance.exports;
-  if (!(memory instanceof WebAssembly.Memory)) {
-    throw new Error("wasm module is missing a `memory` export");
-  }
-
-  for (const name of REQUIRED_FUNCTIONS) {
-    if (typeof instance.exports[name] !== "function") {
-      throw new Error(`wasm module is missing a \`${name}\` export`);
-    }
-  }
-}
 
 export type RenderStatus =
   | "ok"
@@ -83,11 +47,11 @@ export class WasmDoomMusic {
   static async init(wasmPath: string): Promise<WasmDoomMusic> {
     const module = new WebAssembly.Module(await readFile(wasmPath));
     const instance = new WebAssembly.Instance(module, {});
-    assertWasmdoomMusicInstance(instance);
+    assertWasmdoomMusicExports(instance.exports);
 
     instance.exports.wasmdoom_music_init(SAMPLE_RATE);
 
-    return new WasmDoomMusic(instance);
+    return new WasmDoomMusic(instance as WasmdoomMusicInstance);
   }
 
   private stage(data: Uint8Array): number {

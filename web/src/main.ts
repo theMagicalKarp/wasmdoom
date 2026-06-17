@@ -1,10 +1,11 @@
 import { createDoomAudio } from "./doom-audio.ts";
-import { EVENT, createEventDispatcher } from "./doom-events.ts";
+import { EVENT, createEventDispatcher } from "@wasmdoom/lib/wasmdoom-events.ts";
 import { createDoomSaver } from "./doom-save.ts";
 import { gameModeForWad, loadDoom } from "./doom-runtime.ts";
 import { runGameLoop } from "./game-loop.ts";
 import { createInput } from "./input.ts";
 import { createDoomRenderer } from "./doom-renderer.ts";
+import { createRecorder } from "./recorder.ts";
 import { pathJoin } from "./utils.ts";
 
 const { BASE_URL } = import.meta.env;
@@ -51,10 +52,14 @@ async function main() {
     console.warn(`[doom_engine] ${decodeLog(view)}`),
   );
 
-  doom.init(["-mode", gameModeForWad(wad)]);
+  const flags = ["-mode", gameModeForWad(wad)];
+  doom.init(flags);
   events.drain();
 
-  const input = createInput({ canvas, doom: doom.exports, audio });
+  // Off unless the page is loaded with ?record; emits the same SimScript JSON
+  // the headless simulator replays.
+  const recorder = createRecorder({ flags });
+  const input = createInput({ canvas, doom: doom.exports, audio, recorder });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -73,6 +78,7 @@ async function main() {
       // before the throw latches the loop off.
       try {
         doom.exports.wasmdoom_tick();
+        recorder?.endTick();
       } finally {
         events.drain();
       }

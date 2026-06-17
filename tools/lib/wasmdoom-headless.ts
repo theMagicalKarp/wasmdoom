@@ -7,178 +7,25 @@
 // as a wasm trap, which we convert to an EngineCrashError below.
 
 import { readFile } from "node:fs/promises";
-
-// Mirrors GameMode_t in src/doomdef.h. The host declares the IWAD's mode; the
-// engine no longer probes a filesystem to identify it.
-export type GameMode =
-  | "shareware"
-  | "registered"
-  | "commercial"
-  | "retail"
-  | "indetermined";
-
-// Maps a known IWAD filename to its game mode. Replaces the old filesystem
-// IdentifyVersion probe: the host now tells the engine which IWAD this is.
-export function gameModeForWad(filename: string): GameMode {
-  switch (filename.toLowerCase()) {
-    case "doom2.wad":
-    case "doom2f.wad":
-    case "plutonia.wad":
-    case "tnt.wad":
-    case "freedoom2.wad":
-      return "commercial";
-    case "doomu.wad":
-    case "freedoom1.wad":
-      return "retail";
-    case "doom.wad":
-      return "registered";
-    case "doom1.wad":
-      return "shareware";
-    default:
-      return "indetermined";
-  }
-}
-
-// Mirrors WD_ARGV_BUF_CAP in src/wasmdoom.c (kept in sync by hand, like the
-// event tags). The flag tokens written into the argv buffer must fit here.
-export const ARGV_BUF_CAP = 4096;
-
-// Writes Doom command-line flags into the engine's argv staging buffer as
-// NUL-separated tokens followed by an extra trailing NUL (the empty token
-// that terminates the self-terminating list).
-export function stageArgv(
-  memory: WebAssembly.Memory,
-  argvPtr: number,
-  flags: readonly string[],
-): void {
-  const encoder = new TextEncoder();
-  const parts = flags.map((token) => encoder.encode(token));
-  const total = parts.reduce((n, p) => n + p.length + 1, 0) + 1;
-  if (total > ARGV_BUF_CAP) {
-    throw new Error(
-      `flags need ${total} bytes, exceeds ARGV_BUF_CAP (${ARGV_BUF_CAP})`,
-    );
-  }
-  const buf = new Uint8Array(memory.buffer, argvPtr, ARGV_BUF_CAP);
-  let off = 0;
-  for (const part of parts) {
-    buf.set(part, off);
-    off += part.length;
-    buf[off++] = 0; // NUL separator
-  }
-  buf[off] = 0; // empty token terminates the list
-}
-
-export type WasmdoomExports = {
-  memory: WebAssembly.Memory;
-  wasmdoom_init: () => void;
-  wasmdoom_argv_ptr: () => number;
-  wasmdoom_wad_alloc: (len: number) => number;
-  wasmdoom_tick: () => void;
-  wasmdoom_keydown: (keycode: number) => void;
-  wasmdoom_keyup: (keycode: number) => void;
-  wasmdoom_send_mouse: (buttons: number, dx: number, dy: number) => void;
-  wasmdoom_get_framebuffer: () => number;
-  wasmdoom_get_palette: () => number;
-  wasmdoom_events_ptr: () => number;
-  wasmdoom_events_len: () => number;
-  wasmdoom_events_clear: () => void;
-  wasmdoom_save_slot_ptr: (slot: number) => number;
-  wasmdoom_save_commit: (slot: number, dataLen: number) => number;
-  wasmdoom_get_player_health: () => number;
-  wasmdoom_get_player_armorpoints: () => number;
-  wasmdoom_get_player_armortype: () => number;
-  wasmdoom_get_player_readyweapon: () => number;
-  wasmdoom_get_player_pendingweapon: () => number;
-  wasmdoom_get_player_backpack: () => number;
-  wasmdoom_get_player_cheats: () => number;
-  wasmdoom_get_player_killcount: () => number;
-  wasmdoom_get_player_itemcount: () => number;
-  wasmdoom_get_player_secretcount: () => number;
-  wasmdoom_get_player_playerstate: () => number;
-  wasmdoom_get_player_damagecount: () => number;
-  wasmdoom_get_player_bonuscount: () => number;
-  wasmdoom_get_player_attackdown: () => number;
-  wasmdoom_get_player_usedown: () => number;
-  wasmdoom_get_player_refire: () => number;
-  wasmdoom_get_player_cards: () => number;
-  wasmdoom_get_player_weapons: () => number;
-  wasmdoom_get_player_ammo: (type: number) => number;
-  wasmdoom_get_player_maxammo: (type: number) => number;
-  wasmdoom_get_player_power: (power: number) => number;
-  wasmdoom_get_player_frag: (player: number) => number;
-  wasmdoom_get_player_x: () => number;
-  wasmdoom_get_player_y: () => number;
-  wasmdoom_get_player_z: () => number;
-  wasmdoom_get_player_angle: () => number;
-  wasmdoom_get_player_momx: () => number;
-  wasmdoom_get_player_momy: () => number;
-  wasmdoom_get_player_momz: () => number;
-};
-
-export type WasmdoomInstance = WebAssembly.Instance & {
-  exports: WasmdoomExports;
-};
-
-const REQUIRED_FUNCTIONS = [
-  "wasmdoom_init",
-  "wasmdoom_argv_ptr",
-  "wasmdoom_wad_alloc",
-  "wasmdoom_tick",
-  "wasmdoom_keydown",
-  "wasmdoom_keyup",
-  "wasmdoom_send_mouse",
-  "wasmdoom_get_framebuffer",
-  "wasmdoom_get_palette",
-  "wasmdoom_events_ptr",
-  "wasmdoom_events_len",
-  "wasmdoom_events_clear",
-  "wasmdoom_save_slot_ptr",
-  "wasmdoom_save_commit",
-  "wasmdoom_get_player_health",
-  "wasmdoom_get_player_armorpoints",
-  "wasmdoom_get_player_armortype",
-  "wasmdoom_get_player_readyweapon",
-  "wasmdoom_get_player_pendingweapon",
-  "wasmdoom_get_player_backpack",
-  "wasmdoom_get_player_cheats",
-  "wasmdoom_get_player_killcount",
-  "wasmdoom_get_player_itemcount",
-  "wasmdoom_get_player_secretcount",
-  "wasmdoom_get_player_playerstate",
-  "wasmdoom_get_player_damagecount",
-  "wasmdoom_get_player_bonuscount",
-  "wasmdoom_get_player_attackdown",
-  "wasmdoom_get_player_usedown",
-  "wasmdoom_get_player_refire",
-  "wasmdoom_get_player_cards",
-  "wasmdoom_get_player_weapons",
-  "wasmdoom_get_player_ammo",
-  "wasmdoom_get_player_maxammo",
-  "wasmdoom_get_player_power",
-  "wasmdoom_get_player_frag",
-  "wasmdoom_get_player_x",
-  "wasmdoom_get_player_y",
-  "wasmdoom_get_player_z",
-  "wasmdoom_get_player_angle",
-  "wasmdoom_get_player_momx",
-  "wasmdoom_get_player_momy",
-  "wasmdoom_get_player_momz",
-] as const;
-
-function assertWasmdoomExports(
-  exports: WebAssembly.Exports,
-): asserts exports is WasmdoomExports {
-  const { memory } = exports;
-  if (!(memory instanceof WebAssembly.Memory)) {
-    throw new Error("wasm module is missing a `memory` export");
-  }
-  for (const name of REQUIRED_FUNCTIONS) {
-    if (typeof exports[name] !== "function") {
-      throw new Error(`wasm module is missing a \`${name}\` export`);
-    }
-  }
-}
+import {
+  assertWasmdoomExports,
+  type WasmdoomExports,
+} from "@wasmdoom/lib/wasmdoom-exports.ts";
+import { stageArgv } from "@wasmdoom/lib/wasmdoom-host.ts";
+import { EVENT, readEvents } from "@wasmdoom/lib/wasmdoom-events.ts";
+import {
+  MAP_OBJECT_FIELD,
+  MAP_OBJECT_OFF,
+  MAP_OBJECT_REC,
+  type MapObject,
+} from "@wasmdoom/lib/map-object-layout.ts";
+import {
+  PLAYER_FIELD,
+  PLAYER_LEN,
+  PLAYER_OFF,
+  PLAYER_REC,
+  type Player,
+} from "@wasmdoom/lib/player-layout.ts";
 
 // Thrown when the wasm process calls exit() or aborts mid-tick. The engine's
 // exit() traps the wasm, so callers see this instead of a raw RuntimeError and
@@ -197,43 +44,25 @@ export type ErrorRecord = {
   message: string;
 };
 
-// Log tags, kept in sync with src/wd_events.h. All three carry their message
-// bytes inline in the payload. The headless host only cares about these tags,
-// so we scan for them directly rather than pulling in the full web-side
-// dispatcher.
-const EV_ERROR = 1;
-const EV_INFO = 14;
-const EV_WARNING = 15;
+// Decode a record's inline message bytes (EV_ERROR/EV_INFO/EV_WARNING all carry
+// their text this way).
+function eventText(payload: DataView): string {
+  return new TextDecoder().decode(
+    new Uint8Array(payload.buffer, payload.byteOffset, payload.byteLength),
+  );
+}
 
 // Scan the outbound event buffer for the EV_ERROR record I_Error emits right
 // before exit(), and decode its message. Safe to call after the tick/_start has
 // thrown: proc_exit only throws, so wasm linear memory stays readable, and the
 // buffer is cleared only at the start of the next tick (which never comes after
-// a crash). Returns null if no error record is present.
+// a crash). readEvents does not consume the buffer, so the record survives.
+// Returns null if no error record is present.
 function readEngineError(exports: WasmdoomExports): string | null {
-  const len = exports.wasmdoom_events_len();
-  if (len === 0) {
-    return null;
-  }
-  const base = exports.wasmdoom_events_ptr();
-  const view = new DataView(exports.memory.buffer, base, len);
-  let offset = 0;
-  while (offset + 4 <= len) {
-    const tag = view.getUint16(offset, true);
-    const payloadLen = view.getUint16(offset + 2, true);
-    const payloadStart = offset + 4;
-    if (payloadStart + payloadLen > len) {
-      break;
+  for (const { tag, payload } of readEvents(exports)) {
+    if (tag === EVENT.ERROR) {
+      return eventText(payload);
     }
-    if (tag === EV_ERROR) {
-      const bytes = new Uint8Array(
-        exports.memory.buffer,
-        base + payloadStart,
-        payloadLen,
-      );
-      return new TextDecoder().decode(bytes);
-    }
-    offset = payloadStart + payloadLen;
   }
   return null;
 }
@@ -243,34 +72,18 @@ function readEngineError(exports: WasmdoomExports): string | null {
 // cleared at the start of the next tick) and after init. EV_ERROR is handled
 // separately by readEngineError, so it is skipped here.
 export function drainLogs(exports: WasmdoomExports): void {
-  const len = exports.wasmdoom_events_len();
-  if (len === 0) {
+  if (exports.wasmdoom_events_len() === 0) {
     return;
   }
-  const base = exports.wasmdoom_events_ptr();
-  const view = new DataView(exports.memory.buffer, base, len);
-  let offset = 0;
-  while (offset + 4 <= len) {
-    const tag = view.getUint16(offset, true);
-    const payloadLen = view.getUint16(offset + 2, true);
-    const payloadStart = offset + 4;
-    if (payloadStart + payloadLen > len) {
-      break;
-    }
-    if (tag === EV_INFO || tag === EV_WARNING) {
-      const bytes = new Uint8Array(
-        exports.memory.buffer,
-        base + payloadStart,
-        payloadLen,
-      );
-      const message = new TextDecoder().decode(bytes);
-      if (tag === EV_WARNING) {
+  for (const { tag, payload } of readEvents(exports)) {
+    if (tag === EVENT.INFO || tag === EVENT.WARNING) {
+      const message = eventText(payload);
+      if (tag === EVENT.WARNING) {
         console.warn(`[doom_engine] ${message}`);
       } else {
         console.log(`[doom_engine] ${message}`);
       }
     }
-    offset = payloadStart + payloadLen;
   }
   exports.wasmdoom_events_clear();
 }
@@ -363,4 +176,189 @@ export function readFramebuffer(doom: HeadlessDoom): {
   const indices = new Uint8Array(memory, fbPtr, 320 * 200).slice();
   const palette = new Uint8Array(memory, palPtr, 768).slice();
   return { indices, palette };
+}
+
+// Snapshots the live map_objects (monsters, items, projectiles, the player)
+// into a flat array. Recomputes the view each call because wasm memory growth
+// invalidates the backing ArrayBuffer. fixed_t fields are decoded to world
+// units (16.16 -> float); angle stays raw BAM.
+export function readMapObjects(doom: HeadlessDoom): MapObject[] {
+  const count = doom.exports.wasmdoom_snapshot_map_objects();
+  const base = doom.exports.wasmdoom_map_objects_ptr();
+  const view = new DataView(
+    doom.exports.memory.buffer,
+    base,
+    count * MAP_OBJECT_REC,
+  );
+  const out: MapObject[] = [];
+  for (let i = 0; i < count; i++) {
+    const o = i * MAP_OBJECT_REC;
+    out.push({
+      x: view.getInt32(o + MAP_OBJECT_OFF.x, true) / 65536,
+      y: view.getInt32(o + MAP_OBJECT_OFF.y, true) / 65536,
+      z: view.getInt32(o + MAP_OBJECT_OFF.z, true) / 65536,
+      angle: view.getUint32(o + MAP_OBJECT_OFF.angle, true),
+      type: view.getInt32(o + MAP_OBJECT_OFF.type, true),
+      health: view.getInt32(o + MAP_OBJECT_OFF.health, true),
+      flags: view.getInt32(o + MAP_OBJECT_OFF.flags, true),
+    });
+  }
+  return out;
+}
+
+// Snapshots the current player into a struct, or null if there is no player
+// yet (e.g. the title screen). Like readMapObjects, recomputes the view each call
+// because wasm memory growth invalidates the backing ArrayBuffer. fixed_t
+// position/momentum fields are decoded to world units (16.16 -> float); angle
+// stays raw BAM. cards/weapons are packed bitmasks (bit i = card_t/weapontype_t
+// value i).
+export function readPlayer(doom: HeadlessDoom): Player | null {
+  if (!doom.exports.wasmdoom_snapshot_player()) {
+    return null;
+  }
+  const base = doom.exports.wasmdoom_player_snapshot_ptr();
+  const view = new DataView(doom.exports.memory.buffer, base, PLAYER_REC);
+  const arr = (off: number, len: number): number[] => {
+    const out: number[] = [];
+    for (let i = 0; i < len; i++) {
+      out.push(view.getInt32(off + i * 4, true));
+    }
+    return out;
+  };
+  return {
+    health: view.getInt32(PLAYER_OFF.health, true),
+    armorpoints: view.getInt32(PLAYER_OFF.armorpoints, true),
+    armortype: view.getInt32(PLAYER_OFF.armortype, true),
+    readyweapon: view.getInt32(PLAYER_OFF.readyweapon, true),
+    pendingweapon: view.getInt32(PLAYER_OFF.pendingweapon, true),
+    backpack: view.getInt32(PLAYER_OFF.backpack, true),
+    cheats: view.getInt32(PLAYER_OFF.cheats, true),
+    killcount: view.getInt32(PLAYER_OFF.killcount, true),
+    itemcount: view.getInt32(PLAYER_OFF.itemcount, true),
+    secretcount: view.getInt32(PLAYER_OFF.secretcount, true),
+    playerstate: view.getInt32(PLAYER_OFF.playerstate, true),
+    damagecount: view.getInt32(PLAYER_OFF.damagecount, true),
+    bonuscount: view.getInt32(PLAYER_OFF.bonuscount, true),
+    attackdown: view.getInt32(PLAYER_OFF.attackdown, true),
+    usedown: view.getInt32(PLAYER_OFF.usedown, true),
+    refire: view.getInt32(PLAYER_OFF.refire, true),
+    cards: view.getInt32(PLAYER_OFF.cards, true),
+    weapons: view.getInt32(PLAYER_OFF.weapons, true),
+    ammo: arr(PLAYER_OFF.ammo, PLAYER_LEN.ammo),
+    maxammo: arr(PLAYER_OFF.maxammo, PLAYER_LEN.maxammo),
+    powers: arr(PLAYER_OFF.powers, PLAYER_LEN.powers),
+    x: view.getInt32(PLAYER_OFF.x, true) / 65536,
+    y: view.getInt32(PLAYER_OFF.y, true) / 65536,
+    z: view.getInt32(PLAYER_OFF.z, true) / 65536,
+    angle: view.getUint32(PLAYER_OFF.angle, true),
+    momx: view.getInt32(PLAYER_OFF.momx, true) / 65536,
+    momy: view.getInt32(PLAYER_OFF.momy, true) / 65536,
+    momz: view.getInt32(PLAYER_OFF.momz, true) / 65536,
+  };
+}
+
+// fixed_t fields (encoded x65536 on the way in); the rest are written raw.
+const PLAYER_FIXED_FIELDS = new Set(["x", "y", "z", "momx", "momy", "momz"]);
+const PLAYER_POS_FIELDS = new Set([
+  "x",
+  "y",
+  "z",
+  "angle",
+  "momx",
+  "momy",
+  "momz",
+]);
+const PLAYER_ARRAY_FIELDS = new Set(["ammo", "maxammo", "powers"]);
+
+// Override the live player. Snapshots first so untouched fields keep their
+// current values, writes only the fields present in `patch` into the shared
+// buffer, ORs the matching PLAYER_FIELD dirty bits, and calls
+// wasmdoom_apply_player so the engine writes them back into viewplayer. Returns
+// false if there is no player. Must run with no tick between this and the call.
+// fixed_t position/momentum fields are encoded (world units -> 16.16); angle is
+// raw BAM; cards/weapons are packed bitmasks (bit i = card_t/weapontype_t i).
+// Note: set `pendingweapon` (not `readyweapon`) to trigger an animated switch.
+export function writePlayer(
+  doom: HeadlessDoom,
+  patch: Partial<Player>,
+): boolean {
+  if (!doom.exports.wasmdoom_snapshot_player()) {
+    return false;
+  }
+  const base = doom.exports.wasmdoom_player_snapshot_ptr();
+  const view = new DataView(doom.exports.memory.buffer, base, PLAYER_REC);
+  let dirty = 0;
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) {
+      continue;
+    }
+    const off = PLAYER_OFF[key as keyof typeof PLAYER_OFF];
+    if (PLAYER_ARRAY_FIELDS.has(key)) {
+      const len = PLAYER_LEN[key as keyof typeof PLAYER_LEN];
+      const elems = value as number[];
+      for (let i = 0; i < len; i++) {
+        view.setInt32(off + i * 4, elems[i] | 0, true);
+      }
+      dirty |= PLAYER_FIELD[key as keyof typeof PLAYER_FIELD];
+    } else if (PLAYER_POS_FIELDS.has(key)) {
+      if (PLAYER_FIXED_FIELDS.has(key)) {
+        view.setInt32(off, Math.round((value as number) * 65536), true);
+      } else {
+        view.setUint32(off, (value as number) >>> 0, true); // angle, raw BAM
+      }
+      dirty |= PLAYER_FIELD.pos;
+    } else {
+      view.setInt32(off, (value as number) | 0, true);
+      dirty |= PLAYER_FIELD[key as keyof typeof PLAYER_FIELD];
+    }
+  }
+  view.setUint32(PLAYER_OFF.dirty, dirty >>> 0, true);
+  doom.exports.wasmdoom_apply_player();
+  return true;
+}
+
+// Override live map_objects, keyed by their index in the most recent snapshot
+// order. Snapshots first (which establishes that order and zeroes every
+// record's dirty field), writes the patched fields, ORs the MAP_OBJECT_FIELD
+// dirty bits per record, and calls wasmdoom_apply_map_objects. Indices out of
+// range are ignored. Returns the map_object count. x/y/z are encoded (world
+// units -> 16.16); angle is raw BAM. Must run with no tick between this and the
+// call.
+export function writeMapObjects(
+  doom: HeadlessDoom,
+  patches: Iterable<readonly [number, Partial<MapObject>]>,
+): number {
+  const count = doom.exports.wasmdoom_snapshot_map_objects();
+  const base = doom.exports.wasmdoom_map_objects_ptr();
+  const view = new DataView(
+    doom.exports.memory.buffer,
+    base,
+    count * MAP_OBJECT_REC,
+  );
+  for (const [index, patch] of patches) {
+    if (index < 0 || index >= count) {
+      continue;
+    }
+    const recOff = index * MAP_OBJECT_REC;
+    let dirty = 0;
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) {
+        continue;
+      }
+      const off = recOff + MAP_OBJECT_OFF[key as keyof typeof MAP_OBJECT_OFF];
+      if (key === "angle") {
+        view.setUint32(off, (value as number) >>> 0, true);
+        dirty |= MAP_OBJECT_FIELD.pos;
+      } else if (key === "x" || key === "y" || key === "z") {
+        view.setInt32(off, Math.round((value as number) * 65536), true);
+        dirty |= MAP_OBJECT_FIELD.pos;
+      } else {
+        view.setInt32(off, (value as number) | 0, true);
+        dirty |= MAP_OBJECT_FIELD[key as keyof typeof MAP_OBJECT_FIELD];
+      }
+    }
+    view.setUint32(recOff + MAP_OBJECT_OFF.dirty, dirty >>> 0, true);
+  }
+  doom.exports.wasmdoom_apply_map_objects();
+  return count;
 }

@@ -10,7 +10,7 @@
 // The slot number is a save's identity end to end; the engine's "doomsav<N>.dsg"
 // filename never crosses this boundary (the wasm store derives it from N).
 
-import { EVENT, type EventDispatcher } from "./doom-events.ts";
+import { EVENT, type EventDispatcher } from "@wasmdoom/lib/wasmdoom-events.ts";
 import { bytesToBase64, base64ToBytes } from "./utils.ts";
 
 export type SaveWasmExports = {

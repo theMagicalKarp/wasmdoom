@@ -5,7 +5,7 @@ import {
   EVENT,
   createEventDispatcher,
   type EventBufferExports,
-} from "./doom-events.ts";
+} from "./wasmdoom-events.ts";
 
 // Stand-in for the wasm module: a real WebAssembly.Memory plus exports that
 // the dispatcher reads each drain pass.

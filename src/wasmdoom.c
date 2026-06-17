@@ -4,6 +4,7 @@
 #include "d_main.h"
 #include "d_player.h"
 #include "doomdef.h"
+#include "doomstat.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "m_argv.h"
@@ -12,6 +13,7 @@
 #include "v_video.h"
 #include "wasmdoom.h"
 #include "wd_events.h"
+#include "wd_iface.h"
 #include "wd_save.h"
 
 #define EXPORT(name) __attribute__((export_name(#name))) name
@@ -147,62 +149,260 @@ extern byte doom_palette[768];
 uint8_t *EXPORT(wasmdoom_get_palette)(void) { return doom_palette; }
 
 // --- Player -----------------------------------------------------------------
-#define WD_PLAYER_GET(name, expr)                                              \
-  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
-    return viewplayer ? (int)(expr) : 0;                                       \
-  }
-#define WD_PLAYER_GET_IDX(name, field, count)                                  \
-  int EXPORT(wasmdoom_get_player_##name)(int i) {                              \
-    if (!viewplayer || i < 0 || i >= (count))                                  \
-      return 0;                                                                \
-    return (int)viewplayer->field[i];                                          \
-  }
-#define WD_PLAYER_GET_MO(name, expr)                                           \
-  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
-    return (viewplayer && viewplayer->mo) ? (int)(expr) : 0;                   \
-  }
-// Boolean arrays packed into one int: bit i mirrors the array's enum value i
-// (same shape as the cheats flags). Safe only while count <= 32 bits.
-#define WD_PLAYER_GET_MASK(name, field, count)                                 \
-  int EXPORT(wasmdoom_get_player_##name)(void) {                               \
-    if (!viewplayer)                                                           \
-      return 0;                                                                \
-    int m = 0;                                                                 \
-    for (int i = 0; i < (count); i++)                                          \
-      m |= (viewplayer->field[i] ? 1 : 0) << i;                                \
-    return m;                                                                  \
-  }
+// One player_t packed into the documented wd_player_t wire layout, same
+// snapshot approach as the mobjs below (one buffer the host reads over linear
+// memory, rather than ~30 per-field boundary crossings). See wd_iface.h.
+_Static_assert(NUMAMMO == WD_NUMAMMO, "wd_player_t ammo size drift");
+_Static_assert(NUMPOWERS == WD_NUMPOWERS, "wd_player_t powers size drift");
 
-WD_PLAYER_GET(health, viewplayer->health)
-WD_PLAYER_GET(armorpoints, viewplayer->armorpoints)
-WD_PLAYER_GET(armortype, viewplayer->armortype)
-WD_PLAYER_GET(readyweapon, viewplayer->readyweapon)
-WD_PLAYER_GET(pendingweapon, viewplayer->pendingweapon)
-WD_PLAYER_GET(backpack, viewplayer->backpack)
-WD_PLAYER_GET(cheats, viewplayer->cheats)
-WD_PLAYER_GET(killcount, viewplayer->killcount)
-WD_PLAYER_GET(itemcount, viewplayer->itemcount)
-WD_PLAYER_GET(secretcount, viewplayer->secretcount)
-WD_PLAYER_GET(playerstate, viewplayer->playerstate)
-WD_PLAYER_GET(damagecount, viewplayer->damagecount)
-WD_PLAYER_GET(bonuscount, viewplayer->bonuscount)
-WD_PLAYER_GET(attackdown, viewplayer->attackdown)
-WD_PLAYER_GET(usedown, viewplayer->usedown)
-WD_PLAYER_GET(refire, viewplayer->refire)
+static wd_player_t wd_player_buf;
 
-// bit = card_t (it_bluecard…) / weapontype_t (wp_fist…)
-WD_PLAYER_GET_MASK(cards, cards, NUMCARDS)
-WD_PLAYER_GET_MASK(weapons, weaponowned, NUMWEAPONS)
+// Snapshot viewplayer into wd_player_buf and return 1, or return 0 if there is
+// no player (e.g. the title screen). The mo-derived fields stay 0 when
+// viewplayer->mo is null. Call before reading wasmdoom_player_snapshot_ptr().
+int EXPORT(wasmdoom_snapshot_player)(void) {
+  if (!viewplayer) {
+    return 0;
+  }
+  wd_player_buf = (wd_player_t){
+      .health = viewplayer->health,
+      .armorpoints = viewplayer->armorpoints,
+      .armortype = viewplayer->armortype,
+      .readyweapon = viewplayer->readyweapon,
+      .pendingweapon = viewplayer->pendingweapon,
+      .backpack = viewplayer->backpack,
+      .cheats = viewplayer->cheats,
+      .killcount = viewplayer->killcount,
+      .itemcount = viewplayer->itemcount,
+      .secretcount = viewplayer->secretcount,
+      .playerstate = viewplayer->playerstate,
+      .damagecount = viewplayer->damagecount,
+      .bonuscount = viewplayer->bonuscount,
+      .attackdown = viewplayer->attackdown,
+      .usedown = viewplayer->usedown,
+      .refire = viewplayer->refire,
+  };
+  // Boolean arrays packed into one int: bit i mirrors the enum value i (same
+  // shape as the cheats flags). Safe only while the count is <= 32 bits.
+  for (int i = 0; i < NUMCARDS; i++) {
+    wd_player_buf.cards |= (viewplayer->cards[i] ? 1 : 0) << i;
+  }
+  for (int i = 0; i < NUMWEAPONS; i++) {
+    wd_player_buf.weapons |= (viewplayer->weaponowned[i] ? 1 : 0) << i;
+  }
+  for (int i = 0; i < NUMAMMO; i++) {
+    wd_player_buf.ammo[i] = viewplayer->ammo[i];
+    wd_player_buf.maxammo[i] = viewplayer->maxammo[i];
+  }
+  for (int i = 0; i < NUMPOWERS; i++) {
+    wd_player_buf.powers[i] = viewplayer->powers[i];
+  }
+  if (viewplayer->mo) {
+    wd_player_buf.x = viewplayer->mo->x;
+    wd_player_buf.y = viewplayer->mo->y;
+    wd_player_buf.z = viewplayer->mo->z;
+    wd_player_buf.angle = viewplayer->mo->angle;
+    wd_player_buf.momx = viewplayer->mo->momx;
+    wd_player_buf.momy = viewplayer->mo->momy;
+    wd_player_buf.momz = viewplayer->mo->momz;
+  }
+  return 1;
+}
 
-WD_PLAYER_GET_IDX(ammo, ammo, NUMAMMO)
-WD_PLAYER_GET_IDX(maxammo, maxammo, NUMAMMO)
-WD_PLAYER_GET_IDX(power, powers, NUMPOWERS)
-WD_PLAYER_GET_IDX(frag, frags, MAXPLAYERS)
+// Pointer to the wd_player_t filled by the most recent
+// wasmdoom_snapshot_player().
+uint8_t *EXPORT(wasmdoom_player_snapshot_ptr)(void) {
+  return (uint8_t *)&wd_player_buf;
+}
 
-WD_PLAYER_GET_MO(x, viewplayer->mo->x)
-WD_PLAYER_GET_MO(y, viewplayer->mo->y)
-WD_PLAYER_GET_MO(z, viewplayer->mo->z)
-WD_PLAYER_GET_MO(angle, viewplayer->mo->angle)
-WD_PLAYER_GET_MO(momx, viewplayer->mo->momx)
-WD_PLAYER_GET_MO(momy, viewplayer->mo->momy)
-WD_PLAYER_GET_MO(momz, viewplayer->mo->momz)
+// Write host-overridden fields back into viewplayer. The host snapshots first
+// (so untouched fields keep their current values), edits wd_player_buf in
+// linear memory, sets the matching WD_PF_* bits in .dirty, then calls this --
+// with no intervening tick. Only dirtied fields are applied; .dirty is cleared
+// on return. Returns 0 if there is no player. cards/weapons are unpacked from
+// their bitmasks (inverse of the snapshot pack); WD_PF_POS relinks the mobj in
+// the blockmap via P_Unset/SetThingPosition rather than assigning x/y directly.
+// Note: setting pendingweapon triggers the animated weapon switch; writing
+// readyweapon directly mid-animation may look wrong.
+int EXPORT(wasmdoom_apply_player)(void) {
+  if (!viewplayer) {
+    return 0;
+  }
+  uint32_t d = wd_player_buf.dirty;
+  if (d & WD_PF_HEALTH) {
+    viewplayer->health = wd_player_buf.health;
+  }
+  if (d & WD_PF_ARMORPOINTS) {
+    viewplayer->armorpoints = wd_player_buf.armorpoints;
+  }
+  if (d & WD_PF_ARMORTYPE) {
+    viewplayer->armortype = wd_player_buf.armortype;
+  }
+  if (d & WD_PF_READYWEAPON) {
+    viewplayer->readyweapon = wd_player_buf.readyweapon;
+  }
+  if (d & WD_PF_PENDINGWEAPON) {
+    viewplayer->pendingweapon = wd_player_buf.pendingweapon;
+  }
+  if (d & WD_PF_BACKPACK) {
+    viewplayer->backpack = wd_player_buf.backpack;
+  }
+  if (d & WD_PF_CHEATS) {
+    viewplayer->cheats = wd_player_buf.cheats;
+  }
+  if (d & WD_PF_KILLCOUNT) {
+    viewplayer->killcount = wd_player_buf.killcount;
+  }
+  if (d & WD_PF_ITEMCOUNT) {
+    viewplayer->itemcount = wd_player_buf.itemcount;
+  }
+  if (d & WD_PF_SECRETCOUNT) {
+    viewplayer->secretcount = wd_player_buf.secretcount;
+  }
+  if (d & WD_PF_PLAYERSTATE) {
+    viewplayer->playerstate = wd_player_buf.playerstate;
+  }
+  if (d & WD_PF_DAMAGECOUNT) {
+    viewplayer->damagecount = wd_player_buf.damagecount;
+  }
+  if (d & WD_PF_BONUSCOUNT) {
+    viewplayer->bonuscount = wd_player_buf.bonuscount;
+  }
+  if (d & WD_PF_ATTACKDOWN) {
+    viewplayer->attackdown = wd_player_buf.attackdown;
+  }
+  if (d & WD_PF_USEDOWN) {
+    viewplayer->usedown = wd_player_buf.usedown;
+  }
+  if (d & WD_PF_REFIRE) {
+    viewplayer->refire = wd_player_buf.refire;
+  }
+  if (d & WD_PF_CARDS) {
+    for (int i = 0; i < NUMCARDS; i++) {
+      viewplayer->cards[i] = (wd_player_buf.cards >> i) & 1;
+    }
+  }
+  if (d & WD_PF_WEAPONS) {
+    for (int i = 0; i < NUMWEAPONS; i++) {
+      viewplayer->weaponowned[i] = (wd_player_buf.weapons >> i) & 1;
+    }
+  }
+  if (d & WD_PF_AMMO) {
+    for (int i = 0; i < NUMAMMO; i++) {
+      viewplayer->ammo[i] = wd_player_buf.ammo[i];
+    }
+  }
+  if (d & WD_PF_MAXAMMO) {
+    for (int i = 0; i < NUMAMMO; i++) {
+      viewplayer->maxammo[i] = wd_player_buf.maxammo[i];
+    }
+  }
+  if (d & WD_PF_POWERS) {
+    for (int i = 0; i < NUMPOWERS; i++) {
+      viewplayer->powers[i] = wd_player_buf.powers[i];
+    }
+  }
+  if ((d & WD_PF_POS) && viewplayer->mo) {
+    mobj_t *mo = viewplayer->mo;
+    P_UnsetThingPosition(mo);
+    mo->x = wd_player_buf.x;
+    mo->y = wd_player_buf.y;
+    mo->z = wd_player_buf.z;
+    P_SetThingPosition(mo);
+    mo->angle = wd_player_buf.angle;
+    mo->momx = wd_player_buf.momx;
+    mo->momy = wd_player_buf.momy;
+    mo->momz = wd_player_buf.momz;
+  }
+  wd_player_buf.dirty = 0;
+  return 1;
+}
+
+// --- Thinkers / mobjs -------------------------------------------------------
+// Thinkers are a heterogeneous doubly-linked list (thinkercap sentinel); only
+// the ones running P_MobjThinker are map objects. Rather than per-field getters
+// (count * fields boundary crossings per tick), pack the mobjs we care about
+// into one buffer the host reads as a flat wd_mobj_t[] over linear memory. See
+// wd_iface.h for the documented layout.
+#define WD_MOBJ_CAP 4096 // worst-case mobjs/level; extras are dropped
+static wd_mobj_t wd_mobj_buf[WD_MOBJ_CAP];
+
+// Snapshots the current mobjs into wd_mobj_buf and returns the count. Call this
+// each time before reading wasmdoom_map_objects_ptr().
+int EXPORT(wasmdoom_snapshot_map_objects)(void) {
+  // Off a level (e.g. title/menu/intermission) the thinker list is not set up:
+  // thinkercap is zero-initialized, so walking it runs off into linear memory
+  // and never reaches the sentinel. Mirror wasmdoom_snapshot_player's guard.
+  if (gamestate != GS_LEVEL) {
+    return 0;
+  }
+  int n = 0;
+  for (thinker_t *th = thinkercap.next; th != &thinkercap && n < WD_MOBJ_CAP;
+       th = th->next) {
+    if (th->function.acp1 != (actionf_p1)P_MobjThinker) {
+      continue;
+    }
+    mobj_t *mo = (mobj_t *)th;
+    wd_mobj_buf[n] = (wd_mobj_t){.x = mo->x,
+                                 .y = mo->y,
+                                 .z = mo->z,
+                                 .angle = mo->angle,
+                                 .type = mo->type,
+                                 .health = mo->health,
+                                 .flags = mo->flags};
+    n++;
+  }
+  return n;
+}
+
+// Pointer to the wd_mobj_t[] filled by the most recent
+// wasmdoom_snapshot_map_objects().
+uint8_t *EXPORT(wasmdoom_map_objects_ptr)(void) {
+  return (uint8_t *)wd_mobj_buf;
+}
+
+// Write host-overridden mobj fields back into the live thinker list. Re-walks
+// the list in the same order as the snapshot, so record n maps to the same mobj
+// the host read at index n -- valid only with no intervening tick. For each
+// record with dirty bits set, applies the marked WD_MF_* fields and clears that
+// record's .dirty. WD_MF_POS relinks the mobj in the blockmap via
+// P_Unset/SetThingPosition. Returns the mobj count (same as the snapshot).
+int EXPORT(wasmdoom_apply_map_objects)(void) {
+  // Same guard as the snapshot: no thinker list off a level. The host walks the
+  // list in the same order it snapshotted, so an empty snapshot means nothing
+  // to apply here either.
+  if (gamestate != GS_LEVEL) {
+    return 0;
+  }
+  int n = 0;
+  for (thinker_t *th = thinkercap.next; th != &thinkercap && n < WD_MOBJ_CAP;
+       th = th->next) {
+    if (th->function.acp1 != (actionf_p1)P_MobjThinker) {
+      continue;
+    }
+    mobj_t *mo = (mobj_t *)th;
+    uint32_t d = wd_mobj_buf[n].dirty;
+    if (d) {
+      if (d & WD_MF_HEALTH) {
+        mo->health = wd_mobj_buf[n].health;
+      }
+      if (d & WD_MF_FLAGS) {
+        mo->flags = wd_mobj_buf[n].flags;
+      }
+      if (d & WD_MF_TYPE) {
+        mo->type = wd_mobj_buf[n].type;
+      }
+      if (d & WD_MF_POS) {
+        P_UnsetThingPosition(mo);
+        mo->x = wd_mobj_buf[n].x;
+        mo->y = wd_mobj_buf[n].y;
+        mo->z = wd_mobj_buf[n].z;
+        P_SetThingPosition(mo);
+        mo->angle = wd_mobj_buf[n].angle;
+      }
+      wd_mobj_buf[n].dirty = 0;
+    }
+    n++;
+  }
+  return n;
+}

@@ -13,6 +13,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@wasmdoom/lib": "file:../lib",
     "lucide-static": "^1.16.0",
     "nipplejs": "^1.0.3"
   },

@@ -9,7 +9,7 @@
 // followed by unsigned 8-bit mono PCM. Stock Doom is always 11025 Hz; the
 // browser resamples to the device rate for us.
 
-import { EVENT, type EventDispatcher } from "./doom-events.ts";
+import { EVENT, type EventDispatcher } from "@wasmdoom/lib/wasmdoom-events.ts";
 import type { MusicWorkletMessage } from "./music/music-worklet.ts";
 import workletURL from "./music/music-worklet.ts?worker&url";
 import { pathJoin } from "./utils.ts";

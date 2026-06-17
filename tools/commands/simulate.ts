@@ -8,8 +8,10 @@ import {
   readFramebuffer,
   readPlayer,
   readMapObjects,
+  readSettings,
   writePlayer,
   writeMapObjects,
+  writeSettings,
   tickSafely,
   type HeadlessDoom,
 } from "#lib/wasmdoom-headless.ts";
@@ -94,6 +96,8 @@ function evalAssert(
   let state: Record<string, number | number[]> | null;
   if (cmd.target === "player") {
     state = readPlayer(doom) as Record<string, number | number[]> | null;
+  } else if (cmd.target === "settings") {
+    state = readSettings(doom) as Record<string, number | number[]>;
   } else {
     const map_object = readMapObjects(doom)[cmd.index];
     state =
@@ -201,6 +205,8 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
           case "set":
             if (cmd.target === "player") {
               writePlayer(doom, cmd.patch);
+            } else if (cmd.target === "settings") {
+              writeSettings(doom, cmd.patch);
             } else {
               writeMapObjects(doom, [[cmd.index, cmd.patch]]);
             }
@@ -242,7 +248,7 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
           const where =
             record.target === "map_object"
               ? `map_object[${record.index}].${record.field}`
-              : `player.${record.field}`;
+              : `${record.target}.${record.field}`;
           console.error(
             `assert failed at tick ${tick}: ${where} expected ${JSON.stringify(record.expected)}, got ${JSON.stringify(record.actual)}`,
           );
@@ -267,6 +273,7 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
       await mkdir(frameDir, { recursive: true });
       const player = readPlayer(doom); // null on title/intermission screens
       const map_objects = readMapObjects(doom);
+      const settings = readSettings(doom);
       const { indices, palette } = readFramebuffer(doom);
       await Promise.all([
         writeFile(
@@ -276,6 +283,10 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
         writeFile(
           join(frameDir, "map_objects.json"),
           JSON.stringify(map_objects, null, 2) + "\n",
+        ),
+        writeFile(
+          join(frameDir, "settings.json"),
+          JSON.stringify(settings, null, 2) + "\n",
         ),
         writeFile(join(frameDir, "screen.ppm"), encodePpm(indices, palette)),
       ]);

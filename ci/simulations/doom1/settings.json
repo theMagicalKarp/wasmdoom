@@ -1,0 +1,29 @@
+{
+  "ticks": 80,
+  "flags": ["-warp", "1", "1", "-skill", "4"],
+  "commands": [
+    {
+      "tick": 40,
+      "type": "assert",
+      "target": "settings",
+      "expect": {
+        "gamestate": 0,
+        "gameepisode": 1,
+        "gamemap": 1,
+        "gameskill": 3
+      }
+    },
+    {
+      "tick": 50,
+      "type": "set",
+      "target": "settings",
+      "patch": { "sfx_volume": 3, "screenblocks": 8, "detail_level": 1 }
+    },
+    {
+      "tick": 51,
+      "type": "assert",
+      "target": "settings",
+      "expect": { "sfx_volume": 3, "screenblocks": 8, "detail_level": 1 }
+    }
+  ]
+}

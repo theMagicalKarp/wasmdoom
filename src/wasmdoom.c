@@ -9,7 +9,9 @@
 #include "i_video.h"
 #include "m_argv.h"
 #include "p_local.h"
+#include "r_main.h"
 #include "r_state.h"
+#include "s_sound.h"
 #include "v_video.h"
 #include "wasmdoom.h"
 #include "wd_events.h"
@@ -316,6 +318,79 @@ int EXPORT(wasmdoom_apply_player)(void) {
   }
   wd_player_buf.dirty = 0;
   return 1;
+}
+
+// --- Settings ---------------------------------------------------------------
+// Global config + read-only game state (which map/skill we're on) packed into
+// one wd_settings_t, same snapshot/apply shape as the player. The game-state
+// fields are read-only context; only the config fields carry dirty bits, and on
+// apply each routes through the engine's real setter so side effects (volume
+// recompute, view resize) still happen. See wd_iface.h.
+static wd_settings_t wd_settings_buf;
+
+// Snapshot the current settings + game state into wd_settings_buf. Unlike the
+// player there is no "missing" case -- the globals always exist -- so there is
+// no return flag. Call before reading wasmdoom_settings_ptr().
+void EXPORT(wasmdoom_snapshot_settings)(void) {
+  wd_settings_buf = (wd_settings_t){
+      .gamestate = gamestate,
+      .gameepisode = gameepisode,
+      .gamemap = gamemap,
+      .gameskill = gameskill,
+      .sfx_volume = snd_SfxVolume,
+      .music_volume = snd_MusicVolume,
+      .mouse_sensitivity = mouseSensitivity,
+      .show_messages = showMessages,
+      .screenblocks = screenblocks,
+      .detail_level = detailLevel,
+  };
+}
+
+// Pointer to the wd_settings_t filled by the most recent
+// wasmdoom_snapshot_settings().
+uint8_t *EXPORT(wasmdoom_settings_ptr)(void) {
+  return (uint8_t *)&wd_settings_buf;
+}
+
+// Write host-overridden config back into the engine. The host snapshots first,
+// edits wd_settings_buf, sets the matching WD_SF_* bits in .dirty, then calls
+// this. Only dirtied fields are applied; .dirty is cleared on return. Each
+// field goes through its engine setter rather than a raw store so side effects
+// fire. The read-only game-state fields have no dirty bit and are never written
+// (changing the map/skill is a level-load action, out of scope here).
+void EXPORT(wasmdoom_apply_settings)(void) {
+  uint32_t d = wd_settings_buf.dirty;
+  if (d & WD_SF_SFX_VOLUME) {
+    S_SetSfxVolume(wd_settings_buf.sfx_volume);
+  }
+  if (d & WD_SF_MUSIC_VOLUME) {
+    S_SetMusicVolume(wd_settings_buf.music_volume);
+  }
+  if (d & WD_SF_MOUSE_SENSITIVITY) {
+    mouseSensitivity = wd_settings_buf.mouse_sensitivity;
+  }
+  if (d & WD_SF_SHOW_MESSAGES) {
+    showMessages = wd_settings_buf.show_messages;
+  }
+  if (d & WD_SF_VIEWSIZE) {
+    // screenSize is the options-menu's temp display variable for the view-size
+    // thermo; it's normally only synced from screenblocks in M_Init /
+    // M_SizeDisplay. Clamp to the same range M_SizeDisplay enforces (screenSize
+    // 0-8, i.e. screenblocks 3-11) and keep screenSize in step so the menu
+    // reflects host-applied changes.
+    extern int screenSize;
+    screenblocks = wd_settings_buf.screenblocks;
+    if (screenblocks < 3) {
+      screenblocks = 3;
+    } else if (screenblocks > 11) {
+      screenblocks = 11;
+    }
+    screenSize = screenblocks - 3;
+
+    detailLevel = wd_settings_buf.detail_level;
+    R_SetViewSize(screenblocks, detailLevel);
+  }
+  wd_settings_buf.dirty = 0;
 }
 
 // --- Thinkers / mobjs -------------------------------------------------------

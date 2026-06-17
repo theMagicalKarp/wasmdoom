@@ -26,6 +26,9 @@ export type WasmdoomExports = {
   wasmdoom_snapshot_map_objects: () => number; // packs map_objects, returns count
   wasmdoom_map_objects_ptr: () => number; // wd_mobj_t[] in linear memory
   wasmdoom_apply_map_objects: () => number; // applies dirtied map_objects, count
+  wasmdoom_snapshot_settings: () => void; // packs settings + game state
+  wasmdoom_settings_ptr: () => number; // wd_settings_t in linear memory
+  wasmdoom_apply_settings: () => void; // applies dirtied settings
 };
 
 export type WasmdoomInstance = WebAssembly.Instance & {
@@ -56,6 +59,9 @@ const WASMDOOM_EXPORT_NAMES = [
   "wasmdoom_snapshot_map_objects",
   "wasmdoom_map_objects_ptr",
   "wasmdoom_apply_map_objects",
+  "wasmdoom_snapshot_settings",
+  "wasmdoom_settings_ptr",
+  "wasmdoom_apply_settings",
 ] as const satisfies readonly (keyof WasmdoomExports)[];
 
 // Validate a freshly-instantiated module's exports against WasmdoomExports. The

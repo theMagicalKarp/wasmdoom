@@ -215,6 +215,12 @@ extern boolean precache;
 extern gamestate_t wipegamestate;
 
 extern int mouseSensitivity;
+
+// Options/config globals defined in m_menu.c. Declared here (like
+// mouseSensitivity above) so the JS<->WASM settings interface can reach them.
+extern int showMessages;
+extern int detailLevel;
+extern int screenblocks;
 //?
 // debug flag to cancel adaptiveness
 extern boolean singletics;

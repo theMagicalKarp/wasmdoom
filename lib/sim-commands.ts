@@ -11,15 +11,22 @@
 //       { "tick": 50, "type": "set",    "target": "player", "patch":  { "health": 200 } },
 //       { "tick": 60, "type": "assert", "target": "player", "expect": { "health": 200 } },
 //       { "tick": 90, "type": "set",    "target": "map_object", "index": 3, "patch": { "health": 1 } },
-//       { "tick": 95, "type": "assert", "target": "player", "expect": { "x": 1024 }, "tol": 1 }
+//       { "tick": 95, "type": "assert", "target": "player", "expect": { "x": 1024 }, "tol": 1 },
+//       { "tick": 96, "type": "assert", "target": "settings", "expect": { "gamemap": 1 } },
+//       { "tick": 97, "type": "set",    "target": "settings", "patch": { "sfx_volume": 3 } }
 //     ]
 //   }
 
 import { resolveKey } from "./wasmdoom-keys.ts";
 import { PLAYER_OFF, PLAYER_LEN, type Player } from "./player-layout.ts";
 import { MAP_OBJECT_OFF, type MapObject } from "./map-object-layout.ts";
+import {
+  SETTINGS_OFF,
+  SETTINGS_WRITABLE,
+  type Settings,
+} from "./settings-layout.ts";
 
-export type StateTarget = "player" | "map_object";
+export type StateTarget = "player" | "map_object" | "settings";
 
 export type SimCommand =
   | { tick: number; type: "keydown"; key: number }
@@ -41,6 +48,7 @@ export type SimCommand =
       index: number;
       patch: Partial<MapObject>;
     }
+  | { tick: number; type: "set"; target: "settings"; patch: Partial<Settings> }
   // tol is a non-negative fuzz applied to every numeric compare (default 0).
   // Required in practice for the float position/momentum fields.
   | {
@@ -56,6 +64,13 @@ export type SimCommand =
       target: "map_object";
       index: number;
       expect: Partial<MapObject>;
+      tol: number;
+    }
+  | {
+      tick: number;
+      type: "assert";
+      target: "settings";
+      expect: Partial<Settings>;
       tol: number;
     };
 
@@ -74,6 +89,12 @@ const PLAYER_FIELDS = new Set(
 const MAP_OBJECT_FIELDS = new Set(
   Object.keys(MAP_OBJECT_OFF).filter((k) => k !== "dirty"),
 );
+// `assert` may read any settings field (incl. the read-only game state);
+// `set` may only write the config subset.
+const SETTINGS_READABLE = new Set(
+  Object.keys(SETTINGS_OFF).filter((k) => k !== "dirty"),
+);
+const SETTINGS_WRITABLE_FIELDS = new Set<string>(SETTINGS_WRITABLE);
 const PLAYER_ARRAY_LEN = PLAYER_LEN as Record<string, number>;
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -96,6 +117,17 @@ function expectNumber(value: unknown, field: string): number {
   return value;
 }
 
+function fieldsFor(target: StateTarget, mode: "set" | "assert"): Set<string> {
+  switch (target) {
+    case "player":
+      return PLAYER_FIELDS;
+    case "map_object":
+      return MAP_OBJECT_FIELDS;
+    case "settings":
+      return mode === "set" ? SETTINGS_WRITABLE_FIELDS : SETTINGS_READABLE;
+  }
+}
+
 // Validate a `patch`/`expect` object for a set/assert command: keys must be
 // real fields for the target, scalars must be numbers, and the player array
 // fields (ammo/maxammo/powers) must be number arrays of the right length.
@@ -103,11 +135,12 @@ function parseStateFields(
   raw: unknown,
   target: StateTarget,
   ctx: string,
+  mode: "set" | "assert",
 ): Record<string, number | number[]> {
   if (!isObject(raw)) {
     throw new Error(`${ctx} must be an object`);
   }
-  const fields = target === "player" ? PLAYER_FIELDS : MAP_OBJECT_FIELDS;
+  const fields = fieldsFor(target, mode);
   const out: Record<string, number | number[]> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!fields.has(key)) {
@@ -130,8 +163,8 @@ function parseStateFields(
 }
 
 function parseTarget(raw: unknown, ctx: string): StateTarget {
-  if (raw !== "player" && raw !== "map_object") {
-    throw new Error(`${ctx} must be "player" or "map_object"`);
+  if (raw !== "player" && raw !== "map_object" && raw !== "settings") {
+    throw new Error(`${ctx} must be "player", "map_object", or "settings"`);
   }
   return raw;
 }
@@ -200,6 +233,7 @@ function parseCommand(raw: unknown, index: number): SimCommand {
         raw.patch,
         target,
         `commands[${index}].patch`,
+        "set",
       );
       if (target === "map_object") {
         const idx = expectInt(raw.index, `commands[${index}].index`);
@@ -216,6 +250,7 @@ function parseCommand(raw: unknown, index: number): SimCommand {
         raw.expect,
         target,
         `commands[${index}].expect`,
+        "assert",
       );
       let tol = 0;
       if (raw.tol !== undefined) {

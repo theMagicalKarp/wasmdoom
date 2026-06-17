@@ -1,9 +1,188 @@
 {
-  "ticks": 180,
+  "ticks": 445,
+  "flags": [
+    "-mode",
+    "shareware"
+  ],
   "commands": [
-    { "tick": 60, "type": "snapshot", "name": "title" },
-    { "tick": 90, "type": "keydown", "key": "MENU_OPEN" },
-    { "tick": 95, "type": "keyup", "key": "MENU_OPEN" },
-    { "tick": 150, "type": "snapshot", "name": "menu" }
+    {
+      "tick": 34,
+      "type": "mouse",
+      "buttons": 1,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "tick": 36,
+      "type": "mouse",
+      "buttons": 0,
+      "dx": 0,
+      "dy": 0
+    },
+    {
+      "tick": 72,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 74,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 87,
+      "type": "keydown",
+      "key": 13
+    },
+    {
+      "tick": 89,
+      "type": "keyup",
+      "key": 13
+    },
+    { "tick": 99, "type": "snapshot", "name": "settings-before" },
+    {
+      "tick": 100,
+      "type": "assert",
+      "target": "settings",
+      "expect": {
+        "gamestate": 3,
+        "gameepisode": 0,
+        "gamemap": 0,
+        "gameskill": 0
+      }
+    },
+    {
+      "tick": 100,
+      "type": "set",
+      "target": "settings",
+      "patch": { "screenblocks": 3, "detail_level": 1, "show_messages": 0, "mouse_sensitivity": 1 }
+    },
+    {
+      "tick": 101,
+      "type": "assert",
+      "target": "settings",
+      "expect": { "screenblocks": 3, "detail_level": 1, "show_messages": 0, "mouse_sensitivity": 1 }
+    },
+    { "tick": 101, "type": "snapshot", "name": "settings-after" },
+    {
+      "tick": 125,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 128,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 139,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 142,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 157,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 160,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 168,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 171,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 187,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 190,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 203,
+      "type": "keydown",
+      "key": 175
+    },
+    {
+      "tick": 206,
+      "type": "keyup",
+      "key": 175
+    },
+    {
+      "tick": 237,
+      "type": "keydown",
+      "key": 173
+    },
+    {
+      "tick": 240,
+      "type": "keyup",
+      "key": 173
+    },
+    {
+      "tick": 265,
+      "type": "keydown",
+      "key": 13
+    },
+    {
+      "tick": 267,
+      "type": "keyup",
+      "key": 13
+    },
+    { "tick": 299, "type": "snapshot", "name": "sound-before" },
+    {
+      "tick": 300,
+      "type": "assert",
+      "target": "settings",
+      "expect": {
+        "sfx_volume": 8,
+        "music_volume": 8
+      }
+    },
+    {
+      "tick": 301,
+      "type": "set",
+      "target": "settings",
+      "patch": { "sfx_volume": 2, "music_volume": 5 }
+    },
+    {
+      "tick": 302,
+      "type": "assert",
+      "target": "settings",
+      "expect": { "sfx_volume": 2, "music_volume": 5 }
+    },
+
+    {
+      "tick": 305,
+      "type": "keydown",
+      "key": 174
+    },
+    {
+      "tick": 310,
+      "type": "keyup",
+      "key": 174
+    },
+    {
+      "tick": 315,
+      "type": "assert",
+      "target": "settings",
+      "expect": { "sfx_volume": 3, "music_volume": 5 }
+    },
+    { "tick": 315, "type": "snapshot", "name": "sound-after-input" }
   ]
 }

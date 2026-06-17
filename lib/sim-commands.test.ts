@@ -109,7 +109,7 @@ test("rejects unknown state target", () => {
           { tick: 0, type: "set", target: "enemy", patch: { health: 1 } },
         ],
       }),
-    /must be "player" or "map_object"/,
+    /must be "player", "map_object", or "settings"/,
   );
 });
 
@@ -168,6 +168,45 @@ test("rejects negative tol", () => {
         ],
       }),
     /tol must be >= 0/,
+  );
+});
+
+test("accepts settings set/assert without an index", () => {
+  const script = parseSimScript({
+    ticks: 10,
+    commands: [
+      { tick: 0, type: "set", target: "settings", patch: { sfx_volume: 3 } },
+      { tick: 1, type: "assert", target: "settings", expect: { gamemap: 1 } },
+    ],
+  });
+  assert.equal(script.commands.length, 2);
+});
+
+test("assert may read read-only settings game state", () => {
+  const script = parseSimScript({
+    ticks: 10,
+    commands: [
+      {
+        tick: 0,
+        type: "assert",
+        target: "settings",
+        expect: { gameskill: 2 },
+      },
+    ],
+  });
+  assert.equal(script.commands.length, 1);
+});
+
+test("rejects set on a read-only settings field", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [
+          { tick: 0, type: "set", target: "settings", patch: { gamemap: 2 } },
+        ],
+      }),
+    /unknown settings field/,
   );
 });
 

@@ -26,6 +26,13 @@ import {
   PLAYER_REC,
   type Player,
 } from "@wasmdoom/lib/player-layout.ts";
+import {
+  SETTINGS_FIELD,
+  SETTINGS_OFF,
+  SETTINGS_REC,
+  SETTINGS_WRITABLE,
+  type Settings,
+} from "@wasmdoom/lib/settings-layout.ts";
 
 // Thrown when the wasm process calls exit() or aborts mid-tick. The engine's
 // exit() traps the wasm, so callers see this instead of a raw RuntimeError and
@@ -361,4 +368,58 @@ export function writeMapObjects(
   }
   doom.exports.wasmdoom_apply_map_objects();
   return count;
+}
+
+// Snapshots the global config + read-only game state (which map/skill we're on)
+// into a struct. Like readPlayer, recomputes the view each call because wasm
+// memory growth invalidates the backing ArrayBuffer. Every field is a plain int
+// (no fixed-point/BAM encoding). Always succeeds -- the globals always exist.
+export function readSettings(doom: HeadlessDoom): Settings {
+  doom.exports.wasmdoom_snapshot_settings();
+  const base = doom.exports.wasmdoom_settings_ptr();
+  const view = new DataView(doom.exports.memory.buffer, base, SETTINGS_REC);
+  const i32 = (off: number) => view.getInt32(off, true);
+  return {
+    gamestate: i32(SETTINGS_OFF.gamestate),
+    gameepisode: i32(SETTINGS_OFF.gameepisode),
+    gamemap: i32(SETTINGS_OFF.gamemap),
+    gameskill: i32(SETTINGS_OFF.gameskill),
+    sfx_volume: i32(SETTINGS_OFF.sfx_volume),
+    music_volume: i32(SETTINGS_OFF.music_volume),
+    mouse_sensitivity: i32(SETTINGS_OFF.mouse_sensitivity),
+    show_messages: i32(SETTINGS_OFF.show_messages),
+    screenblocks: i32(SETTINGS_OFF.screenblocks),
+    detail_level: i32(SETTINGS_OFF.detail_level),
+  };
+}
+
+const SETTINGS_WRITABLE_SET = new Set<string>(SETTINGS_WRITABLE);
+
+// Override the writable config. Snapshots first so untouched fields keep their
+// current values, writes only the writable keys present in `patch`, ORs the
+// matching SETTINGS_FIELD dirty bits, and calls wasmdoom_apply_settings so the
+// engine applies them through its real setters (S_SetSfxVolume, R_SetViewSize,
+// ...). Read-only game-state keys (gamestate/gameepisode/gamemap/gameskill) are
+// ignored. Must run with no tick between this and the call.
+export function writeSettings(
+  doom: HeadlessDoom,
+  patch: Partial<Settings>,
+): void {
+  doom.exports.wasmdoom_snapshot_settings();
+  const base = doom.exports.wasmdoom_settings_ptr();
+  const view = new DataView(doom.exports.memory.buffer, base, SETTINGS_REC);
+  let dirty = 0;
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined || !SETTINGS_WRITABLE_SET.has(key)) {
+      continue; // read-only or unknown keys are ignored
+    }
+    view.setInt32(
+      SETTINGS_OFF[key as keyof typeof SETTINGS_OFF],
+      (value as number) | 0,
+      true,
+    );
+    dirty |= SETTINGS_FIELD[key as keyof typeof SETTINGS_FIELD];
+  }
+  view.setUint32(SETTINGS_OFF.dirty, dirty >>> 0, true);
+  doom.exports.wasmdoom_apply_settings();
 }

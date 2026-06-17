@@ -7892,6 +7892,12 @@
             }
         },
         {
+          "tick": 1920,
+          "type": "assert",
+          "target": "settings",
+          "expect": { "gamestate": 0, "gameepisode": 1, "gamemap": 1, "gameskill": 2}
+        },
+        {
             "tick": 1920,
             "type": "snapshot",
             "name": "mid"
@@ -7905,6 +7911,17 @@
             "tick": 1920,
             "type": "keydown",
             "key": 375
+        },
+        {
+          "tick": 1921,
+          "type": "set",
+          "target": "settings",
+          "patch": { "screenblocks": 10}
+        },
+        {
+            "tick": 1922,
+            "type": "snapshot",
+            "name": "mid-adjust-screenblocks"
         },
         {
             "tick": 1922,
@@ -17520,6 +17537,12 @@
                 "momy": 0.22,
                 "momz": 0
             }
+        },
+        {
+          "tick": 3937,
+          "type": "assert",
+          "target": "settings",
+          "expect": { "gamestate": 1, "gameepisode": 1, "gamemap": 1, "gameskill": 2}
         }
     ]
 }

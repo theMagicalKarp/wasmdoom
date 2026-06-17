@@ -108,4 +108,60 @@ enum {
   WD_PF_POS = 1u << 21,
 };
 
+// Global game settings + read-only game state, packed into one record the host
+// reads/writes the same way as wd_player_t. The first four fields (gamestate..
+// gameskill) are read-only context (which map/skill we're on); they have no
+// dirty bit and are ignored by wasmdoom_apply_settings. The remaining fields
+// are writable config; on apply each goes through the engine's real setter
+// (S_SetSfxVolume etc.) rather than a raw store, so side effects still fire.
+typedef struct {
+  int32_t gamestate;   // gamestate_t, read-only
+  int32_t gameepisode; // read-only
+  int32_t gamemap;     // read-only
+  int32_t gameskill;   // skill_t, read-only
+  int32_t sfx_volume;
+  int32_t music_volume;
+  int32_t mouse_sensitivity;
+  int32_t show_messages;
+  int32_t screenblocks;
+  int32_t detail_level;
+  uint32_t dirty; // host->engine: WD_SF_* bits to apply (0 on snapshot)
+} wd_settings_t;
+
+_Static_assert(offsetof(wd_settings_t, gamestate) == 0,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, gameepisode) == 4,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, gamemap) == 8,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, gameskill) == 12,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, sfx_volume) == 16,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, music_volume) == 20,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, mouse_sensitivity) == 24,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, show_messages) == 28,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, screenblocks) == 32,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, detail_level) == 36,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, dirty) == 40,
+               "wd_settings_t layout drift");
+_Static_assert(sizeof(wd_settings_t) == 44, "wd_settings_t layout drift");
+
+// Dirty bits for wd_settings_t.dirty: the host sets bit(s) for each writable
+// field it wrote before calling wasmdoom_apply_settings(). screenblocks and
+// detail_level share WD_SF_VIEWSIZE because R_SetViewSize takes both together
+// (same idea as WD_PF_POS grouping the position fields).
+enum {
+  WD_SF_SFX_VOLUME = 1u << 0,
+  WD_SF_MUSIC_VOLUME = 1u << 1,
+  WD_SF_MOUSE_SENSITIVITY = 1u << 2,
+  WD_SF_SHOW_MESSAGES = 1u << 3,
+  WD_SF_VIEWSIZE = 1u << 4, // screenblocks + detail_level
+};
+
 #endif

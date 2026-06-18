@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   EVENT,
+  EVENT_SCHEMA,
   createEventDispatcher,
+  decodeEvent,
   type EventBufferExports,
 } from "./wasmdoom-events.ts";
 
@@ -165,6 +167,71 @@ test("drain decodes a sound_start payload's seven fields", () => {
     sep: 128,
     pitch: 130,
   });
+});
+
+// Build a DataView over just the payload bytes (no tag/len header), the shape
+// decodeEvent expects.
+function payloadView(bytes: number[]): DataView {
+  return new DataView(new Uint8Array(bytes).buffer);
+}
+
+test("decodeEvent maps ENEMY_KILLED fields by name, decoding fixed to world units", () => {
+  const decoded = decodeEvent(
+    EVENT.ENEMY_KILLED,
+    payloadView([
+      ...u32(9), // mobjType
+      ...u32(100 * 65536), // x (fixed 16.16 -> 100.0)
+      ...u32(0xffff0000), // y (fixed 16.16 -> -1.0)
+      ...u32(1), // byPlayer
+    ]),
+  );
+  assert.equal(decoded.event, "ENEMY_KILLED");
+  assert.deepEqual(decoded.fields, { mobjType: 9, x: 100, y: -1, byPlayer: 1 });
+});
+
+test("decodeEvent reads HUD_MESSAGE as an inline string", () => {
+  const bytes = [...new TextEncoder().encode("You got the shotgun!")];
+  const decoded = decodeEvent(EVENT.HUD_MESSAGE, payloadView(bytes));
+  assert.equal(decoded.event, "HUD_MESSAGE");
+  assert.deepEqual(decoded.fields, { message: "You got the shotgun!" });
+});
+
+test("decodeEvent treats i32 payloads as signed", () => {
+  const decoded = decodeEvent(
+    EVENT.PLAYER_DAMAGED,
+    payloadView([
+      ...u32(15), // damage
+      ...u32(0xffffffff), // health -1
+      ...u32(0), // armor
+      ...u32(0xffffffff), // attackerType (sentinel, read as u32)
+    ]),
+  );
+  assert.deepEqual(decoded.fields, {
+    damage: 15,
+    health: -1,
+    armor: 0,
+    attackerType: 0xffffffff,
+  });
+});
+
+test("decodeEvent yields no fields and the byte length for an unknown tag", () => {
+  const decoded = decodeEvent(60000, payloadView([1, 2, 3]));
+  assert.equal(decoded.event, null);
+  assert.deepEqual(decoded.fields, {});
+  assert.equal(decoded.byteLength, 3);
+});
+
+test("every EVENT name except the infra log tags has an EVENT_SCHEMA entry", () => {
+  // Gameplay tags (>= 100) must all be in the schema; the infra tags (1..15)
+  // are decoded ad hoc by the hosts and are intentionally absent.
+  for (const [name, tag] of Object.entries(EVENT)) {
+    if (tag >= 100) {
+      assert.ok(
+        name in EVENT_SCHEMA,
+        `EVENT.${name} (tag ${tag}) is missing from EVENT_SCHEMA`,
+      );
+    }
+  }
 });
 
 test("drain does not clear the buffer (wasmdoom_tick owns clearing)", () => {

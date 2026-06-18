@@ -275,3 +275,133 @@ test("rejects unknown command types", () => {
     /unknown command type/,
   );
 });
+
+test("parses assert_event with expect, tol, and count", () => {
+  const script = parseSimScript({
+    ticks: 100,
+    commands: [
+      {
+        tick: 90,
+        type: "assert_event",
+        event: "ENEMY_KILLED",
+        expect: { mobjType: 9, byPlayer: 1 },
+        tol: 0,
+        count: 1,
+      },
+      { tick: 95, type: "assert_event", event: "SECRET_FOUND" },
+    ],
+  });
+  const killed = script.commands[0] as {
+    event: string;
+    expect: Record<string, number>;
+    count?: number;
+  };
+  assert.equal(killed.event, "ENEMY_KILLED");
+  assert.deepEqual(killed.expect, { mobjType: 9, byPlayer: 1 });
+  assert.equal(killed.count, 1);
+  // No expect/count -> empty expect, count omitted.
+  const secret = script.commands[1] as {
+    expect: Record<string, number>;
+    count?: number;
+  };
+  assert.deepEqual(secret.expect, {});
+  assert.equal(secret.count, undefined);
+});
+
+test("parses assert_event with a string expectation for a string field", () => {
+  const script = parseSimScript({
+    ticks: 100,
+    commands: [
+      {
+        tick: 90,
+        type: "assert_event",
+        event: "HUD_MESSAGE",
+        expect: { message: "Picked up the armor." },
+        count: 1,
+      },
+    ],
+  });
+  const hud = script.commands[0] as {
+    event: string;
+    expect: Record<string, number | string>;
+  };
+  assert.deepEqual(hud.expect, { message: "Picked up the armor." });
+});
+
+test("rejects a number for a string field", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [
+          {
+            tick: 0,
+            type: "assert_event",
+            event: "HUD_MESSAGE",
+            expect: { message: 5 },
+          },
+        ],
+      }),
+    /message must be a string/,
+  );
+});
+
+test("rejects a string for a numeric field", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [
+          {
+            tick: 0,
+            type: "assert_event",
+            event: "SECRET_FOUND",
+            expect: { secretCount: "x" },
+          },
+        ],
+      }),
+    /secretCount must be a number/,
+  );
+});
+
+test("rejects assert_event with an unknown event name", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [{ tick: 0, type: "assert_event", event: "NOPE" }],
+      }),
+    /known EVENT name/,
+  );
+});
+
+test("rejects assert_event with a field not in the event's schema", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [
+          {
+            tick: 0,
+            type: "assert_event",
+            event: "ENEMY_KILLED",
+            expect: { bogus: 1 },
+          },
+        ],
+      }),
+    /unknown ENEMY_KILLED field/,
+  );
+});
+
+test("rejects assert_event with a negative count", () => {
+  assert.throws(
+    () =>
+      parseSimScript({
+        ticks: 10,
+        commands: [
+          { tick: 0, type: "assert_event", event: "SECRET_FOUND", count: -1 },
+        ],
+      }),
+    /count must be >= 0/,
+  );
+});

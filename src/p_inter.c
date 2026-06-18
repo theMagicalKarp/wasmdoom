@@ -39,6 +39,7 @@ static const char rcsid[] = "$Id: p_inter.c,v 1.4 1997/02/03 22:45:11 b1 Exp $";
 #include "s_sound.h"
 
 #include "p_inter.h"
+#include "wd_events.h"
 
 #define BONUSADD 6
 
@@ -242,6 +243,7 @@ void P_GiveCard(player_t *player, card_t card) {
 
   player->bonuscount = BONUSADD;
   player->cards[card] = 1;
+  emit_key_obtained((uint32_t)card);
 }
 
 //
@@ -641,6 +643,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher) {
   if (special->flags & MF_COUNTITEM) {
     player->itemcount++;
   }
+  // Single subtyped pickup notification (all failed-pickup paths returned
+  // early above). itemId is the sprite; the HUD text rides HUD_MESSAGE.
+  emit_item_picked_up((uint32_t)special->sprite, 0);
   P_RemoveMobj(special);
   player->bonuscount += BONUSADD;
   if (player == &players[consoleplayer]) {
@@ -663,6 +668,18 @@ void P_KillMobj(mobj_t *source, mobj_t *target) {
 
   target->flags |= MF_CORPSE | MF_DROPOFF;
   target->height >>= 2;
+
+  // Surface the death to the host before the death-state bookkeeping (which
+  // has early returns). PLAYER_DIED for a player, ENEMY_KILLED otherwise.
+  {
+    uint32_t attacker_type = source ? (uint32_t)source->type : EV_ATTACKER_NONE;
+    if (target->player) {
+      emit_player_died(attacker_type);
+    } else {
+      emit_enemy_killed((uint32_t)target->type, target->x, target->y,
+                        (source && source->player) ? 1 : 0);
+    }
+  }
 
   if (source && source->player) {
     // count for intermission
@@ -839,10 +856,16 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source,
     if (player == &players[consoleplayer]) {
       I_Tactile(40, 10, 40 + temp * 2);
     }
+
+    emit_player_damaged(damage, player->health, player->armorpoints,
+                        source ? (uint32_t)source->type : EV_ATTACKER_NONE);
   }
 
   // do the damage
   target->health -= damage;
+  if (!player) {
+    emit_enemy_damaged((uint32_t)target->type, damage, target->health);
+  }
   if (target->health <= 0) {
     P_KillMobj(source, target);
     return;

@@ -6,6 +6,49 @@
     ],
     "commands": [
         {
+            "tick": 0,
+            "type": "assert_event",
+            "event": "GAME_STATE_CHANGED",
+            "expect": {
+                "oldState": 0,
+                "newState": 3
+            }
+        },
+        {
+            "tick": 171,
+            "type": "assert_event",
+            "event": "GAME_STATE_CHANGED",
+            "expect": {
+                "oldState": 3,
+                "newState": 0
+            }
+        },
+        {
+            "tick": 171,
+            "type": "assert_event",
+            "event": "LEVEL_LOADED",
+            "expect": {
+                "episode": 1,
+                "map": 5,
+                "skill": 2
+            }
+        },
+        {
+            "tick": 171,
+            "type": "assert_event",
+            "event": "PLAYER_SPAWNED",
+            "expect": {}
+        },
+        {
+            "tick": 171,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 202,
             "type": "mouse",
             "buttons": 1,
@@ -20,6 +63,15 @@
             "dy": 0
         },
         {
+            "tick": 225,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 242,
             "type": "keydown",
             "key": 175
@@ -28,6 +80,15 @@
             "tick": 242,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 242,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 246,
@@ -43,6 +104,14 @@
             "tick": 255,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 255,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 2
+            }
         },
         {
             "tick": 257,
@@ -65,6 +134,39 @@
             "key": 175
         },
         {
+            "tick": 268,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 55,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 268,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 11
+            }
+        },
+        {
+            "tick": 268,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up the armor."
+            }
+        },
+        {
+            "tick": 269,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 11
+            }
+        },
+        {
             "tick": 275,
             "type": "keydown",
             "key": 175
@@ -73,6 +175,15 @@
             "tick": 275,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 276,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 277,
@@ -95,6 +206,22 @@
             "key": 175
         },
         {
+            "tick": 289,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
+            "tick": 290,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 11
+            }
+        },
+        {
             "tick": 293,
             "type": "keydown",
             "key": 173
@@ -105,9 +232,72 @@
             "key": 375
         },
         {
+            "tick": 293,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 2,
+                "damage": 5,
+                "healthLeft": 25
+            }
+        },
+        {
+            "tick": 293,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 49
+            }
+        },
+        {
+            "tick": 293,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 295,
             "type": "keyup",
             "key": 173
+        },
+        {
+            "tick": 295,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
+            "tick": 295,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 13
+            }
+        },
+        {
+            "tick": 296,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 71,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
+            "tick": 297,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 2
+            }
         },
         {
             "tick": 300,
@@ -135,9 +325,38 @@
             "key": 375
         },
         {
+            "tick": 307,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 2,
+                "damage": 15,
+                "healthLeft": 10
+            }
+        },
+        {
+            "tick": 307,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 48
+            }
+        },
+        {
             "tick": 308,
             "type": "keyup",
             "key": 173
+        },
+        {
+            "tick": 310,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 312,
@@ -155,6 +374,58 @@
             "key": 173
         },
         {
+            "tick": 317,
+            "type": "assert_event",
+            "event": "PLAYER_DAMAGED",
+            "expect": {
+                "damage": 2,
+                "health": 98,
+                "armor": 99,
+                "attackerType": 2
+            }
+        },
+        {
+            "tick": 317,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 7
+            }
+        },
+        {
+            "tick": 321,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 2,
+                "damage": 15,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 321,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 2,
+                "x": -170.81,
+                "y": -49.29,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 321,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 47
+            }
+        },
+        {
             "tick": 326,
             "type": "keydown",
             "key": 173
@@ -168,6 +439,16 @@
             "tick": 328,
             "type": "keyup",
             "key": 173
+        },
+        {
+            "tick": 335,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 46
+            }
         },
         {
             "tick": 337,
@@ -185,6 +466,32 @@
             "key": 173
         },
         {
+            "tick": 343,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 92,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 343,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 6,
+                "priority": 8
+            }
+        },
+        {
+            "tick": 343,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "You got the shotgun!"
+            }
+        },
+        {
             "tick": 345,
             "type": "keydown",
             "key": 173
@@ -200,6 +507,14 @@
             "key": 173
         },
         {
+            "tick": 350,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
             "tick": 352,
             "type": "keydown",
             "key": 173
@@ -213,6 +528,14 @@
             "tick": 354,
             "type": "keyup",
             "key": 173
+        },
+        {
+            "tick": 355,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
         },
         {
             "tick": 357,
@@ -238,6 +561,15 @@
             "tick": 363,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 365,
+            "type": "assert_event",
+            "event": "WEAPON_CHANGED",
+            "expect": {
+                "from": 1,
+                "to": 2
+            }
         },
         {
             "tick": 366,
@@ -270,6 +602,88 @@
             "key": 13
         },
         {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 45
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 30
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 5,
+                "healthLeft": 25
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 5,
+                "healthLeft": 20
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 11,
+                "x": 39.52,
+                "y": 21.74,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 383,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 2,
+                "ammoType": 1,
+                "ammoLeft": 3
+            }
+        },
+        {
             "tick": 405,
             "type": "keydown",
             "key": 175
@@ -283,6 +697,77 @@
             "tick": 407,
             "type": "keyup",
             "key": 175
+        },
+        {
+            "tick": 413,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
+            "tick": 420,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 30,
+                "damage": 15,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 420,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 30,
+                "damage": 10,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 420,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 30,
+                "x": 192,
+                "y": 16,
+                "byPlayer": 1
+            }
+        },
+        {
+            "tick": 420,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 2,
+                "ammoType": 1,
+                "ammoLeft": 2
+            }
+        },
+        {
+            "tick": 433,
+            "type": "assert_event",
+            "event": "EXPLOSION",
+            "expect": {
+                "x": 216.93,
+                "y": 16.31,
+                "damage": 128
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 433,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 28,
+                "healthLeft": 32
+            }
         },
         {
             "tick": 434,
@@ -300,9 +785,38 @@
             "key": 173
         },
         {
+            "tick": 443,
+            "type": "assert_event",
+            "event": "PLAYER_DAMAGED",
+            "expect": {
+                "damage": 6,
+                "health": 92,
+                "armor": 96,
+                "attackerType": 11
+            }
+        },
+        {
+            "tick": 443,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 3,
+                "priority": 7
+            }
+        },
+        {
             "tick": 447,
             "type": "keydown",
             "key": 13
+        },
+        {
+            "tick": 447,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 7
+            }
         },
         {
             "tick": 449,
@@ -310,9 +824,180 @@
             "key": 13
         },
         {
+            "tick": 457,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 17
+            }
+        },
+        {
+            "tick": 457,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": 7
+            }
+        },
+        {
+            "tick": 457,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": -8
+            }
+        },
+        {
+            "tick": 457,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 11,
+                "x": 39.86,
+                "y": -26.88,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 457,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 2,
+                "ammoType": 1,
+                "ammoLeft": 1
+            }
+        },
+        {
+            "tick": 463,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 463,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
+            "tick": 469,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 469,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
+            "tick": 473,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
+            "tick": 476,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 476,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
+            "tick": 483,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
+            "tick": 493,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
+            "tick": 497,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 5
+            }
+        },
+        {
+            "tick": 498,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 504,
             "type": "keydown",
             "key": 13
+        },
+        {
+            "tick": 504,
+            "type": "assert_event",
+            "event": "LEVEL_LOADED",
+            "expect": {
+                "episode": 1,
+                "map": 1,
+                "skill": 2
+            }
+        },
+        {
+            "tick": 504,
+            "type": "assert_event",
+            "event": "PLAYER_SPAWNED",
+            "expect": {}
+        },
+        {
+            "tick": 504,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 507,
@@ -528,6 +1213,15 @@
             "buttons": 0,
             "dx": -10,
             "dy": 0
+        },
+        {
+            "tick": 569,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 570,
@@ -1057,6 +1751,15 @@
             "dy": 0
         },
         {
+            "tick": 603,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 604,
             "type": "keydown",
             "key": 173
@@ -1345,6 +2048,15 @@
             "tick": 637,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 637,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 638,
@@ -1637,6 +2349,15 @@
             "key": 375
         },
         {
+            "tick": 671,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 673,
             "type": "keydown",
             "key": 173
@@ -1907,6 +2628,23 @@
             "key": 375
         },
         {
+            "tick": 703,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 703,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
             "tick": 704,
             "type": "keydown",
             "key": 173
@@ -1915,6 +2653,15 @@
             "tick": 704,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 705,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 706,
@@ -1965,6 +2712,23 @@
             "tick": 710,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 711,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 711,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
         },
         {
             "tick": 712,
@@ -2060,6 +2824,23 @@
             "dy": 0
         },
         {
+            "tick": 734,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 55,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 734,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up the armor."
+            }
+        },
+        {
             "tick": 735,
             "type": "keyup",
             "key": 173
@@ -2098,6 +2879,15 @@
             "buttons": 0,
             "dx": 202,
             "dy": 0
+        },
+        {
+            "tick": 739,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 740,
@@ -2382,6 +3172,15 @@
             "key": 375
         },
         {
+            "tick": 790,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 791,
             "type": "keydown",
             "key": 173
@@ -2532,6 +3331,15 @@
             "key": 375
         },
         {
+            "tick": 807,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 808,
             "type": "keydown",
             "key": 173
@@ -2610,6 +3418,15 @@
             "tick": 824,
             "type": "keydown",
             "key": 356
+        },
+        {
+            "tick": 824,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 825,
@@ -2657,6 +3474,15 @@
             "key": 353
         },
         {
+            "tick": 858,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 860,
             "type": "keydown",
             "key": 44
@@ -2770,6 +3596,15 @@
             "tick": 872,
             "type": "keyup",
             "key": 44
+        },
+        {
+            "tick": 892,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 906,
@@ -2782,9 +3617,27 @@
             "key": 356
         },
         {
+            "tick": 909,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 911,
             "type": "keyup",
             "key": 46
+        },
+        {
+            "tick": 926,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 927,
@@ -2909,6 +3762,15 @@
             "dy": 0
         },
         {
+            "tick": 943,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 944,
             "type": "mouse",
             "buttons": 0,
@@ -2963,6 +3825,15 @@
             "buttons": 0,
             "dx": -19,
             "dy": 0
+        },
+        {
+            "tick": 960,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 961,
@@ -3054,6 +3925,15 @@
             "buttons": 0,
             "dx": -74,
             "dy": 0
+        },
+        {
+            "tick": 977,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 978,
@@ -3262,6 +4142,15 @@
             "dy": 0
         },
         {
+            "tick": 1011,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1012,
             "type": "mouse",
             "buttons": 0,
@@ -3353,6 +4242,15 @@
             "dy": 0
         },
         {
+            "tick": 1028,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1034,
             "type": "mouse",
             "buttons": 0,
@@ -3396,9 +4294,27 @@
             "key": 357
         },
         {
+            "tick": 1049,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 4,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 1052,
             "type": "keyup",
             "key": 32
+        },
+        {
+            "tick": 1053,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
         },
         {
             "tick": 1056,
@@ -3409,6 +4325,23 @@
             "tick": 1056,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 1059,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
+            "tick": 1062,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1064,
@@ -3441,6 +4374,15 @@
             "tick": 1079,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1079,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1081,
@@ -3531,6 +4473,16 @@
             "dy": 0
         },
         {
+            "tick": 1087,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 49
+            }
+        },
+        {
             "tick": 1088,
             "type": "keydown",
             "key": 173
@@ -3663,6 +4615,16 @@
             "tick": 1101,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1101,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 48
+            }
         },
         {
             "tick": 1102,
@@ -3772,6 +4734,25 @@
             "key": 173
         },
         {
+            "tick": 1113,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
+            "tick": 1115,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 47
+            }
+        },
+        {
             "tick": 1117,
             "type": "keydown",
             "key": 173
@@ -3857,6 +4838,16 @@
             "dy": 0
         },
         {
+            "tick": 1129,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 46
+            }
+        },
+        {
             "tick": 1130,
             "type": "keydown",
             "key": 173
@@ -3872,6 +4863,15 @@
             "buttons": 1,
             "dx": 10,
             "dy": 0
+        },
+        {
+            "tick": 1130,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 1131,
@@ -3991,6 +4991,35 @@
             "key": 173
         },
         {
+            "tick": 1143,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 10,
+                "healthLeft": 10
+            }
+        },
+        {
+            "tick": 1143,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 45
+            }
+        },
+        {
+            "tick": 1147,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1153,
             "type": "keydown",
             "key": 175
@@ -4001,11 +5030,40 @@
             "key": 371
         },
         {
+            "tick": 1153,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 5
+            }
+        },
+        {
             "tick": 1157,
             "type": "keyup",
             "key": 175
         },
         {
+            "tick": 1157,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 5,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 1157,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 44
+            }
+        },
+        {
             "tick": 1162,
             "type": "keydown",
             "key": 173
@@ -4024,6 +5082,26 @@
             "tick": 1171,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1171,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 15,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 1171,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 43
+            }
         },
         {
             "tick": 1172,
@@ -4123,6 +5201,38 @@
             "dy": 0
         },
         {
+            "tick": 1185,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 15,
+                "healthLeft": -10
+            }
+        },
+        {
+            "tick": 1185,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 1,
+                "x": 2103.36,
+                "y": -2536.13,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 1185,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 42
+            }
+        },
+        {
             "tick": 1190,
             "type": "keydown",
             "key": 175
@@ -4136,6 +5246,16 @@
             "tick": 1195,
             "type": "keyup",
             "key": 175
+        },
+        {
+            "tick": 1199,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 41
+            }
         },
         {
             "tick": 1201,
@@ -4192,6 +5312,15 @@
             "buttons": 0,
             "dx": -78,
             "dy": 0
+        },
+        {
+            "tick": 1214,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1215,
@@ -4288,6 +5417,38 @@
             "dy": 0
         },
         {
+            "tick": 1229,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 10,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 1229,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 1,
+                "x": 2208.99,
+                "y": -2466.82,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 1229,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 40
+            }
+        },
+        {
             "tick": 1230,
             "type": "mouse",
             "buttons": 1,
@@ -4334,6 +5495,33 @@
             "key": 173
         },
         {
+            "tick": 1243,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 39
+            }
+        },
+        {
+            "tick": 1244,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 78,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1244,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a clip."
+            }
+        },
+        {
             "tick": 1246,
             "type": "mouse",
             "buttons": 0,
@@ -4349,6 +5537,15 @@
             "tick": 1248,
             "type": "keydown",
             "key": 356
+        },
+        {
+            "tick": 1248,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1254,
@@ -4396,6 +5593,15 @@
             "key": 375
         },
         {
+            "tick": 1265,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1267,
             "type": "keydown",
             "key": 173
@@ -4414,6 +5620,23 @@
             "tick": 1268,
             "type": "keydown",
             "key": 356
+        },
+        {
+            "tick": 1272,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1272,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
         },
         {
             "tick": 1275,
@@ -4532,6 +5755,15 @@
             "dy": 0
         },
         {
+            "tick": 1282,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1283,
             "type": "mouse",
             "buttons": 0,
@@ -4573,6 +5805,23 @@
             "dy": 0
         },
         {
+            "tick": 1285,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1285,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
             "tick": 1286,
             "type": "keydown",
             "key": 46
@@ -4603,6 +5852,15 @@
             "tick": 1287,
             "type": "keyup",
             "key": 46
+        },
+        {
+            "tick": 1299,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1303,
@@ -4782,6 +6040,23 @@
             "dy": 0
         },
         {
+            "tick": 1321,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1321,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
             "tick": 1322,
             "type": "mouse",
             "buttons": 0,
@@ -4824,6 +6099,23 @@
             "dy": 0
         },
         {
+            "tick": 1327,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1327,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
             "tick": 1328,
             "type": "mouse",
             "buttons": 0,
@@ -4836,6 +6128,15 @@
             "buttons": 0,
             "dx": -8,
             "dy": 0
+        },
+        {
+            "tick": 1333,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 1334,
@@ -4900,6 +6201,15 @@
             "buttons": 0,
             "dx": 124,
             "dy": 0
+        },
+        {
+            "tick": 1350,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1351,
@@ -4986,6 +6296,15 @@
             "dy": 0
         },
         {
+            "tick": 1367,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1377,
             "type": "mouse",
             "buttons": 0,
@@ -5033,6 +6352,15 @@
             "buttons": 0,
             "dx": 5,
             "dy": 0
+        },
+        {
+            "tick": 1384,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1390,
@@ -5147,6 +6475,15 @@
             "buttons": 0,
             "dx": -6,
             "dy": 0
+        },
+        {
+            "tick": 1418,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 1419,
@@ -5292,6 +6629,23 @@
             "dy": 0
         },
         {
+            "tick": 1432,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1432,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
+        },
+        {
             "tick": 1433,
             "type": "keydown",
             "key": 175
@@ -5336,6 +6690,15 @@
             "buttons": 0,
             "dx": -5,
             "dy": 0
+        },
+        {
+            "tick": 1435,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1436,
@@ -5383,6 +6746,15 @@
             "tick": 1450,
             "type": "keydown",
             "key": 353
+        },
+        {
+            "tick": 1452,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1457,
@@ -5481,6 +6853,15 @@
             "dy": 0
         },
         {
+            "tick": 1469,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1470,
             "type": "mouse",
             "buttons": 0,
@@ -5528,6 +6909,15 @@
             "buttons": 0,
             "dx": 1,
             "dy": 0
+        },
+        {
+            "tick": 1486,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1492,
@@ -5671,6 +7061,14 @@
             "dy": 0
         },
         {
+            "tick": 1509,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
             "tick": 1510,
             "type": "mouse",
             "buttons": 0,
@@ -5742,6 +7140,15 @@
             "buttons": 0,
             "dx": -4,
             "dy": 0
+        },
+        {
+            "tick": 1520,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 1522,
@@ -5825,6 +7232,35 @@
             "key": 173
         },
         {
+            "tick": 1534,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 15,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 1534,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 43
+            }
+        },
+        {
+            "tick": 1537,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1538,
             "type": "mouse",
             "buttons": 1,
@@ -5896,11 +7332,60 @@
             "dy": 0
         },
         {
+            "tick": 1548,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 15,
+                "healthLeft": -10
+            }
+        },
+        {
+            "tick": 1548,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 1,
+                "x": 2884.99,
+                "y": -2782.97,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 1548,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 42
+            }
+        },
+        {
+            "tick": 1548,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 11
+            }
+        },
+        {
             "tick": 1549,
             "type": "mouse",
             "buttons": 1,
             "dx": 1,
             "dy": 0
+        },
+        {
+            "tick": 1554,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1557,
@@ -5911,6 +7396,23 @@
             "tick": 1557,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1558,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 60,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1558,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a health bonus."
+            }
         },
         {
             "tick": 1559,
@@ -5946,6 +7448,16 @@
             "dy": 0
         },
         {
+            "tick": 1562,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 41
+            }
+        },
+        {
             "tick": 1563,
             "type": "mouse",
             "buttons": 1,
@@ -5975,6 +7487,15 @@
             "buttons": 0,
             "dx": 0,
             "dy": 0
+        },
+        {
+            "tick": 1571,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1577,
@@ -6133,6 +7654,15 @@
             "dy": 0
         },
         {
+            "tick": 1588,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1589,
             "type": "keydown",
             "key": 173
@@ -6172,6 +7702,23 @@
             "buttons": 0,
             "dx": 63,
             "dy": 0
+        },
+        {
+            "tick": 1591,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 78,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1591,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a clip."
+            }
         },
         {
             "tick": 1592,
@@ -6232,6 +7779,14 @@
             "dy": 0
         },
         {
+            "tick": 1601,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 1
+            }
+        },
+        {
             "tick": 1602,
             "type": "keydown",
             "key": 44
@@ -6268,6 +7823,15 @@
             "dy": 0
         },
         {
+            "tick": 1605,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1607,
             "type": "mouse",
             "buttons": 0,
@@ -6301,6 +7865,15 @@
             "buttons": 0,
             "dx": 29,
             "dy": 0
+        },
+        {
+            "tick": 1614,
+            "type": "assert_event",
+            "event": "PLATFORM",
+            "expect": {
+                "sectorIdx": 70,
+                "type": 1
+            }
         },
         {
             "tick": 1615,
@@ -6352,6 +7925,15 @@
             "dy": 0
         },
         {
+            "tick": 1622,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1623,
             "type": "mouse",
             "buttons": 0,
@@ -6376,9 +7958,38 @@
             "dy": 0
         },
         {
+            "tick": 1628,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 5,
+                "healthLeft": 15
+            }
+        },
+        {
+            "tick": 1628,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 45
+            }
+        },
+        {
             "tick": 1630,
             "type": "keyup",
             "key": 46
+        },
+        {
+            "tick": 1639,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1640,
@@ -6400,6 +8011,38 @@
             "buttons": 1,
             "dx": -40,
             "dy": 0
+        },
+        {
+            "tick": 1642,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 1,
+                "damage": 15,
+                "healthLeft": 0
+            }
+        },
+        {
+            "tick": 1642,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 1,
+                "x": 3015.85,
+                "y": -3548.83,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 1642,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 44
+            }
         },
         {
             "tick": 1643,
@@ -6473,6 +8116,25 @@
             "buttons": 1,
             "dx": 3,
             "dy": 0
+        },
+        {
+            "tick": 1656,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 43
+            }
+        },
+        {
+            "tick": 1656,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1657,
@@ -6662,6 +8324,15 @@
             "dy": 0
         },
         {
+            "tick": 1673,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1674,
             "type": "mouse",
             "buttons": 0,
@@ -6792,9 +8463,28 @@
             "key": 353
         },
         {
+            "tick": 1702,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 42
+            }
+        },
+        {
             "tick": 1703,
             "type": "keyup",
             "key": 44
+        },
+        {
+            "tick": 1707,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1710,
@@ -6832,11 +8522,51 @@
             "dy": 0
         },
         {
+            "tick": 1716,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 5,
+                "healthLeft": 55
+            }
+        },
+        {
+            "tick": 1716,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 41
+            }
+        },
+        {
             "tick": 1727,
             "type": "mouse",
             "buttons": 1,
             "dx": -1,
             "dy": 0
+        },
+        {
+            "tick": 1730,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": 45
+            }
+        },
+        {
+            "tick": 1730,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 40
+            }
         },
         {
             "tick": 1733,
@@ -6859,6 +8589,16 @@
             "buttons": 1,
             "dx": 1,
             "dy": 0
+        },
+        {
+            "tick": 1744,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 39
+            }
         },
         {
             "tick": 1745,
@@ -6967,6 +8707,16 @@
             "dy": 0
         },
         {
+            "tick": 1758,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 38
+            }
+        },
+        {
             "tick": 1759,
             "type": "mouse",
             "buttons": 1,
@@ -6993,6 +8743,15 @@
             "buttons": 1,
             "dx": 1,
             "dy": 0
+        },
+        {
+            "tick": 1768,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 5
+            }
         },
         {
             "tick": 1769,
@@ -7023,6 +8782,26 @@
             "dy": 0
         },
         {
+            "tick": 1772,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 30
+            }
+        },
+        {
+            "tick": 1772,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 37
+            }
+        },
+        {
             "tick": 1773,
             "type": "mouse",
             "buttons": 1,
@@ -7045,6 +8824,16 @@
             "tick": 1779,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1786,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 36
+            }
         },
         {
             "tick": 1787,
@@ -7109,6 +8898,26 @@
             "key": 175
         },
         {
+            "tick": 1800,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": 20
+            }
+        },
+        {
+            "tick": 1800,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 35
+            }
+        },
+        {
             "tick": 1802,
             "type": "mouse",
             "buttons": 1,
@@ -7151,6 +8960,26 @@
             "dy": 0
         },
         {
+            "tick": 1814,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 15,
+                "healthLeft": 5
+            }
+        },
+        {
+            "tick": 1814,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 34
+            }
+        },
+        {
             "tick": 1820,
             "type": "keydown",
             "key": 175
@@ -7166,11 +8995,62 @@
             "key": 175
         },
         {
+            "tick": 1828,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 1828,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 11,
+                "x": 3388.32,
+                "y": -3489.78,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 1828,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 33
+            }
+        },
+        {
+            "tick": 1842,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 32
+            }
+        },
+        {
             "tick": 1849,
             "type": "mouse",
             "buttons": 0,
             "dx": 0,
             "dy": 0
+        },
+        {
+            "tick": 1857,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1858,
@@ -7254,6 +9134,15 @@
             "buttons": 0,
             "dx": 1,
             "dy": 0
+        },
+        {
+            "tick": 1874,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 1875,
@@ -7445,6 +9334,15 @@
             "dy": 0
         },
         {
+            "tick": 1891,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1892,
             "type": "keydown",
             "key": 173
@@ -7564,6 +9462,23 @@
             "key": 375
         },
         {
+            "tick": 1899,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 78,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1899,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a clip."
+            }
+        },
+        {
             "tick": 1900,
             "type": "keydown",
             "key": 173
@@ -7667,6 +9582,15 @@
             "buttons": 0,
             "dx": -33,
             "dy": 0
+        },
+        {
+            "tick": 1908,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 1909,
@@ -7847,7 +9771,7 @@
                     0
                 ],
                 "x": 2997.98,
-                "y": -3682.40,
+                "y": -3682.4,
                 "z": -24,
                 "angle": 3171942400,
                 "momx": -1.03,
@@ -7892,10 +9816,15 @@
             }
         },
         {
-          "tick": 1920,
-          "type": "assert",
-          "target": "settings",
-          "expect": { "gamestate": 0, "gameepisode": 1, "gamemap": 1, "gameskill": 2}
+            "tick": 1920,
+            "type": "assert",
+            "target": "settings",
+            "expect": {
+                "gamestate": 0,
+                "gameepisode": 1,
+                "gamemap": 1,
+                "gameskill": 2
+            }
         },
         {
             "tick": 1920,
@@ -7913,10 +9842,12 @@
             "key": 375
         },
         {
-          "tick": 1921,
-          "type": "set",
-          "target": "settings",
-          "patch": { "screenblocks": 10}
+            "tick": 1921,
+            "type": "set",
+            "target": "settings",
+            "patch": {
+                "screenblocks": 10
+            }
         },
         {
             "tick": 1922,
@@ -7989,6 +9920,15 @@
             "key": 44
         },
         {
+            "tick": 1942,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1943,
             "type": "mouse",
             "buttons": 0,
@@ -8045,6 +9985,23 @@
             "dy": 0
         },
         {
+            "tick": 1951,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 84,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 1951,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up 4 shotgun shells."
+            }
+        },
+        {
             "tick": 1957,
             "type": "keyup",
             "key": 173
@@ -8060,9 +10017,27 @@
             "key": 357
         },
         {
+            "tick": 1959,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 76,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 1961,
             "type": "keyup",
             "key": 32
+        },
+        {
+            "tick": 1962,
+            "type": "assert_event",
+            "event": "ENEMY_AWAKENED",
+            "expect": {
+                "mobjType": 11
+            }
         },
         {
             "tick": 1965,
@@ -8106,6 +10081,15 @@
             "buttons": 0,
             "dx": 5,
             "dy": 0
+        },
+        {
+            "tick": 1976,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 1981,
@@ -8221,6 +10205,15 @@
             "dy": 0
         },
         {
+            "tick": 1993,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 1994,
             "type": "keydown",
             "key": 173
@@ -8249,6 +10242,26 @@
             "tick": 1996,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 1997,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 5,
+                "healthLeft": 55
+            }
+        },
+        {
+            "tick": 1997,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 36
+            }
         },
         {
             "tick": 1998,
@@ -8382,6 +10395,26 @@
             "dy": 0
         },
         {
+            "tick": 2011,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 5,
+                "healthLeft": 50
+            }
+        },
+        {
+            "tick": 2011,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 35
+            }
+        },
+        {
             "tick": 2012,
             "type": "mouse",
             "buttons": 1,
@@ -8425,6 +10458,35 @@
             "key": 175
         },
         {
+            "tick": 2025,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": 40
+            }
+        },
+        {
+            "tick": 2025,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 34
+            }
+        },
+        {
+            "tick": 2027,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2037,
             "type": "keydown",
             "key": 44
@@ -8442,11 +10504,51 @@
             "dy": 0
         },
         {
+            "tick": 2039,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 30,
+                "damage": 10,
+                "healthLeft": 10
+            }
+        },
+        {
+            "tick": 2039,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 33
+            }
+        },
+        {
             "tick": 2040,
             "type": "mouse",
             "buttons": 1,
             "dx": 15,
             "dy": 0
+        },
+        {
+            "tick": 2040,
+            "type": "assert_event",
+            "event": "PLAYER_DAMAGED",
+            "expect": {
+                "damage": 10,
+                "health": 91,
+                "armor": 100,
+                "attackerType": 11
+            }
+        },
+        {
+            "tick": 2040,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 7
+            }
         },
         {
             "tick": 2041,
@@ -8551,6 +10653,26 @@
             "dy": 0
         },
         {
+            "tick": 2053,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 10,
+                "healthLeft": 30
+            }
+        },
+        {
+            "tick": 2053,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 32
+            }
+        },
+        {
             "tick": 2054,
             "type": "mouse",
             "buttons": 1,
@@ -8640,6 +10762,16 @@
             "dy": 0
         },
         {
+            "tick": 2067,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 31
+            }
+        },
+        {
             "tick": 2068,
             "type": "mouse",
             "buttons": 1,
@@ -8727,6 +10859,38 @@
             "dy": 0
         },
         {
+            "tick": 2081,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 30,
+                "damage": 15,
+                "healthLeft": -5
+            }
+        },
+        {
+            "tick": 2081,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 30,
+                "x": 2941.29,
+                "y": -4332.47,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 2081,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 30
+            }
+        },
+        {
             "tick": 2082,
             "type": "mouse",
             "buttons": 1,
@@ -8756,6 +10920,15 @@
             "buttons": 1,
             "dx": -14,
             "dy": 0
+        },
+        {
+            "tick": 2084,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2085,
@@ -8880,6 +11053,70 @@
             "dy": 0
         },
         {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 29
+            }
+        },
+        {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "EXPLOSION",
+            "expect": {
+                "x": 2936.73,
+                "y": -4347.22,
+                "damage": 128
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 30,
+                "damage": 31,
+                "healthLeft": -11
+            }
+        },
+        {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 30,
+                "x": 2832,
+                "y": -4240,
+                "byPlayer": 1
+            }
+        },
+        {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "ENEMY_DAMAGED",
+            "expect": {
+                "mobjType": 11,
+                "damage": 38,
+                "healthLeft": -8
+            }
+        },
+        {
+            "tick": 2095,
+            "type": "assert_event",
+            "event": "ENEMY_KILLED",
+            "expect": {
+                "mobjType": 11,
+                "x": 3047.43,
+                "y": -4300.1,
+                "byPlayer": 1
+            },
+            "tol": 0.01
+        },
+        {
             "tick": 2096,
             "type": "mouse",
             "buttons": 1,
@@ -8906,6 +11143,15 @@
             "dy": 0
         },
         {
+            "tick": 2101,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2106,
             "type": "mouse",
             "buttons": 0,
@@ -8921,6 +11167,36 @@
             "tick": 2107,
             "type": "keydown",
             "key": 353
+        },
+        {
+            "tick": 2108,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 5
+            }
+        },
+        {
+            "tick": 2109,
+            "type": "assert_event",
+            "event": "WEAPON_FIRED",
+            "expect": {
+                "weapon": 1,
+                "ammoType": 0,
+                "ammoLeft": 28
+            }
+        },
+        {
+            "tick": 2109,
+            "type": "assert_event",
+            "event": "EXPLOSION",
+            "expect": {
+                "x": 2809.72,
+                "y": -4217.18,
+                "damage": 128
+            },
+            "tol": 0.01
         },
         {
             "tick": 2113,
@@ -8978,6 +11254,15 @@
             "buttons": 0,
             "dx": -8,
             "dy": 0
+        },
+        {
+            "tick": 2124,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2126,
@@ -9204,6 +11489,15 @@
             "dy": 0
         },
         {
+            "tick": 2158,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2164,
             "type": "mouse",
             "buttons": 0,
@@ -9303,6 +11597,23 @@
             "dy": 0
         },
         {
+            "tick": 2183,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 69,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2183,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a medikit."
+            }
+        },
+        {
             "tick": 2184,
             "type": "mouse",
             "buttons": 0,
@@ -9318,6 +11629,15 @@
             "tick": 2186,
             "type": "keydown",
             "key": 353
+        },
+        {
+            "tick": 2192,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2193,
@@ -9382,6 +11702,23 @@
             "tick": 2200,
             "type": "keydown",
             "key": 353
+        },
+        {
+            "tick": 2200,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2200,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
         },
         {
             "tick": 2201,
@@ -9578,6 +11915,15 @@
             "key": 356
         },
         {
+            "tick": 2226,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2227,
             "type": "keydown",
             "key": 46
@@ -9673,6 +12019,15 @@
             "key": 356
         },
         {
+            "tick": 2260,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2262,
             "type": "keyup",
             "key": 46
@@ -9764,6 +12119,16 @@
             "key": 357
         },
         {
+            "tick": 2298,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 76,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 2300,
             "type": "keyup",
             "key": 32
@@ -9844,6 +12209,15 @@
             "key": 375
         },
         {
+            "tick": 2328,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2330,
             "type": "keydown",
             "key": 173
@@ -9982,6 +12356,15 @@
             "tick": 2345,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 2345,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2346,
@@ -10185,6 +12568,15 @@
             "buttons": 0,
             "dx": 10,
             "dy": 0
+        },
+        {
+            "tick": 2362,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 2363,
@@ -10456,6 +12848,15 @@
             "dy": 0
         },
         {
+            "tick": 2379,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2380,
             "type": "keydown",
             "key": 173
@@ -10605,6 +13006,15 @@
             "tick": 2395,
             "type": "keyup",
             "key": 46
+        },
+        {
+            "tick": 2396,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 2403,
@@ -10784,6 +13194,15 @@
             "dy": 0
         },
         {
+            "tick": 2447,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2448,
             "type": "mouse",
             "buttons": 0,
@@ -10907,6 +13326,15 @@
             "key": 356
         },
         {
+            "tick": 2481,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2484,
             "type": "keydown",
             "key": 46
@@ -10935,6 +13363,17 @@
             "tick": 2486,
             "type": "keydown",
             "key": 356
+        },
+        {
+            "tick": 2486,
+            "type": "assert_event",
+            "event": "SECRET_FOUND",
+            "expect": {
+                "secretCount": 1,
+                "x": 3324.78,
+                "y": -3780.68
+            },
+            "tol": 0.01
         },
         {
             "tick": 2488,
@@ -11112,6 +13551,23 @@
             "key": 44
         },
         {
+            "tick": 2505,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 85,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2505,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a box of shotgun shells."
+            }
+        },
+        {
             "tick": 2507,
             "type": "keydown",
             "key": 46
@@ -11146,6 +13602,32 @@
             "buttons": 0,
             "dx": -77,
             "dy": 0
+        },
+        {
+            "tick": 2518,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 92,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2518,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 6,
+                "priority": 8
+            }
+        },
+        {
+            "tick": 2518,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "You got the shotgun!"
+            }
         },
         {
             "tick": 2519,
@@ -11223,6 +13705,15 @@
             "buttons": 0,
             "dx": -35,
             "dy": 0
+        },
+        {
+            "tick": 2533,
+            "type": "assert_event",
+            "event": "WEAPON_CHANGED",
+            "expect": {
+                "from": 1,
+                "to": 2
+            }
         },
         {
             "tick": 2542,
@@ -11323,6 +13814,15 @@
             "dy": 0
         },
         {
+            "tick": 2588,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2589,
             "type": "mouse",
             "buttons": 0,
@@ -11400,6 +13900,15 @@
             "dy": 0
         },
         {
+            "tick": 2605,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2614,
             "type": "mouse",
             "buttons": 0,
@@ -11463,6 +13972,15 @@
             "dy": 0
         },
         {
+            "tick": 2622,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2632,
             "type": "mouse",
             "buttons": 0,
@@ -11520,6 +14038,15 @@
             "buttons": 0,
             "dx": -13,
             "dy": 0
+        },
+        {
+            "tick": 2639,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2640,
@@ -11775,6 +14302,32 @@
             "key": 353
         },
         {
+            "tick": 2706,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 84,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2706,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up 4 shotgun shells."
+            }
+        },
+        {
+            "tick": 2707,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2709,
             "type": "keydown",
             "key": 44
@@ -11873,6 +14426,15 @@
             "tick": 2724,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 2724,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2726,
@@ -12040,6 +14602,15 @@
             "dy": 0
         },
         {
+            "tick": 2741,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2742,
             "type": "mouse",
             "buttons": 0,
@@ -12197,6 +14768,15 @@
             "buttons": 0,
             "dx": -44,
             "dy": 0
+        },
+        {
+            "tick": 2758,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 2759,
@@ -12397,6 +14977,15 @@
             "buttons": 0,
             "dx": -8,
             "dy": 0
+        },
+        {
+            "tick": 2775,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 2776,
@@ -12837,6 +15426,15 @@
             "dy": 0
         },
         {
+            "tick": 2809,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2810,
             "type": "keydown",
             "key": 173
@@ -13033,6 +15631,25 @@
             "key": 357
         },
         {
+            "tick": 2825,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 68,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
+            "tick": 2826,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2827,
             "type": "keyup",
             "key": 32
@@ -13061,6 +15678,15 @@
             "tick": 2842,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 2843,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 2851,
@@ -13190,6 +15816,26 @@
             "buttons": 0,
             "dx": 37,
             "dy": 0
+        },
+        {
+            "tick": 2860,
+            "type": "assert_event",
+            "event": "SECRET_FOUND",
+            "expect": {
+                "secretCount": 2,
+                "x": 2942.27,
+                "y": -3846.71
+            },
+            "tol": 0.01
+        },
+        {
+            "tick": 2860,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 2861,
@@ -13447,6 +16093,15 @@
             "key": 375
         },
         {
+            "tick": 2877,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2878,
             "type": "keydown",
             "key": 173
@@ -13629,6 +16284,15 @@
             "dy": 0
         },
         {
+            "tick": 2894,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2895,
             "type": "keydown",
             "key": 173
@@ -13797,6 +16461,23 @@
             "key": 44
         },
         {
+            "tick": 2926,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 79,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2926,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a box of bullets."
+            }
+        },
+        {
             "tick": 2936,
             "type": "mouse",
             "buttons": 0,
@@ -13881,6 +16562,23 @@
             "dy": 0
         },
         {
+            "tick": 2956,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 85,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 2956,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a box of shotgun shells."
+            }
+        },
+        {
             "tick": 2957,
             "type": "mouse",
             "buttons": 0,
@@ -13921,6 +16619,15 @@
             "buttons": 0,
             "dx": 83,
             "dy": 0
+        },
+        {
+            "tick": 2962,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 2963,
@@ -13979,6 +16686,15 @@
             "dy": 0
         },
         {
+            "tick": 2979,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 2980,
             "type": "mouse",
             "buttons": 0,
@@ -14012,6 +16728,15 @@
             "buttons": 0,
             "dx": -3,
             "dy": 0
+        },
+        {
+            "tick": 2996,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 2997,
@@ -14140,6 +16865,15 @@
             "dy": 0
         },
         {
+            "tick": 3030,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3031,
             "type": "mouse",
             "buttons": 0,
@@ -14174,6 +16908,15 @@
             "tick": 3041,
             "type": "keyup",
             "key": 44
+        },
+        {
+            "tick": 3047,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 3048,
@@ -14260,6 +17003,23 @@
             "dy": 0
         },
         {
+            "tick": 3059,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 56,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 3059,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up the MegaArmor!"
+            }
+        },
+        {
             "tick": 3060,
             "type": "mouse",
             "buttons": 0,
@@ -14310,6 +17070,26 @@
             "buttons": 0,
             "dx": 5,
             "dy": 0
+        },
+        {
+            "tick": 3069,
+            "type": "assert_event",
+            "event": "PLAYER_DAMAGED",
+            "expect": {
+                "damage": 3,
+                "health": 97,
+                "armor": 198,
+                "attackerType": 4294967295
+            }
+        },
+        {
+            "tick": 3069,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 7,
+                "priority": 6
+            }
         },
         {
             "tick": 3070,
@@ -14574,6 +17354,15 @@
             "key": 44
         },
         {
+            "tick": 3105,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3113,
             "type": "mouse",
             "buttons": 0,
@@ -14642,6 +17431,15 @@
             "buttons": 0,
             "dx": 84,
             "dy": 0
+        },
+        {
+            "tick": 3122,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3123,
@@ -14849,6 +17647,15 @@
             "dy": 0
         },
         {
+            "tick": 3190,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3197,
             "type": "mouse",
             "buttons": 0,
@@ -14915,6 +17722,23 @@
             "dy": 0
         },
         {
+            "tick": 3204,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 69,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 3204,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up a medikit."
+            }
+        },
+        {
             "tick": 3205,
             "type": "keyup",
             "key": 44
@@ -14969,6 +17793,15 @@
             "dy": 0
         },
         {
+            "tick": 3241,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3257,
             "type": "mouse",
             "buttons": 0,
@@ -14981,6 +17814,15 @@
             "buttons": 0,
             "dx": 12,
             "dy": 0
+        },
+        {
+            "tick": 3258,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 3259,
@@ -15088,6 +17930,15 @@
             "dy": 0
         },
         {
+            "tick": 3275,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3276,
             "type": "mouse",
             "buttons": 0,
@@ -15173,6 +18024,16 @@
             "key": 357
         },
         {
+            "tick": 3289,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 68,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 3292,
             "type": "keyup",
             "key": 32
@@ -15201,6 +18062,15 @@
             "tick": 3306,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 3309,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3315,
@@ -15604,6 +18474,15 @@
             "dy": 0
         },
         {
+            "tick": 3343,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3344,
             "type": "keydown",
             "key": 173
@@ -15755,9 +18634,28 @@
             "key": 357
         },
         {
+            "tick": 3354,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 76,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 3356,
             "type": "keyup",
             "key": 32
+        },
+        {
+            "tick": 3360,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3361,
@@ -15790,6 +18688,15 @@
             "key": 175
         },
         {
+            "tick": 3377,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3380,
             "type": "keydown",
             "key": 173
@@ -15858,6 +18765,15 @@
             "tick": 3394,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 3394,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3395,
@@ -15998,6 +18914,15 @@
             "tick": 3411,
             "type": "keydown",
             "key": 375
+        },
+        {
+            "tick": 3411,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 3412,
@@ -16083,6 +19008,15 @@
             "tick": 3420,
             "type": "keyup",
             "key": 173
+        },
+        {
+            "tick": 3445,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 1,
+                "priority": 0
+            }
         },
         {
             "tick": 3447,
@@ -16170,9 +19104,44 @@
             "key": 371
         },
         {
+            "tick": 3499,
+            "type": "assert_event",
+            "event": "CHEAT_ACTIVATED",
+            "expect": {
+                "cheat": 7,
+                "param": 0
+            }
+        },
+        {
+            "tick": 3499,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "... doesn't suck - GM"
+            }
+        },
+        {
             "tick": 3502,
             "type": "keyup",
             "key": 175
+        },
+        {
+            "tick": 3513,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
+            "tick": 3530,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3531,
@@ -16203,6 +19172,15 @@
             "tick": 3544,
             "type": "keyup",
             "key": 49
+        },
+        {
+            "tick": 3557,
+            "type": "assert_event",
+            "event": "WEAPON_CHANGED",
+            "expect": {
+                "from": 2,
+                "to": 7
+            }
         },
         {
             "tick": 3558,
@@ -16248,6 +19226,15 @@
             "buttons": 0,
             "dx": -71,
             "dy": 0
+        },
+        {
+            "tick": 3564,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
         },
         {
             "tick": 3565,
@@ -16464,6 +19451,15 @@
             "key": 375
         },
         {
+            "tick": 3581,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3582,
             "type": "keydown",
             "key": 173
@@ -16562,6 +19558,15 @@
             "dy": 0
         },
         {
+            "tick": 3598,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3602,
             "type": "mouse",
             "buttons": 0,
@@ -16612,6 +19617,16 @@
             "key": 357
         },
         {
+            "tick": 3607,
+            "type": "assert_event",
+            "event": "DOOR",
+            "expect": {
+                "sectorIdx": 81,
+                "type": 0,
+                "direction": 1
+            }
+        },
+        {
             "tick": 3609,
             "type": "keyup",
             "key": 32
@@ -16625,6 +19640,15 @@
             "tick": 3614,
             "type": "keydown",
             "key": 371
+        },
+        {
+            "tick": 3615,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 0,
+                "priority": 0
+            }
         },
         {
             "tick": 3619,
@@ -16775,6 +19799,41 @@
             "tick": 3647,
             "type": "keydown",
             "key": 353
+        },
+        {
+            "tick": 3649,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
+            "tick": 3651,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 3651,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 6,
+                "priority": 8
+            }
+        },
+        {
+            "tick": 3651,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
         },
         {
             "tick": 3655,
@@ -16966,6 +20025,23 @@
             "buttons": 0,
             "dx": 6,
             "dy": 0
+        },
+        {
+            "tick": 3667,
+            "type": "assert_event",
+            "event": "ITEM_PICKED_UP",
+            "expect": {
+                "itemId": 61,
+                "messageId": 0
+            }
+        },
+        {
+            "tick": 3667,
+            "type": "assert_event",
+            "event": "HUD_MESSAGE",
+            "expect": {
+                "message": "Picked up an armor bonus."
+            }
         },
         {
             "tick": 3668,
@@ -17405,6 +20481,15 @@
             "dy": 0
         },
         {
+            "tick": 3721,
+            "type": "assert_event",
+            "event": "FACE_CHANGED",
+            "expect": {
+                "faceindex": 2,
+                "priority": 0
+            }
+        },
+        {
             "tick": 3722,
             "type": "mouse",
             "buttons": 0,
@@ -17443,9 +20528,51 @@
             "dy": 0
         },
         {
+            "tick": 3727,
+            "type": "assert_event",
+            "event": "SWITCH_ACTIVATED",
+            "expect": {
+                "lineIdx": 330
+            }
+        },
+        {
+            "tick": 3727,
+            "type": "assert_event",
+            "event": "LEVEL_EXIT_TRIGGERED",
+            "expect": {
+                "secret": 0
+            }
+        },
+        {
             "tick": 3728,
             "type": "keyup",
             "key": 32
+        },
+        {
+            "tick": 3728,
+            "type": "assert_event",
+            "event": "LEVEL_COMPLETED",
+            "expect": {
+                "episode": 0,
+                "map": 0,
+                "secretExit": 0,
+                "leveltime": 3187,
+                "kills": 6,
+                "maxkills": 6,
+                "items": 11,
+                "maxitems": 37,
+                "secrets": 2,
+                "maxsecret": 3
+            }
+        },
+        {
+            "tick": 3728,
+            "type": "assert_event",
+            "event": "GAME_STATE_CHANGED",
+            "expect": {
+                "oldState": 0,
+                "newState": 1
+            }
         },
         {
             "tick": 3882,
@@ -17539,10 +20666,15 @@
             }
         },
         {
-          "tick": 3937,
-          "type": "assert",
-          "target": "settings",
-          "expect": { "gamestate": 1, "gameepisode": 1, "gamemap": 1, "gameskill": 2}
+            "tick": 3937,
+            "type": "assert",
+            "target": "settings",
+            "expect": {
+                "gamestate": 1,
+                "gameepisode": 1,
+                "gamemap": 1,
+                "gameskill": 2
+            }
         }
     ]
 }

@@ -62,6 +62,8 @@ static const char rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 #include "g_game.h"
 
+#include "wd_events.h"
+
 #define SAVEGAMESIZE 0x2c000
 #define SAVESTRINGSIZE 24
 
@@ -87,6 +89,18 @@ void G_DoSaveGame(void);
 gameaction_t gameaction;
 gamestate_t gamestate;
 skill_t gameskill;
+
+// Centralized gamestate setter so every transition surfaces a
+// GAME_STATE_CHANGED event to the host. Only emits on an actual change. All
+// `gamestate = X` sites route through this (g_game.c, d_main.c, f_finale.c).
+void G_SetGameState(gamestate_t newstate) {
+  if (newstate == gamestate) {
+    return;
+  }
+  emit_game_state_changed((uint32_t)gamestate, (uint32_t)newstate);
+  gamestate = newstate;
+}
+
 boolean respawnmonsters;
 int gameepisode;
 int gamemap;
@@ -450,7 +464,9 @@ void G_DoLoadLevel(void) {
     wipegamestate = -1; // force a wipe
   }
 
-  gamestate = GS_LEVEL;
+  G_SetGameState(GS_LEVEL);
+  emit_level_loaded((uint32_t)gameepisode, (uint32_t)gamemap,
+                    (uint32_t)gameskill);
 
   for (i = 0; i < MAXPLAYERS; i++) {
     if (playeringame[i] && players[i].playerstate == PST_DEAD) {
@@ -579,6 +595,7 @@ void G_Ticker(void) {
   for (i = 0; i < MAXPLAYERS; i++) {
     if (playeringame[i] && players[i].playerstate == PST_REBORN) {
       G_DoReborn(i);
+      emit_player_respawned();
     }
   }
 
@@ -931,6 +948,7 @@ extern char *pagename;
 
 void G_ExitLevel(void) {
   secretexit = false;
+  emit_level_exit_triggered(0);
   gameaction = ga_completed;
 }
 
@@ -942,6 +960,7 @@ void G_SecretExitLevel(void) {
   } else {
     secretexit = true;
   }
+  emit_level_exit_triggered((uint32_t)secretexit);
   gameaction = ga_completed;
 }
 
@@ -1058,7 +1077,14 @@ void G_DoCompleted(void) {
            sizeof(wminfo.plyr[i].frags));
   }
 
-  gamestate = GS_INTERMISSION;
+  emit_level_completed(
+      (uint32_t)wminfo.epsd, (uint32_t)wminfo.last, (uint32_t)secretexit,
+      (uint32_t)leveltime, (uint32_t)wminfo.plyr[consoleplayer].skills,
+      (uint32_t)wminfo.maxkills, (uint32_t)wminfo.plyr[consoleplayer].sitems,
+      (uint32_t)wminfo.maxitems, (uint32_t)wminfo.plyr[consoleplayer].ssecret,
+      (uint32_t)wminfo.maxsecret);
+
+  G_SetGameState(GS_INTERMISSION);
   viewactive = false;
   automapactive = false;
 
@@ -1097,7 +1123,7 @@ void G_WorldDone(void) {
 }
 
 void G_DoWorldDone(void) {
-  gamestate = GS_LEVEL;
+  G_SetGameState(GS_LEVEL);
   gamemap = wminfo.next + 1;
   G_DoLoadLevel();
   gameaction = ga_nothing;

@@ -46,6 +46,8 @@ static const char rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
 #include "s_sound.h"
 
 #include "doomstat.h"
+#include "wd_events.h"
+#include "wd_iface.h"
 
 // Data.
 #include "sounds.h"
@@ -743,6 +745,7 @@ void M_ChangeMessages(int choice) {
   }
 
   message_dontfuckwithme = true;
+  emit_settings_changed(WD_SF_SHOW_MESSAGES);
 }
 
 //
@@ -841,11 +844,14 @@ void M_ChangeSensitivity(int choice) {
     }
     break;
   }
+
+  emit_settings_changed(WD_SF_MOUSE_SENSITIVITY);
 }
 
 void M_ChangeDetail(int choice) {
   choice = 0;
   detailLevel = 1 - detailLevel;
+  emit_settings_changed(WD_SF_VIEWSIZE);
 
   // FIXME - does not work. Remove anyway?
   I_Warning("M_ChangeDetail: low detail mode n.a.");
@@ -877,6 +883,7 @@ void M_SizeDisplay(int choice) {
   }
 
   R_SetViewSize(screenblocks, detailLevel);
+  emit_settings_changed(WD_SF_VIEWSIZE);
 }
 
 //

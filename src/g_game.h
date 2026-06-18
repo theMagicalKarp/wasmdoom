@@ -57,6 +57,9 @@ boolean G_CheckDemoStatus(void);
 void G_ExitLevel(void);
 void G_SecretExitLevel(void);
 
+// Centralized gamestate setter; emits GAME_STATE_CHANGED on a real transition.
+void G_SetGameState(gamestate_t newstate);
+
 void G_WorldDone(void);
 
 void G_Ticker(void);

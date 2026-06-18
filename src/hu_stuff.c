@@ -39,6 +39,7 @@ static const char rcsid[] =
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+#include "wd_events.h"
 
 //
 // Locally used constants, shortcuts.
@@ -345,6 +346,16 @@ void HU_Ticker(void) {
     if ((plr->message && !message_nottobefuckedwith) ||
         (plr->message && message_dontfuckwithme)) {
       HUlib_addMessageToSText(&w_message, 0, plr->message);
+      // Mirror the message to the host as it is consumed -- a single chokepoint
+      // covering every player->message source. Length is computed inline so we
+      // don't pull in strlen here.
+      {
+        int mlen = 0;
+        while (plr->message[mlen]) {
+          mlen++;
+        }
+        emit_hud_message(plr->message, mlen);
+      }
       plr->message = 0;
       message_on = true;
       message_counter = HU_MSGTIMEOUT;

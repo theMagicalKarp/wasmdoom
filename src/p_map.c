@@ -35,6 +35,7 @@ static const char rcsid[] = "$Id: p_map.c,v 1.5 1997/02/03 22:45:11 b1 Exp $";
 // State.
 #include "doomstat.h"
 #include "r_state.h"
+#include "wd_events.h"
 // Data.
 #include "sounds.h"
 
@@ -1157,6 +1158,8 @@ void P_RadiusAttack(mobj_t *spot, mobj_t *source, int damage) {
   int yh;
 
   fixed_t dist;
+
+  emit_explosion(spot->x, spot->y, damage);
 
   dist = (damage + MAXRADIUS) << FRACBITS;
   yh = (spot->y + dist - bmaporgy) >> MAPBLOCKSHIFT;

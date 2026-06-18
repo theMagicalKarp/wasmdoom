@@ -13,11 +13,13 @@
 //       { "tick": 90, "type": "set",    "target": "map_object", "index": 3, "patch": { "health": 1 } },
 //       { "tick": 95, "type": "assert", "target": "player", "expect": { "x": 1024 }, "tol": 1 },
 //       { "tick": 96, "type": "assert", "target": "settings", "expect": { "gamemap": 1 } },
-//       { "tick": 97, "type": "set",    "target": "settings", "patch": { "sfx_volume": 3 } }
+//       { "tick": 97, "type": "set",    "target": "settings", "patch": { "sfx_volume": 3 } },
+//       { "tick": 90, "type": "assert_event", "event": "ENEMY_KILLED", "expect": { "mobjType": 9, "byPlayer": 1 }, "count": 1 }
 //     ]
 //   }
 
 import { resolveKey } from "./wasmdoom-keys.ts";
+import { EVENT_SCHEMA } from "./wasmdoom-events.ts";
 import { PLAYER_OFF, PLAYER_LEN, type Player } from "./player-layout.ts";
 import { MAP_OBJECT_OFF, type MapObject } from "./map-object-layout.ts";
 import {
@@ -72,6 +74,19 @@ export type SimCommand =
       target: "settings";
       expect: Partial<Settings>;
       tol: number;
+    }
+  // Assert a gameplay event fired on this exact tick. `event` is an EVENT name;
+  // `expect` matches decoded payload fields: numeric fields (fixed/i32/u32) by
+  // value within tol, string fields (e.g. HUD_MESSAGE message) by exact
+  // equality. With no `count`, passes if >=1 emitted event matches; with
+  // `count`, passes if exactly `count` match.
+  | {
+      tick: number;
+      type: "assert_event";
+      event: string;
+      expect: Record<string, number | string>;
+      tol: number;
+      count?: number;
     };
 
 export interface SimScript {
@@ -117,6 +132,13 @@ function expectNumber(value: unknown, field: string): number {
   return value;
 }
 
+function expectString(value: unknown, field: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`${field} must be a string (got ${JSON.stringify(value)})`);
+  }
+  return value;
+}
+
 function fieldsFor(target: StateTarget, mode: "set" | "assert"): Set<string> {
   switch (target) {
     case "player":
@@ -158,6 +180,32 @@ function parseStateFields(
   }
   if (Object.keys(out).length === 0) {
     throw new Error(`${ctx} must set at least one field`);
+  }
+  return out;
+}
+
+// Validate an `expect` object for an assert_event command: keys must be real
+// payload fields for the event's EVENT_SCHEMA. String-typed fields take a string
+// (matched by exact equality); every other field type takes a number.
+function parseEventExpect(
+  raw: unknown,
+  event: string,
+  ctx: string,
+): Record<string, number | string> {
+  if (!isObject(raw)) {
+    throw new Error(`${ctx} must be an object`);
+  }
+  const fieldType = new Map(EVENT_SCHEMA[event].map((f) => [f.name, f.type]));
+  const out: Record<string, number | string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const type = fieldType.get(key);
+    if (type === undefined) {
+      throw new Error(`${ctx}.${key}: unknown ${event} field`);
+    }
+    out[key] =
+      type === "string"
+        ? expectString(value, `${ctx}.${key}`)
+        : expectNumber(value, `${ctx}.${key}`);
   }
   return out;
 }
@@ -267,6 +315,33 @@ function parseCommand(raw: unknown, index: number): SimCommand {
         return { tick, type: "assert", target, index: idx, expect, tol };
       }
       return { tick, type: "assert", target, expect, tol };
+    }
+    case "assert_event": {
+      if (typeof raw.event !== "string" || !(raw.event in EVENT_SCHEMA)) {
+        throw new Error(
+          `commands[${index}].event must be a known EVENT name (got ${JSON.stringify(raw.event)})`,
+        );
+      }
+      const event = raw.event;
+      const expect =
+        raw.expect === undefined
+          ? {}
+          : parseEventExpect(raw.expect, event, `commands[${index}].expect`);
+      let tol = 0;
+      if (raw.tol !== undefined) {
+        tol = expectNumber(raw.tol, `commands[${index}].tol`);
+        if (tol < 0) {
+          throw new Error(`commands[${index}].tol must be >= 0`);
+        }
+      }
+      if (raw.count === undefined) {
+        return { tick, type: "assert_event", event, expect, tol };
+      }
+      const count = expectInt(raw.count, `commands[${index}].count`);
+      if (count < 0) {
+        throw new Error(`commands[${index}].count must be >= 0`);
+      }
+      return { tick, type: "assert_event", event, expect, tol, count };
     }
     default:
       throw new Error(

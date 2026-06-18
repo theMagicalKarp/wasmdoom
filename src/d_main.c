@@ -406,7 +406,7 @@ void D_DoAdvanceDemo(void) {
     } else {
       pagetic = 170;
     }
-    gamestate = GS_DEMOSCREEN;
+    G_SetGameState(GS_DEMOSCREEN);
     pagename = "TITLEPIC";
     if (gamemode == commercial) {
       S_StartMusic(mus_dm2ttl);
@@ -419,14 +419,14 @@ void D_DoAdvanceDemo(void) {
     break;
   case 2:
     pagetic = 200;
-    gamestate = GS_DEMOSCREEN;
+    G_SetGameState(GS_DEMOSCREEN);
     pagename = "CREDIT";
     break;
   case 3:
     G_DeferedPlayDemo("demo2");
     break;
   case 4:
-    gamestate = GS_DEMOSCREEN;
+    G_SetGameState(GS_DEMOSCREEN);
     if (gamemode == commercial) {
       pagetic = 35 * 11;
       pagename = "TITLEPIC";

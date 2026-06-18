@@ -60,7 +60,8 @@ typedef struct {
   int32_t x, y, z;          // fixed_t 16.16, mo-derived
   uint32_t angle;           // angle_t BAM, mo-derived
   int32_t momx, momy, momz; // fixed_t, mo-derived
-  uint32_t dirty; // host->engine: WD_PF_* bits to apply (0 on snapshot)
+  uint32_t dirty;    // host->engine: WD_PF_* bits to apply (0 on snapshot)
+  int32_t faceindex; // HUD face index 0..41, engine-computed, read-only
 } wd_player_t;
 
 _Static_assert(offsetof(wd_player_t, cards) == 64, "wd_player_t layout drift");
@@ -76,7 +77,9 @@ _Static_assert(offsetof(wd_player_t, angle) == 140, "wd_player_t layout drift");
 _Static_assert(offsetof(wd_player_t, momx) == 144, "wd_player_t layout drift");
 _Static_assert(offsetof(wd_player_t, momz) == 152, "wd_player_t layout drift");
 _Static_assert(offsetof(wd_player_t, dirty) == 156, "wd_player_t layout drift");
-_Static_assert(sizeof(wd_player_t) == 160, "wd_player_t layout drift");
+_Static_assert(offsetof(wd_player_t, faceindex) == 160,
+               "wd_player_t layout drift");
+_Static_assert(sizeof(wd_player_t) == 164, "wd_player_t layout drift");
 
 // Dirty bits for wd_player_t.dirty: the host sets bit(s) for each field it
 // wrote before calling wasmdoom_apply_player().

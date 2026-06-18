@@ -29,6 +29,7 @@ static const char rcsid[] = "$Id: p_mobj.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 #include "doomdef.h"
 #include "p_local.h"
 #include "sounds.h"
+#include "wd_events.h"
 
 #include "hu_stuff.h"
 #include "st_stuff.h"
@@ -635,6 +636,8 @@ void P_SpawnPlayer(mapthing_t *mthing) {
     // wake up the heads up text
     HU_Start();
   }
+
+  emit_player_spawned();
 }
 
 //

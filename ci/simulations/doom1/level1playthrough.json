@@ -138,8 +138,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 55,
-                "messageId": 0
+                "itemId": 55
             }
         },
         {
@@ -470,8 +469,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 92,
-                "messageId": 0
+                "itemId": 92
             }
         },
         {
@@ -880,8 +878,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -897,8 +894,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -922,8 +918,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -2632,8 +2627,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -2718,8 +2712,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -2828,8 +2821,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 55,
-                "messageId": 0
+                "itemId": 55
             }
         },
         {
@@ -5509,8 +5501,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 78,
-                "messageId": 0
+                "itemId": 78
             }
         },
         {
@@ -5626,8 +5617,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -5809,8 +5799,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -6044,8 +6033,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -6103,8 +6091,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -6633,8 +6620,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -7402,8 +7388,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 60,
-                "messageId": 0
+                "itemId": 60
             }
         },
         {
@@ -7708,8 +7693,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 78,
-                "messageId": 0
+                "itemId": 78
             }
         },
         {
@@ -9466,8 +9450,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 78,
-                "messageId": 0
+                "itemId": 78
             }
         },
         {
@@ -9989,8 +9972,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 84,
-                "messageId": 0
+                "itemId": 84
             }
         },
         {
@@ -11601,8 +11583,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 69,
-                "messageId": 0
+                "itemId": 69
             }
         },
         {
@@ -11708,8 +11689,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -13555,8 +13535,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 85,
-                "messageId": 0
+                "itemId": 85
             }
         },
         {
@@ -13608,8 +13587,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 92,
-                "messageId": 0
+                "itemId": 92
             }
         },
         {
@@ -14306,8 +14284,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 84,
-                "messageId": 0
+                "itemId": 84
             }
         },
         {
@@ -16465,8 +16442,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 79,
-                "messageId": 0
+                "itemId": 79
             }
         },
         {
@@ -16566,8 +16542,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 85,
-                "messageId": 0
+                "itemId": 85
             }
         },
         {
@@ -17007,8 +16982,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 56,
-                "messageId": 0
+                "itemId": 56
             }
         },
         {
@@ -17726,8 +17700,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 69,
-                "messageId": 0
+                "itemId": 69
             }
         },
         {
@@ -19814,8 +19787,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {
@@ -20031,8 +20003,7 @@
             "type": "assert_event",
             "event": "ITEM_PICKED_UP",
             "expect": {
-                "itemId": 61,
-                "messageId": 0
+                "itemId": 61
             }
         },
         {

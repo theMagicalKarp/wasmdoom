@@ -314,13 +314,12 @@ void emit_enemy_damaged(uint32_t mobj_type, int32_t damage,
   write_u32(p + 8, (uint32_t)health_left);
 }
 
-void emit_item_picked_up(uint32_t item_id, uint32_t message_id) {
-  uint8_t *p = begin_record(EV_ITEM_PICKED_UP, 8);
+void emit_item_picked_up(uint32_t item_id) {
+  uint8_t *p = begin_record(EV_ITEM_PICKED_UP, 4);
   if (!p) {
     return;
   }
   write_u32(p, item_id);
-  write_u32(p + 4, message_id);
 }
 
 void emit_key_obtained(uint32_t card) {

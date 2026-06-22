@@ -132,10 +132,7 @@ export const EVENT_SCHEMA: Record<string, EventField[]> = {
     { name: "damage", type: "i32" },
     { name: "healthLeft", type: "i32" },
   ],
-  ITEM_PICKED_UP: [
-    { name: "itemId", type: "u32" },
-    { name: "messageId", type: "u32" },
-  ],
+  ITEM_PICKED_UP: [{ name: "itemId", type: "u32" }],
   KEY_OBTAINED: [{ name: "card", type: "u32" }],
   SECRET_FOUND: [
     { name: "secretCount", type: "u32" },

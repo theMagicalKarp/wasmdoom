@@ -645,7 +645,7 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher) {
   }
   // Single subtyped pickup notification (all failed-pickup paths returned
   // early above). itemId is the sprite; the HUD text rides HUD_MESSAGE.
-  emit_item_picked_up((uint32_t)special->sprite, 0);
+  emit_item_picked_up((uint32_t)special->sprite);
   P_RemoveMobj(special);
   player->bonuscount += BONUSADD;
   if (player == &players[consoleplayer]) {

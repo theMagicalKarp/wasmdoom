@@ -143,7 +143,7 @@ void emit_explosion(int32_t x, int32_t y, int32_t damage);
 void emit_enemy_awakened(uint32_t mobj_type);
 void emit_enemy_damaged(uint32_t mobj_type, int32_t damage,
                         int32_t health_left);
-void emit_item_picked_up(uint32_t item_id, uint32_t message_id);
+void emit_item_picked_up(uint32_t item_id);
 void emit_key_obtained(uint32_t card);
 void emit_secret_found(uint32_t secret_count, int32_t x, int32_t y);
 void emit_locked_door_blocked(uint32_t required_key);

@@ -3,18 +3,14 @@ import { basename, join } from "node:path";
 import type { Command } from "commander";
 
 import {
-  EngineCrashError,
   loadHeadlessDoom,
   readFramebuffer,
   readPlayer,
   readMapObjects,
   readSettings,
-  writePlayer,
-  writeMapObjects,
-  writeSettings,
-  tickSafely,
   type HeadlessDoom,
 } from "#lib/wasmdoom-headless.ts";
+import { replayScript, type EventRecord } from "#lib/replay.ts";
 import { gameModeForWad } from "@wasmdoom/lib/wasmdoom-host.ts";
 import { encodePpm } from "#lib/ppm.ts";
 import {
@@ -22,6 +18,7 @@ import {
   type SimCommand,
   type StateTarget,
 } from "@wasmdoom/lib/sim-commands.ts";
+import type { DecodedEvent } from "@wasmdoom/lib/wasmdoom-events.ts";
 
 interface SimulateOptions {
   wasm: string;
@@ -39,7 +36,8 @@ interface SnapshotRecord {
   file: string;
 }
 
-interface AssertionRecord {
+interface StateAssertionRecord {
+  kind: "state";
   tick: number;
   target: StateTarget;
   index?: number;
@@ -49,6 +47,20 @@ interface AssertionRecord {
   ok: boolean;
 }
 
+interface EventAssertionRecord {
+  kind: "event";
+  tick: number;
+  event: string;
+  expect: Record<string, number | string>;
+  // How many of this tick's events matched the event name + expected fields.
+  matched: number;
+  // Expected match count when the command set `count`; null means ">=1".
+  count: number | null;
+  ok: boolean;
+}
+
+type AssertionRecord = StateAssertionRecord | EventAssertionRecord;
+
 interface SimulateResult {
   wad: string;
   wasm: string;
@@ -57,6 +69,7 @@ interface SimulateResult {
   snapshots: SnapshotRecord[];
   assertions: AssertionRecord[];
   assertionsFailed: number;
+  events: EventRecord[];
   dumpDir: string | null;
   framesDumped: number;
   errors: { source: string; message: string }[];
@@ -92,7 +105,7 @@ function fieldMatches(
 function evalAssert(
   doom: HeadlessDoom,
   cmd: Extract<SimCommand, { type: "assert" }>,
-): AssertionRecord[] {
+): StateAssertionRecord[] {
   let state: Record<string, number | number[]> | null;
   if (cmd.target === "player") {
     state = readPlayer(doom) as Record<string, number | number[]> | null;
@@ -107,6 +120,7 @@ function evalAssert(
     const value = expected as number | number[];
     const actual = state ? state[field] : undefined;
     return {
+      kind: "state",
       tick: cmd.tick,
       target: cmd.target,
       ...(cmd.target === "map_object" ? { index: cmd.index } : {}),
@@ -118,17 +132,50 @@ function evalAssert(
   });
 }
 
-function groupByTick(commands: SimCommand[]): Map<number, SimCommand[]> {
-  const map = new Map<number, SimCommand[]>();
-  for (const cmd of commands) {
-    const list = map.get(cmd.tick);
-    if (list) {
-      list.push(cmd);
-    } else {
-      map.set(cmd.tick, [cmd]);
+// True if a decoded event matches every expected payload field: numeric
+// expectations match within tol, string expectations (e.g. HUD_MESSAGE message)
+// match by exact equality.
+function eventMatches(
+  ev: DecodedEvent,
+  expect: Record<string, number | string>,
+  tol: number,
+): boolean {
+  for (const [field, expected] of Object.entries(expect)) {
+    const actual = ev.fields[field];
+    if (typeof expected === "string") {
+      if (actual !== expected) {
+        return false;
+      }
+    } else if (
+      typeof actual !== "number" ||
+      !withinTol(actual, expected, tol)
+    ) {
+      return false;
     }
   }
-  return map;
+  return true;
+}
+
+// Evaluate an assert_event against the events that fired on its tick: count how
+// many match the event name + expected fields. Pass = exactly `count` when set,
+// else >= 1.
+function evalAssertEvent(
+  tickEvents: DecodedEvent[],
+  cmd: Extract<SimCommand, { type: "assert_event" }>,
+): EventAssertionRecord {
+  const matched = tickEvents.filter(
+    (ev) => ev.event === cmd.event && eventMatches(ev, cmd.expect, cmd.tol),
+  ).length;
+  const ok = cmd.count === undefined ? matched >= 1 : matched === cmd.count;
+  return {
+    kind: "event",
+    tick: cmd.tick,
+    event: cmd.event,
+    expect: cmd.expect,
+    matched,
+    count: cmd.count ?? null,
+    ok,
+  };
 }
 
 async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
@@ -171,128 +218,106 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
     flags,
   });
 
-  const byTick = groupByTick(script.commands);
   const snapshots: SnapshotRecord[] = [];
   const assertions: AssertionRecord[] = [];
-
-  let mouseButtons = 0;
-  let mouseDx = 0;
-  let mouseDy = 0;
-  let ticksRun = 0;
   let framesDumped = 0;
-  let crashed = false;
 
-  for (let tick = 0; tick < ticks; tick++) {
-    const pendingSnapshots: { name: string }[] = [];
-    const pendingAsserts: Extract<SimCommand, { type: "assert" }>[] = [];
-    const cmds = byTick.get(tick);
-    if (cmds) {
-      for (const cmd of cmds) {
-        switch (cmd.type) {
-          case "keydown":
-            doom.exports.wasmdoom_keydown(cmd.key);
-            break;
-          case "keyup":
-            doom.exports.wasmdoom_keyup(cmd.key);
-            break;
-          case "mouse":
-            mouseButtons = cmd.buttons;
-            mouseDx += cmd.dx;
-            mouseDy += cmd.dy;
-            break;
-          // set runs pre-tick so it takes effect this tick; assert runs
-          // post-tick (below) so it observes the tick's result.
-          case "set":
-            if (cmd.target === "player") {
-              writePlayer(doom, cmd.patch);
-            } else if (cmd.target === "settings") {
-              writeSettings(doom, cmd.patch);
-            } else {
-              writeMapObjects(doom, [[cmd.index, cmd.patch]]);
-            }
-            break;
-          case "assert":
-            pendingAsserts.push(cmd);
-            break;
-          case "snapshot":
-            pendingSnapshots.push({ name: cmd.name });
-            break;
-          case "wait":
-            break;
+  // replayScript drives the engine (input dispatch + tick) and collects the
+  // event stream; this onTick hook layers simulate's asserts/snapshots/dumps on
+  // top, observing post-tick state exactly as before.
+  const { events, ticksRun, crashed } = await replayScript(doom, script, {
+    ticks,
+    onTick: async ({ tick, cmds, tickEvents }) => {
+      const pendingAsserts = cmds.filter(
+        (c): c is Extract<SimCommand, { type: "assert" }> =>
+          c.type === "assert",
+      );
+      const pendingAssertEvents = cmds.filter(
+        (c): c is Extract<SimCommand, { type: "assert_event" }> =>
+          c.type === "assert_event",
+      );
+      const pendingSnapshots = cmds.filter(
+        (c): c is Extract<SimCommand, { type: "snapshot" }> =>
+          c.type === "snapshot",
+      );
+
+      for (const cmd of pendingAsserts) {
+        for (const record of evalAssert(doom, cmd)) {
+          assertions.push(record);
+          if (!record.ok) {
+            const where =
+              record.target === "map_object"
+                ? `map_object[${record.index}].${record.field}`
+                : `${record.target}.${record.field}`;
+            console.error(
+              `assert failed at tick ${tick}: ${where} expected ${JSON.stringify(record.expected)}, got ${JSON.stringify(record.actual)}`,
+            );
+          }
         }
       }
-    }
 
-    doom.exports.wasmdoom_send_mouse(mouseButtons, mouseDx, mouseDy);
-    mouseDx = 0;
-    mouseDy = 0;
-
-    try {
-      tickSafely(doom);
-    } catch (err) {
-      if (err instanceof EngineCrashError) {
-        crashed = true;
-        console.error(
-          `engine crashed at tick ${tick}: exit code ${err.exitCode}`,
-        );
-        break;
-      }
-      throw err;
-    }
-    ticksRun = tick + 1;
-
-    for (const cmd of pendingAsserts) {
-      for (const record of evalAssert(doom, cmd)) {
+      // assert_event matches only events that fired on this exact tick (the
+      // buffer is cleared each tick, so the tick is the natural boundary).
+      for (const cmd of pendingAssertEvents) {
+        const record = evalAssertEvent(tickEvents, cmd);
         assertions.push(record);
         if (!record.ok) {
-          const where =
-            record.target === "map_object"
-              ? `map_object[${record.index}].${record.field}`
-              : `${record.target}.${record.field}`;
+          const want =
+            record.count === null ? ">=1" : `exactly ${record.count}`;
           console.error(
-            `assert failed at tick ${tick}: ${where} expected ${JSON.stringify(record.expected)}, got ${JSON.stringify(record.actual)}`,
+            `assert_event failed at tick ${tick}: ${record.event} ` +
+              `expect ${JSON.stringify(record.expect)} wanted ${want} match(es), got ${record.matched}`,
           );
         }
       }
-    }
 
-    for (const { name } of pendingSnapshots) {
-      const { indices, palette } = readFramebuffer(doom);
-      const ppm = encodePpm(indices, palette);
-      const file = join("snapshots", `${name}.ppm`);
-      await writeFile(join(opts.out, file), ppm);
-      snapshots.push({ name, tick, file });
-      log(`snapshot ${name} at tick ${tick} -> ${file}`);
-    }
+      for (const { name } of pendingSnapshots) {
+        const { indices, palette } = readFramebuffer(doom);
+        const ppm = encodePpm(indices, palette);
+        const file = join("snapshots", `${name}.ppm`);
+        await writeFile(join(opts.out, file), ppm);
+        snapshots.push({ name, tick, file });
+        log(`snapshot ${name} at tick ${tick} -> ${file}`);
+      }
 
-    // Per-frame dump: one report dir per tick with post-tick player +
-    // map_object state and a screenshot, matching how asserts/snapshots read
-    // above.
-    if (opts.dump) {
-      const frameDir = join(opts.dump, String(tick).padStart(framePad, "0"));
-      await mkdir(frameDir, { recursive: true });
-      const player = readPlayer(doom); // null on title/intermission screens
-      const map_objects = readMapObjects(doom);
-      const settings = readSettings(doom);
-      const { indices, palette } = readFramebuffer(doom);
-      await Promise.all([
-        writeFile(
-          join(frameDir, "player.json"),
-          JSON.stringify(player, null, 2) + "\n",
-        ),
-        writeFile(
-          join(frameDir, "map_objects.json"),
-          JSON.stringify(map_objects, null, 2) + "\n",
-        ),
-        writeFile(
-          join(frameDir, "settings.json"),
-          JSON.stringify(settings, null, 2) + "\n",
-        ),
-        writeFile(join(frameDir, "screen.ppm"), encodePpm(indices, palette)),
-      ]);
-      framesDumped++;
-    }
-  }
+      // Per-frame dump: one report dir per tick with post-tick player +
+      // map_object state and a screenshot, matching how asserts/snapshots read
+      // above.
+      if (opts.dump) {
+        const frameDir = join(opts.dump, String(tick).padStart(framePad, "0"));
+        await mkdir(frameDir, { recursive: true });
+        const player = readPlayer(doom); // null on title/intermission screens
+        const map_objects = readMapObjects(doom);
+        const settings = readSettings(doom);
+        const { indices, palette } = readFramebuffer(doom);
+        // This tick's decoded events (event name + named fields).
+        const frameEvents = tickEvents.map((ev) => ({
+          event: ev.event,
+          fields: ev.fields,
+        }));
+        await Promise.all([
+          writeFile(
+            join(frameDir, "player.json"),
+            JSON.stringify(player, null, 2) + "\n",
+          ),
+          writeFile(
+            join(frameDir, "map_objects.json"),
+            JSON.stringify(map_objects, null, 2) + "\n",
+          ),
+          writeFile(
+            join(frameDir, "settings.json"),
+            JSON.stringify(settings, null, 2) + "\n",
+          ),
+          writeFile(
+            join(frameDir, "events.json"),
+            JSON.stringify(frameEvents, null, 2) + "\n",
+          ),
+          writeFile(join(frameDir, "screen.ppm"), encodePpm(indices, palette)),
+        ]);
+        framesDumped++;
+      }
+    },
+  });
 
   const assertionsFailed = assertions.filter((a) => !a.ok).length;
   const hadErrors = doom.errors.length > 0 || crashed || assertionsFailed > 0;
@@ -306,6 +331,7 @@ async function run(wadPath: string, opts: SimulateOptions): Promise<void> {
     snapshots,
     assertions,
     assertionsFailed,
+    events,
     dumpDir: opts.dump ?? null,
     framesDumped,
     errors: doom.errors,

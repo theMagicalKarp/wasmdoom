@@ -2,7 +2,7 @@
 // (like the WasmdoomExports type); the C side has _Static_asserts that fail the
 // build if these offsets/size ever drift.
 
-export const PLAYER_REC = 160; // sizeof(wd_player_t)
+export const PLAYER_REC = 164; // sizeof(wd_player_t)
 export const PLAYER_OFF = {
   health: 0,
   armorpoints: 4,
@@ -33,6 +33,7 @@ export const PLAYER_OFF = {
   momy: 148,
   momz: 152,
   dirty: 156, // host->engine: PLAYER_FIELD bits to apply (0 on snapshot)
+  faceindex: 160, // HUD face index 0..41, engine-computed, read-only
 } as const;
 
 // Dirty bits for the `dirty` field, mirroring the WD_PF_* enum in
@@ -100,4 +101,5 @@ export type Player = {
   momx: number; // world units (fixed_t decoded to float)
   momy: number;
   momz: number;
+  faceindex: number; // HUD face index 0..41, engine-computed, read-only
 };

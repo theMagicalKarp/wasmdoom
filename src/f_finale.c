@@ -36,6 +36,7 @@ static const char rcsid[] =
 #include "sounds.h"
 
 #include "doomstat.h"
+#include "g_game.h"
 #include "r_state.h"
 
 // ?
@@ -91,7 +92,7 @@ void F_CastDrawer(void);
 //
 void F_StartFinale(void) {
   gameaction = ga_nothing;
-  gamestate = GS_FINALE;
+  G_SetGameState(GS_FINALE);
   viewactive = false;
   automapactive = false;
 

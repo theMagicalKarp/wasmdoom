@@ -56,6 +56,7 @@ static const char rcsid[] =
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+#include "wd_events.h"
 
 //
 // STATUS BAR DATA
@@ -373,6 +374,14 @@ static int st_facecount = 0;
 // current face index, used by w_faces
 static int st_faceindex = 0;
 
+// Last face index surfaced to the host via FACE_CHANGED. -1 forces an emit on
+// the first computed face after a (re)start.
+static int st_lastfaceindex = -1;
+
+// Read-only accessor for the engine-computed HUD face, exposed on the player
+// snapshot (wasmdoom_snapshot_player) since st_faceindex is static here.
+int ST_GetFaceIndex(void) { return st_faceindex; }
+
 // holds key-type for each key box on bar
 static int keyboxes[3];
 
@@ -508,6 +517,7 @@ boolean ST_Responder(event_t *ev) {
         } else {
           plyr->message = STSTR_DQDOFF;
         }
+        emit_cheat_activated(CHEAT_GOD, (plyr->cheats & CF_GODMODE) ? 1 : 0);
       }
       // 'fa' cheat for killer fucking arsenal
       else if (cht_CheckCheat(&cheat_ammonokey, ev->data1)) {
@@ -523,6 +533,7 @@ boolean ST_Responder(event_t *ev) {
         }
 
         plyr->message = STSTR_FAADDED;
+        emit_cheat_activated(CHEAT_AMMONOKEY, 0);
       }
       // 'kfa' cheat for key full ammo
       else if (cht_CheckCheat(&cheat_ammo, ev->data1)) {
@@ -542,6 +553,7 @@ boolean ST_Responder(event_t *ev) {
         }
 
         plyr->message = STSTR_KFAADDED;
+        emit_cheat_activated(CHEAT_AMMO, 0);
       }
       // 'mus' cheat for changing music
       else if (cht_CheckCheat(&cheat_mus, ev->data1)) {
@@ -569,6 +581,7 @@ boolean ST_Responder(event_t *ev) {
             S_ChangeMusic(musnum, 1);
           }
         }
+        emit_cheat_activated(CHEAT_MUSIC, (uint32_t)musnum);
       }
       // Simplified, accepting both "noclip" and "idspispopd".
       // no clipping mode cheat
@@ -581,6 +594,7 @@ boolean ST_Responder(event_t *ev) {
         } else {
           plyr->message = STSTR_NCOFF;
         }
+        emit_cheat_activated(CHEAT_NOCLIP, (plyr->cheats & CF_NOCLIP) ? 1 : 0);
       }
       // 'behold?' power-up cheats
       for (i = 0; i < 6; i++) {
@@ -594,18 +608,21 @@ boolean ST_Responder(event_t *ev) {
           }
 
           plyr->message = STSTR_BEHOLDX;
+          emit_cheat_activated(CHEAT_POWERUP, (uint32_t)i);
         }
       }
 
       // 'behold' power-up menu
       if (cht_CheckCheat(&cheat_powerup[6], ev->data1)) {
         plyr->message = STSTR_BEHOLD;
+        emit_cheat_activated(CHEAT_BEHOLD, 0);
       }
       // 'choppers' invulnerability & chainsaw
       else if (cht_CheckCheat(&cheat_choppers, ev->data1)) {
         plyr->weaponowned[wp_chainsaw] = true;
         plyr->powers[pw_invulnerability] = true;
         plyr->message = STSTR_CHOPPERS;
+        emit_cheat_activated(CHEAT_CHOPPERS, 0);
       }
       // 'mypos' for player position
       else if (cht_CheckCheat(&cheat_mypos, ev->data1)) {
@@ -614,6 +631,7 @@ boolean ST_Responder(event_t *ev) {
                 players[consoleplayer].mo->angle, players[consoleplayer].mo->x,
                 players[consoleplayer].mo->y);
         plyr->message = buf;
+        emit_cheat_activated(CHEAT_MYPOS, 0);
       }
     }
 
@@ -662,6 +680,7 @@ boolean ST_Responder(event_t *ev) {
       // So be it.
       plyr->message = STSTR_CLEV;
       G_DeferedInitNew(gameskill, epsd, map);
+      emit_cheat_activated(CHEAT_CHANGE_LEVEL, (uint32_t)(map * 100 + epsd));
     }
   }
   return false;
@@ -809,6 +828,13 @@ void ST_updateFaceWidget(void) {
     st_faceindex = ST_calcPainOffset() + (st_randomnumber % 3);
     st_facecount = ST_STRAIGHTFACECOUNT;
     priority = 0;
+  }
+
+  // Coalesced: only surface the face to the host when the index actually
+  // changes (this runs every tick). priority is the precedence that won.
+  if (st_faceindex != st_lastfaceindex) {
+    st_lastfaceindex = st_faceindex;
+    emit_face_changed((uint32_t)st_faceindex, (uint32_t)priority);
   }
 
   st_facecount--;

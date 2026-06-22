@@ -51,6 +51,10 @@ void ST_Start(void);
 // Called by startup code.
 void ST_Init(void);
 
+// Read-only accessor for the engine-computed HUD face index (0..41). Used by
+// the player snapshot in wasmdoom.c.
+int ST_GetFaceIndex(void);
+
 // States for status bar code.
 typedef enum {
   AutomapState,

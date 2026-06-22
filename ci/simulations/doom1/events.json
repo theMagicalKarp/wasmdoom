@@ -1,0 +1,37 @@
+{
+  "ticks": 60,
+  "flags": ["-warp", "1", "1", "-skill", "4"],
+  "commands": [
+    {
+      "tick": 0,
+      "type": "assert_event",
+      "event": "FACE_CHANGED"
+    },
+    {
+      "tick": 20,
+      "type": "set",
+      "target": "settings",
+      "patch": { "sfx_volume": 7 }
+    },
+    {
+      "tick": 20,
+      "type": "assert_event",
+      "event": "SETTINGS_CHANGED",
+      "expect": { "dirtyMask": 1 },
+      "count": 1
+    },
+    {
+      "tick": 30,
+      "type": "set",
+      "target": "settings",
+      "patch": { "music_volume": 5 }
+    },
+    {
+      "tick": 30,
+      "type": "assert_event",
+      "event": "SETTINGS_CHANGED",
+      "expect": { "dirtyMask": 2 },
+      "count": 1
+    }
+  ]
+}

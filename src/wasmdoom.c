@@ -12,6 +12,7 @@
 #include "r_main.h"
 #include "r_state.h"
 #include "s_sound.h"
+#include "st_stuff.h"
 #include "v_video.h"
 #include "wasmdoom.h"
 #include "wd_events.h"
@@ -208,6 +209,9 @@ int EXPORT(wasmdoom_snapshot_player)(void) {
     wd_player_buf.momy = viewplayer->mo->momy;
     wd_player_buf.momz = viewplayer->mo->momz;
   }
+  // Engine-computed HUD face index; read-only, no dirty bit, never written
+  // back.
+  wd_player_buf.faceindex = ST_GetFaceIndex();
   return 1;
 }
 

@@ -34,6 +34,7 @@ static const char rcsid[] = "$Id: p_doors.c,v 1.4 1997/02/03 16:47:53 b1 Exp $";
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+#include "wd_events.h"
 
 #if 0
 //
@@ -192,6 +193,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing) {
     if (!p->cards[it_bluecard] && !p->cards[it_blueskull]) {
       p->message = PD_BLUEO;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_bluecard);
       return 0;
     }
     break;
@@ -204,6 +206,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing) {
     if (!p->cards[it_redcard] && !p->cards[it_redskull]) {
       p->message = PD_REDO;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_redcard);
       return 0;
     }
     break;
@@ -216,6 +219,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing) {
     if (!p->cards[it_yellowcard] && !p->cards[it_yellowskull]) {
       p->message = PD_YELLOWO;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_yellowcard);
       return 0;
     }
     break;
@@ -296,6 +300,8 @@ int EV_DoDoor(line_t *line, vldoor_e type) {
     default:
       break;
     }
+
+    emit_door((uint32_t)secnum, (uint32_t)type, door->direction);
   }
   return rtn;
 }
@@ -325,6 +331,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing) {
     if (!player->cards[it_bluecard] && !player->cards[it_blueskull]) {
       player->message = PD_BLUEK;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_bluecard);
       return;
     }
     break;
@@ -338,6 +345,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing) {
     if (!player->cards[it_yellowcard] && !player->cards[it_yellowskull]) {
       player->message = PD_YELLOWK;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_yellowcard);
       return;
     }
     break;
@@ -351,6 +359,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing) {
     if (!player->cards[it_redcard] && !player->cards[it_redskull]) {
       player->message = PD_REDK;
       S_StartSound(NULL, sfx_oof);
+      emit_locked_door_blocked((uint32_t)it_redcard);
       return;
     }
     break;
@@ -438,6 +447,8 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing) {
   // find the top and bottom of the movement range
   door->topheight = P_FindLowestCeilingSurrounding(sec);
   door->topheight -= 4 * FRACUNIT;
+
+  emit_door((uint32_t)secnum, (uint32_t)door->type, door->direction);
 }
 
 //

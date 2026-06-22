@@ -34,6 +34,7 @@ static const char rcsid[] = "$Id: p_plats.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 // State.
 #include "doomstat.h"
 #include "r_state.h"
+#include "wd_events.h"
 
 // Data.
 #include "sounds.h"
@@ -222,6 +223,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount) {
       break;
     }
     P_AddActivePlat(plat);
+    emit_platform((uint32_t)secnum, (uint32_t)type);
   }
   return rtn;
 }

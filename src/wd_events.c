@@ -181,3 +181,246 @@ void emit_save_written(int32_t slot, const uint8_t *data, int32_t data_len) {
   write_u32(p + 4, (uint32_t)(uintptr_t)data);
   write_u32(p + 8, (uint32_t)data_len);
 }
+
+// --- Gameplay events --------------------------------------------------------
+void emit_game_state_changed(uint32_t old_state, uint32_t new_state) {
+  uint8_t *p = begin_record(EV_GAME_STATE_CHANGED, 8);
+  if (!p) {
+    return;
+  }
+  write_u32(p, old_state);
+  write_u32(p + 4, new_state);
+}
+
+void emit_level_loaded(uint32_t episode, uint32_t map, uint32_t skill) {
+  uint8_t *p = begin_record(EV_LEVEL_LOADED, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, episode);
+  write_u32(p + 4, map);
+  write_u32(p + 8, skill);
+}
+
+void emit_level_completed(uint32_t episode, uint32_t map, uint32_t secret_exit,
+                          uint32_t leveltime, uint32_t kills, uint32_t maxkills,
+                          uint32_t items, uint32_t maxitems, uint32_t secrets,
+                          uint32_t maxsecret) {
+  uint8_t *p = begin_record(EV_LEVEL_COMPLETED, 40);
+  if (!p) {
+    return;
+  }
+  write_u32(p, episode);
+  write_u32(p + 4, map);
+  write_u32(p + 8, secret_exit);
+  write_u32(p + 12, leveltime);
+  write_u32(p + 16, kills);
+  write_u32(p + 20, maxkills);
+  write_u32(p + 24, items);
+  write_u32(p + 28, maxitems);
+  write_u32(p + 32, secrets);
+  write_u32(p + 36, maxsecret);
+}
+
+void emit_level_exit_triggered(uint32_t secret) {
+  uint8_t *p = begin_record(EV_LEVEL_EXIT_TRIGGERED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, secret);
+}
+
+void emit_player_spawned(void) { begin_record(EV_PLAYER_SPAWNED, 0); }
+
+void emit_player_died(uint32_t attacker_type) {
+  uint8_t *p = begin_record(EV_PLAYER_DIED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, attacker_type);
+}
+
+void emit_player_respawned(void) { begin_record(EV_PLAYER_RESPAWNED, 0); }
+
+void emit_weapon_fired(uint32_t weapon, uint32_t ammo_type, int32_t ammo_left) {
+  uint8_t *p = begin_record(EV_WEAPON_FIRED, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, weapon);
+  write_u32(p + 4, ammo_type);
+  write_u32(p + 8, (uint32_t)ammo_left);
+}
+
+void emit_weapon_changed(uint32_t from, uint32_t to) {
+  uint8_t *p = begin_record(EV_WEAPON_CHANGED, 8);
+  if (!p) {
+    return;
+  }
+  write_u32(p, from);
+  write_u32(p + 4, to);
+}
+
+void emit_player_damaged(int32_t damage, int32_t health, int32_t armor,
+                         uint32_t attacker_type) {
+  uint8_t *p = begin_record(EV_PLAYER_DAMAGED, 16);
+  if (!p) {
+    return;
+  }
+  write_u32(p, (uint32_t)damage);
+  write_u32(p + 4, (uint32_t)health);
+  write_u32(p + 8, (uint32_t)armor);
+  write_u32(p + 12, attacker_type);
+}
+
+void emit_enemy_killed(uint32_t mobj_type, int32_t x, int32_t y,
+                       uint32_t by_player) {
+  uint8_t *p = begin_record(EV_ENEMY_KILLED, 16);
+  if (!p) {
+    return;
+  }
+  write_u32(p, mobj_type);
+  write_u32(p + 4, (uint32_t)x);
+  write_u32(p + 8, (uint32_t)y);
+  write_u32(p + 12, by_player);
+}
+
+void emit_explosion(int32_t x, int32_t y, int32_t damage) {
+  uint8_t *p = begin_record(EV_EXPLOSION, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, (uint32_t)x);
+  write_u32(p + 4, (uint32_t)y);
+  write_u32(p + 8, (uint32_t)damage);
+}
+
+void emit_enemy_awakened(uint32_t mobj_type) {
+  uint8_t *p = begin_record(EV_ENEMY_AWAKENED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, mobj_type);
+}
+
+void emit_enemy_damaged(uint32_t mobj_type, int32_t damage,
+                        int32_t health_left) {
+  uint8_t *p = begin_record(EV_ENEMY_DAMAGED, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, mobj_type);
+  write_u32(p + 4, (uint32_t)damage);
+  write_u32(p + 8, (uint32_t)health_left);
+}
+
+void emit_item_picked_up(uint32_t item_id) {
+  uint8_t *p = begin_record(EV_ITEM_PICKED_UP, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, item_id);
+}
+
+void emit_key_obtained(uint32_t card) {
+  uint8_t *p = begin_record(EV_KEY_OBTAINED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, card);
+}
+
+void emit_secret_found(uint32_t secret_count, int32_t x, int32_t y) {
+  uint8_t *p = begin_record(EV_SECRET_FOUND, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, secret_count);
+  write_u32(p + 4, (uint32_t)x);
+  write_u32(p + 8, (uint32_t)y);
+}
+
+void emit_locked_door_blocked(uint32_t required_key) {
+  uint8_t *p = begin_record(EV_LOCKED_DOOR_BLOCKED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, required_key);
+}
+
+void emit_door(uint32_t sector_idx, uint32_t type, int32_t direction) {
+  uint8_t *p = begin_record(EV_DOOR, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, sector_idx);
+  write_u32(p + 4, type);
+  write_u32(p + 8, (uint32_t)direction);
+}
+
+void emit_switch_activated(uint32_t line_idx) {
+  uint8_t *p = begin_record(EV_SWITCH_ACTIVATED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, line_idx);
+}
+
+void emit_teleport(uint32_t mobj_type, int32_t x, int32_t y) {
+  uint8_t *p = begin_record(EV_TELEPORT, 12);
+  if (!p) {
+    return;
+  }
+  write_u32(p, mobj_type);
+  write_u32(p + 4, (uint32_t)x);
+  write_u32(p + 8, (uint32_t)y);
+}
+
+void emit_platform(uint32_t sector_idx, uint32_t type) {
+  uint8_t *p = begin_record(EV_PLATFORM, 8);
+  if (!p) {
+    return;
+  }
+  write_u32(p, sector_idx);
+  write_u32(p + 4, type);
+}
+
+void emit_hud_message(const char *msg, int32_t len) {
+  if (len < 0) {
+    len = 0;
+  }
+  if (len > EV_LOG_MAX) {
+    len = EV_LOG_MAX;
+  }
+  uint8_t *p = begin_record(EV_HUD_MESSAGE, (uint16_t)len);
+  if (!p) {
+    return;
+  }
+  memcpy(p, msg, (size_t)len);
+}
+
+void emit_face_changed(uint32_t faceindex, uint32_t priority) {
+  uint8_t *p = begin_record(EV_FACE_CHANGED, 8);
+  if (!p) {
+    return;
+  }
+  write_u32(p, faceindex);
+  write_u32(p + 4, priority);
+}
+
+void emit_cheat_activated(uint32_t cheat, uint32_t param) {
+  uint8_t *p = begin_record(EV_CHEAT_ACTIVATED, 8);
+  if (!p) {
+    return;
+  }
+  write_u32(p, cheat);
+  write_u32(p + 4, param);
+}
+
+void emit_settings_changed(uint32_t dirty_mask) {
+  uint8_t *p = begin_record(EV_SETTINGS_CHANGED, 4);
+  if (!p) {
+    return;
+  }
+  write_u32(p, dirty_mask);
+}

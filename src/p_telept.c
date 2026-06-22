@@ -34,6 +34,7 @@ static const char rcsid[] =
 
 // State.
 #include "r_state.h"
+#include "wd_events.h"
 
 //
 // TELEPORTATION
@@ -115,6 +116,7 @@ int EV_Teleport(line_t *line, int side, mobj_t *thing) {
 
         thing->angle = m->angle;
         thing->momx = thing->momy = thing->momz = 0;
+        emit_teleport((uint32_t)thing->type, thing->x, thing->y);
         return 1;
       }
     }

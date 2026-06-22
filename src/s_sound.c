@@ -34,6 +34,8 @@ static const char rcsid[] = "$Id: s_sound.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 #include "p_local.h"
 
 #include "doomstat.h"
+#include "wd_events.h"
+#include "wd_iface.h"
 
 // Purpose?
 const char snd_prefixen[] = {'P', 'P', 'A', 'S', 'S', 'S',
@@ -421,6 +423,7 @@ void S_SetMusicVolume(int volume) {
   I_SetMusicVolume(127);
   I_SetMusicVolume(volume);
   snd_MusicVolume = volume;
+  emit_settings_changed(WD_SF_MUSIC_VOLUME);
 }
 
 void S_SetSfxVolume(int volume) {
@@ -430,6 +433,7 @@ void S_SetSfxVolume(int volume) {
   }
 
   snd_SfxVolume = volume;
+  emit_settings_changed(WD_SF_SFX_VOLUME);
 }
 
 //

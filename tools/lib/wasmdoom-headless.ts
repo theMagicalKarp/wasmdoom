@@ -12,7 +12,12 @@ import {
   type WasmdoomExports,
 } from "@wasmdoom/lib/wasmdoom-exports.ts";
 import { stageArgv } from "@wasmdoom/lib/wasmdoom-host.ts";
-import { EVENT, readEvents } from "@wasmdoom/lib/wasmdoom-events.ts";
+import {
+  EVENT,
+  decodeEvent,
+  readEvents,
+  type DecodedEvent,
+} from "@wasmdoom/lib/wasmdoom-events.ts";
 import {
   MAP_OBJECT_FIELD,
   MAP_OBJECT_OFF,
@@ -74,13 +79,16 @@ function readEngineError(exports: WasmdoomExports): string | null {
   return null;
 }
 
-// Walk the outbound event buffer and print EV_INFO/EV_WARNING records, whose
-// payloads are the message bytes inline. Call once per tick (the buffer is
-// cleared at the start of the next tick) and after init. EV_ERROR is handled
-// separately by readEngineError, so it is skipped here.
-export function drainLogs(exports: WasmdoomExports): void {
+// Walk the outbound event buffer once, decode every record into named fields,
+// preserve the EV_INFO/EV_WARNING console logging, then clear the buffer.
+// Returns the decoded records (in append order) so callers can assert on or
+// capture them. Call once per tick (the buffer is cleared at the start of the
+// next tick) and after init. EV_ERROR is handled separately by readEngineError;
+// it is still decoded and returned here but not re-logged.
+export function drainEvents(exports: WasmdoomExports): DecodedEvent[] {
+  const events: DecodedEvent[] = [];
   if (exports.wasmdoom_events_len() === 0) {
-    return;
+    return events;
   }
   for (const { tag, payload } of readEvents(exports)) {
     if (tag === EVENT.INFO || tag === EVENT.WARNING) {
@@ -91,13 +99,17 @@ export function drainLogs(exports: WasmdoomExports): void {
         console.log(`[doom_engine] ${message}`);
       }
     }
+    events.push(decodeEvent(tag, payload));
   }
   exports.wasmdoom_events_clear();
+  return events;
 }
 
 export type HeadlessDoom = {
   exports: WasmdoomExports;
   errors: ErrorRecord[];
+  // Events emitted during wasmdoom_init (before the first tick).
+  initEvents: DecodedEvent[];
 };
 
 export async function loadHeadlessDoom(opts: {
@@ -140,9 +152,10 @@ export async function loadHeadlessDoom(opts: {
   // Run engine setup. Like a tick, it can I_Error → exit() mid-call, which traps
   // the wasm; convert any throw into an EngineCrashError, decoding the engine's
   // own error message from the event buffer when present.
+  let initEvents: DecodedEvent[] = [];
   try {
     exports.wasmdoom_init();
-    drainLogs(exports);
+    initEvents = drainEvents(exports);
   } catch (err) {
     const engineError = readEngineError(exports);
     const message =
@@ -152,16 +165,17 @@ export async function loadHeadlessDoom(opts: {
     throw new EngineCrashError(-1, message);
   }
 
-  return { exports, errors };
+  return { exports, errors, initEvents };
 }
 
 // Run a single tick, converting a wasm trap (the engine's exit()) into an
 // EngineCrashError. wasmdoom_tick clears the event buffer itself at the start of
 // each tick, so the EV_ERROR record from a crash survives for readEngineError.
-export function tickSafely(doom: HeadlessDoom): void {
+// Returns this tick's decoded events (cleared from the buffer here).
+export function tickSafely(doom: HeadlessDoom): DecodedEvent[] {
   try {
     doom.exports.wasmdoom_tick();
-    drainLogs(doom.exports);
+    return drainEvents(doom.exports);
   } catch (err) {
     const engineError = readEngineError(doom.exports);
     const message =
@@ -261,6 +275,7 @@ export function readPlayer(doom: HeadlessDoom): Player | null {
     momx: view.getInt32(PLAYER_OFF.momx, true) / 65536,
     momy: view.getInt32(PLAYER_OFF.momy, true) / 65536,
     momz: view.getInt32(PLAYER_OFF.momz, true) / 65536,
+    faceindex: view.getInt32(PLAYER_OFF.faceindex, true),
   };
 }
 

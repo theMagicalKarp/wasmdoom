@@ -37,6 +37,7 @@ static const char rcsid[] = "$Id: p_enemy.c,v 1.5 1997/02/03 22:45:11 b1 Exp $";
 // State.
 #include "doomstat.h"
 #include "r_state.h"
+#include "wd_events.h"
 
 // Data.
 #include "sounds.h"
@@ -561,6 +562,7 @@ void A_Look(mobj_t *actor) {
 
   // go into chase state
 seeyou:
+  emit_enemy_awakened((uint32_t)actor->type);
   if (actor->info->seesound) {
     int sound;
 

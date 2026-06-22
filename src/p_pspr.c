@@ -37,6 +37,16 @@ static const char rcsid[] = "$Id: p_pspr.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 #include "sounds.h"
 
 #include "p_pspr.h"
+#include "wd_events.h"
+
+// Emit WEAPON_FIRED for the player's current ready weapon. Melee weapons
+// (am_noammo) report ammoLeft 0. Called at the tail of each A_Fire*/A_Punch/
+// A_Saw action so it reflects the post-fire ammo count.
+static void P_EmitWeaponFired(player_t *player) {
+  ammotype_t ammo = weaponinfo[player->readyweapon].ammo;
+  int32_t left = (ammo == am_noammo) ? 0 : player->ammo[ammo];
+  emit_weapon_fired((uint32_t)player->readyweapon, (uint32_t)ammo, left);
+}
 
 #define LOWERSPEED FRACUNIT * 6
 #define RAISESPEED FRACUNIT * 6
@@ -328,6 +338,14 @@ void A_Lower(player_t *player, pspdef_t *psp) {
     return;
   }
 
+  // Emit before the swap, while readyweapon still holds the outgoing weapon.
+  // This is the single funnel for real weapon changes; P_BringUpWeapon runs
+  // after readyweapon has already been updated, so it can't see the "from".
+  if (player->readyweapon != player->pendingweapon) {
+    emit_weapon_changed((uint32_t)player->readyweapon,
+                        (uint32_t)player->pendingweapon);
+  }
+
   player->readyweapon = player->pendingweapon;
 
   P_BringUpWeapon(player);
@@ -391,6 +409,8 @@ void A_Punch(player_t *player, pspdef_t *psp) {
     player->mo->angle = R_PointToAngle2(player->mo->x, player->mo->y,
                                         linetarget->x, linetarget->y);
   }
+
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -432,6 +452,8 @@ void A_Saw(player_t *player, pspdef_t *psp) {
     }
   }
   player->mo->flags |= MF_JUSTATTACKED;
+
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -440,6 +462,7 @@ void A_Saw(player_t *player, pspdef_t *psp) {
 void A_FireMissile(player_t *player, pspdef_t *psp) {
   player->ammo[weaponinfo[player->readyweapon].ammo]--;
   P_SpawnPlayerMissile(player->mo, MT_ROCKET);
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -448,6 +471,7 @@ void A_FireMissile(player_t *player, pspdef_t *psp) {
 void A_FireBFG(player_t *player, pspdef_t *psp) {
   player->ammo[weaponinfo[player->readyweapon].ammo] -= BFGCELLS;
   P_SpawnPlayerMissile(player->mo, MT_BFG);
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -460,6 +484,7 @@ void A_FirePlasma(player_t *player, pspdef_t *psp) {
                weaponinfo[player->readyweapon].flashstate + (P_Random() & 1));
 
   P_SpawnPlayerMissile(player->mo, MT_PLASMA);
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -516,6 +541,7 @@ void A_FirePistol(player_t *player, pspdef_t *psp) {
 
   P_BulletSlope(player->mo);
   P_GunShot(player->mo, !player->refire);
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -536,6 +562,8 @@ void A_FireShotgun(player_t *player, pspdef_t *psp) {
   for (i = 0; i < 7; i++) {
     P_GunShot(player->mo, false);
   }
+
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -562,6 +590,8 @@ void A_FireShotgun2(player_t *player, pspdef_t *psp) {
     P_LineAttack(player->mo, angle, MISSILERANGE,
                  bulletslope + ((P_Random() - P_Random()) << 5), damage);
   }
+
+  P_EmitWeaponFired(player);
 }
 
 //
@@ -584,6 +614,7 @@ void A_FireCGun(player_t *player, pspdef_t *psp) {
   P_BulletSlope(player->mo);
 
   P_GunShot(player->mo, !player->refire);
+  P_EmitWeaponFired(player);
 }
 
 //

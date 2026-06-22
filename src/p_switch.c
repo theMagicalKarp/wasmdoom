@@ -38,6 +38,7 @@ static const char rcsid[] =
 // State.
 #include "doomstat.h"
 #include "r_state.h"
+#include "wd_events.h"
 
 //
 // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
@@ -176,6 +177,8 @@ void P_ChangeSwitchTexture(line_t *line, int useAgain) {
   int texBot;
   int i;
   int sound;
+
+  emit_switch_activated((uint32_t)(line - lines));
 
   if (!useAgain) {
     line->special = 0;

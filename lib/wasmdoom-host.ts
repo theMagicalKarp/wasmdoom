@@ -34,6 +34,30 @@ export function gameModeForWad(filename: string): GameMode {
   }
 }
 
+// Maps a URL slug (e.g. /wad/freedoom) to the exact on-disk WAD filename in
+// wads/. Filenames are case-sensitive: GitHub Pages serves them from Linux, so
+// CHEX.WAD must keep its upper case. Only doom1.wad, freedoom1.wad and
+// freedoom2.wad are committed to the repo; the other slugs resolve locally
+// (npm run dev) but their fetch 404s on Pages.
+const WAD_BY_SLUG: Record<string, string> = {
+  doom1: "doom1.wad",
+  doom: "doom.wad",
+  doom2: "doom2.wad",
+  freedoom: "freedoom1.wad",
+  freedoom1: "freedoom1.wad",
+  freedoom2: "freedoom2.wad",
+  tnt: "tnt.wad",
+  chex: "CHEX.WAD",
+};
+
+// The IWAD booted when no /wad/<slug> path is present or the slug is unknown.
+export const DEFAULT_WAD = "doom1.wad";
+
+// Resolves a slug to its WAD filename, or undefined if no such slug exists.
+export function wadForSlug(slug: string): string | undefined {
+  return WAD_BY_SLUG[slug.toLowerCase()];
+}
+
 // Mirrors WD_ARGV_BUF_CAP in src/wasmdoom.c (kept in sync by hand, like the
 // event tags). The flag tokens written into the argv buffer must fit here.
 export const ARGV_BUF_CAP = 4096;

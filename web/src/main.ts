@@ -6,6 +6,7 @@ import { runGameLoop } from "./game-loop.ts";
 import { createInput } from "./input.ts";
 import { createDoomRenderer } from "./doom-renderer.ts";
 import { createRecorder } from "./recorder.ts";
+import { flagsFromQuery, resolveWad } from "./wad-route.ts";
 import { pathJoin } from "./utils.ts";
 
 const { BASE_URL } = import.meta.env;
@@ -15,7 +16,8 @@ async function main() {
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error("missing #screen canvas element");
   }
-  const wad = "doom1.wad";
+  // The path selects the IWAD (/wad/<slug>); "/" boots the default.
+  const wad = resolveWad(window.location.pathname, BASE_URL);
   const renderer = createDoomRenderer(canvas);
   const saver = createDoomSaver({ namespace: wad });
   const audio = createDoomAudio();
@@ -52,7 +54,10 @@ async function main() {
     console.warn(`[doom_engine] ${decodeLog(view)}`),
   );
 
-  const flags = ["-mode", gameModeForWad(wad)];
+  // Query params (?skill=4&warp=1&nomonsters) become engine flags; the recorder
+  // captures them so headless replays reuse the same initialization.
+  const params = new URLSearchParams(window.location.search);
+  const flags = ["-mode", gameModeForWad(wad), ...flagsFromQuery(params)];
   doom.init(flags);
   events.drain();
 

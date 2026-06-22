@@ -1,5 +1,10 @@
 import { defineConfig, type Plugin } from "vite";
-import { createReadStream, readFileSync, statSync } from "node:fs";
+import {
+  copyFileSync,
+  createReadStream,
+  readFileSync,
+  statSync,
+} from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -56,12 +61,30 @@ function serveWasmFile(urlPath: string, filePath: string): Plugin {
   };
 }
 
+// GitHub Pages has no SPA fallback: an unmatched path like /wasmdoom/wad/doom1
+// is served its 404.html. Copy index.html to 404.html so those /wad/<slug>
+// routes boot the app (asset URLs are absolute via `base`, so they resolve from
+// any depth). The dev server already falls back to index.html, so build-only.
+function spaFallback(): Plugin {
+  return {
+    name: "spa-404-fallback",
+    apply: "build",
+    writeBundle(opts) {
+      const dir = opts.dir;
+      if (dir) {
+        copyFileSync(resolve(dir, "index.html"), resolve(dir, "404.html"));
+      }
+    },
+  };
+}
+
 export default defineConfig({
   // Served from "/" in dev; GitHub Pages deploys under a sub-path via BASE_PATH.
   base: process.env.BASE_PATH ?? "/",
   plugins: [
     serveWasmFile("/wasmdoom.wasm", wasmPath),
     serveWasmFile("/wasmdoom.music.wasm", musicWasmPath),
+    spaFallback(),
   ],
   server: {
     host: "0.0.0.0",

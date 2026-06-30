@@ -336,6 +336,7 @@ static wd_settings_t wd_settings_buf;
 // player there is no "missing" case -- the globals always exist -- so there is
 // no return flag. Call before reading wasmdoom_settings_ptr().
 void EXPORT(wasmdoom_snapshot_settings)(void) {
+  extern int saveStringEnter; // m_menu.c: true while typing a save name
   wd_settings_buf = (wd_settings_t){
       .gamestate = gamestate,
       .gameepisode = gameepisode,
@@ -347,6 +348,8 @@ void EXPORT(wasmdoom_snapshot_settings)(void) {
       .show_messages = showMessages,
       .screenblocks = screenblocks,
       .detail_level = detailLevel,
+      .menuactive = menuactive,
+      .save_string_enter = saveStringEnter,
   };
 }
 

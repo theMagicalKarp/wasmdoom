@@ -128,6 +128,8 @@ typedef struct {
   int32_t show_messages;
   int32_t screenblocks;
   int32_t detail_level;
+  int32_t menuactive;        // boolean, read-only (menu overlayed?)
+  int32_t save_string_enter; // boolean, read-only (typing a save name?)
   uint32_t dirty; // host->engine: WD_SF_* bits to apply (0 on snapshot)
 } wd_settings_t;
 
@@ -151,9 +153,13 @@ _Static_assert(offsetof(wd_settings_t, screenblocks) == 32,
                "wd_settings_t layout drift");
 _Static_assert(offsetof(wd_settings_t, detail_level) == 36,
                "wd_settings_t layout drift");
-_Static_assert(offsetof(wd_settings_t, dirty) == 40,
+_Static_assert(offsetof(wd_settings_t, menuactive) == 40,
                "wd_settings_t layout drift");
-_Static_assert(sizeof(wd_settings_t) == 44, "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, save_string_enter) == 44,
+               "wd_settings_t layout drift");
+_Static_assert(offsetof(wd_settings_t, dirty) == 48,
+               "wd_settings_t layout drift");
+_Static_assert(sizeof(wd_settings_t) == 52, "wd_settings_t layout drift");
 
 // Dirty bits for wd_settings_t.dirty: the host sets bit(s) for each writable
 // field it wrote before calling wasmdoom_apply_settings(). screenblocks and

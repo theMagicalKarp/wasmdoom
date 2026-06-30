@@ -405,6 +405,8 @@ export function readSettings(doom: HeadlessDoom): Settings {
     show_messages: i32(SETTINGS_OFF.show_messages),
     screenblocks: i32(SETTINGS_OFF.screenblocks),
     detail_level: i32(SETTINGS_OFF.detail_level),
+    menuactive: i32(SETTINGS_OFF.menuactive),
+    save_string_enter: i32(SETTINGS_OFF.save_string_enter),
   };
 }
 

@@ -2,7 +2,7 @@
 // hand (like the WasmdoomExports type); the C side has _Static_asserts that fail
 // the build if these offsets/size ever drift.
 
-export const SETTINGS_REC = 44; // sizeof(wd_settings_t)
+export const SETTINGS_REC = 52; // sizeof(wd_settings_t)
 export const SETTINGS_OFF = {
   // Read-only game state (no dirty bit; ignored by wasmdoom_apply_settings).
   gamestate: 0, // gamestate_t
@@ -16,7 +16,9 @@ export const SETTINGS_OFF = {
   show_messages: 28,
   screenblocks: 32,
   detail_level: 36,
-  dirty: 40, // host->engine: SETTINGS_FIELD bits to apply (0 on snapshot)
+  menuactive: 40, // read-only (no dirty bit); menu overlayed?
+  save_string_enter: 44, // read-only (no dirty bit); typing a save name?
+  dirty: 48, // host->engine: SETTINGS_FIELD bits to apply (0 on snapshot)
 } as const;
 
 // Dirty bits for the `dirty` field, mirroring the WD_SF_* enum in
@@ -55,4 +57,6 @@ export type Settings = {
   show_messages: number;
   screenblocks: number;
   detail_level: number;
+  menuactive: number; // read-only, menu overlayed?
+  save_string_enter: number; // read-only, typing a save name?
 };

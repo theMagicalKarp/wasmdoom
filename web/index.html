@@ -50,40 +50,90 @@
         image-rendering: pixelated;
       }
 
+      /* Viewport-relative grid overlay: a top chrome row (back / menu) and a
+         bottom row of two control cells, with safe-area padding instead of the
+         old absolute vw/svh + magic-pixel offsets. */
       #mobile-controls {
         display: none;
         position: fixed;
         inset: 0;
         pointer-events: none;
         z-index: 10;
+        box-sizing: border-box;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto 1fr auto;
+        grid-template-areas:
+          ".        topright"
+          ".        .       "
+          "leftctl  rightctl";
       }
 
       #mobile-controls.visible {
-        display: block;
+        display: grid;
       }
 
-      #joystick-left-zone {
-        position: absolute;
-        left: env(safe-area-inset-left, 0px);
-        bottom: env(safe-area-inset-bottom, 0px);
-        width: 40vw;
-        height: 50svh;
-        pointer-events: auto;
+      /* Bottom-row cells: a column of an action-button cluster stacked above the
+         joystick/d-pad zone, so the two never overlap. Sized relative to the
+         viewport. */
+      .control-cell {
+        position: relative;
+        height: clamp(200px, 42svh, 380px);
+        display: flex;
+        flex-direction: column;
+        pointer-events: none;
+      }
+      #left-controls {
+        grid-area: leftctl;
+      }
+      #right-controls {
+        grid-area: rightctl;
       }
 
+      /* Top of each cell: a horizontal cluster of action buttons. */
+      .cell-buttons {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: clamp(16px, 6vmin, 48px);
+        /* Pull the cluster up into the empty middle grid row so the buttons sit
+           higher above the joystick. */
+        margin-top: clamp(-96px, -10svh, -48px);
+        pointer-events: none;
+      }
+
+      /* Portrait has plenty of vertical room, so the full lift plus the tall
+         stick-zone leaves the buttons floating too far above the joystick.
+         Compact the cell and ease off the lift there. */
+      @media (orientation: portrait) {
+        .control-cell {
+          height: clamp(200px, 34svh, 300px);
+        }
+        .cell-buttons {
+          margin-top: clamp(-32px, -3svh, -8px);
+        }
+      }
+
+      /* Bottom of each cell: fills the remaining space and hosts the joystick or
+         d-pad. Its own stacking/positioning context for the zone + d-pad. */
+      .stick-zone {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        pointer-events: none;
+      }
+
+      #joystick-left-zone,
       #joystick-right-zone {
         position: absolute;
-        right: env(safe-area-inset-right, 0px);
-        bottom: env(safe-area-inset-bottom, 0px);
-        width: 40vw;
-        height: 50svh;
+        inset: 0;
         pointer-events: auto;
       }
 
       .action-btn {
-        position: absolute;
-        width: 18vw;
-        max-width: 96px;
+        position: relative;
+        width: clamp(56px, 14vmin, 96px);
         aspect-ratio: 1;
         border-radius: 50%;
         border: 2px solid rgba(255, 255, 255, 0.6);
@@ -96,9 +146,7 @@
         -webkit-user-select: none;
         -webkit-tap-highlight-color: transparent;
         touch-action: none;
-        transform: translateX(-50%);
         pointer-events: auto;
-        z-index: 1;
       }
 
       /* Icon drawn as a white mask so it tints with background-color and
@@ -112,20 +160,64 @@
         mask: center / 50% no-repeat;
       }
 
-      /* Fire (shoot): right, centered above the right joystick. */
-      #fire-btn {
-        left: 80vw;
-        bottom: calc(25svh + 100px);
+      /* Chrome buttons (back / menu) sit in the grid's top row, not absolutely
+         positioned, and are rounded rects rather than circles. */
+      .chrome-btn {
+        position: relative;
+        transform: none;
+        aspect-ratio: auto;
+        width: clamp(48px, 12vmin, 72px);
+        height: clamp(48px, 12vmin, 72px);
+        border-radius: 12px;
+        background: rgba(40, 40, 40, 0.55);
       }
+      #back-btn {
+        display: none; /* menu-mode only; sits next to Confirm in the right cluster */
+        background: rgba(40, 40, 40, 0.55);
+      }
+      #back-btn:active,
+      #back-btn.pressed {
+        background: rgba(90, 90, 90, 0.8);
+      }
+      #menu-btn {
+        grid-area: topright;
+        justify-self: end;
+        align-self: start;
+      }
+      .chrome-btn:active,
+      .chrome-btn.pressed {
+        background: rgba(90, 90, 90, 0.8);
+      }
+      #back-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/arrow-left.svg");
+        mask-image: url("node_modules/lucide-static/icons/arrow-left.svg");
+      }
+      #menu-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/menu.svg");
+        mask-image: url("node_modules/lucide-static/icons/menu.svg");
+      }
+
+      /* Fire (shoot): right side of the right cell's button cluster. */
       #fire-btn::before {
         -webkit-mask-image: url("node_modules/lucide-static/icons/crosshair.svg");
         mask-image: url("node_modules/lucide-static/icons/crosshair.svg");
       }
 
-      /* Use: left, centered above the left joystick. */
+      /* Weapon toggle: left of fire in the right cell's button cluster. */
+      #weapon-btn {
+        background: rgba(150, 110, 30, 0.45);
+      }
+      #weapon-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/repeat.svg");
+        mask-image: url("node_modules/lucide-static/icons/repeat.svg");
+      }
+      #weapon-btn:active,
+      #weapon-btn.pressed {
+        background: rgba(210, 160, 50, 0.8);
+      }
+
+      /* Use: in the left cell's button cluster, above the movement joystick. */
       #use-btn {
-        left: 20vw;
-        bottom: calc(25svh + 100px);
         background: rgba(60, 100, 200, 0.45);
       }
       #use-btn::before {
@@ -143,8 +235,80 @@
         background: rgba(80, 130, 240, 0.8);
       }
 
-      div.back {
-        border-radius: 25px;
+      /* D-pad: a 3x3 cross of arrow buttons, replacing the movement joystick in
+         menu mode. Hidden in-game. */
+      #dpad {
+        display: none;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        grid-template-columns: repeat(3, auto);
+        grid-template-rows: repeat(3, auto);
+        gap: 8px;
+        pointer-events: none;
+      }
+      .dpad-btn {
+        position: relative;
+        transform: none;
+        width: clamp(48px, 12vmin, 80px);
+        background: rgba(40, 40, 40, 0.55);
+      }
+      .dpad-btn:active,
+      .dpad-btn.pressed {
+        background: rgba(90, 90, 90, 0.8);
+      }
+      #dpad-up {
+        grid-column: 2;
+        grid-row: 1;
+      }
+      #dpad-left {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      #dpad-right {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      #dpad-down {
+        grid-column: 2;
+        grid-row: 3;
+      }
+      #dpad-up::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/chevron-up.svg");
+        mask-image: url("node_modules/lucide-static/icons/chevron-up.svg");
+      }
+      #dpad-down::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/chevron-down.svg");
+        mask-image: url("node_modules/lucide-static/icons/chevron-down.svg");
+      }
+      #dpad-left::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/chevron-left.svg");
+        mask-image: url("node_modules/lucide-static/icons/chevron-left.svg");
+      }
+      #dpad-right::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/chevron-right.svg");
+        mask-image: url("node_modules/lucide-static/icons/chevron-right.svg");
+      }
+
+      /* Menu mode: d-pad + back + confirm replace the in-game combat controls. */
+      #mobile-controls.menu-mode #menu-btn,
+      #mobile-controls.menu-mode #joystick-left-zone,
+      #mobile-controls.menu-mode #joystick-right-zone,
+      #mobile-controls.menu-mode #use-btn,
+      #mobile-controls.menu-mode #weapon-btn {
+        display: none;
+      }
+      #mobile-controls.menu-mode #back-btn {
+        display: flex;
+      }
+      #mobile-controls.menu-mode #dpad {
+        display: grid;
+      }
+      /* Fire button doubles as Confirm in menu mode (icon swap only). */
+      #mobile-controls.menu-mode #fire-btn::before {
+        -webkit-mask-image: url("node_modules/lucide-static/icons/check.svg");
+        mask-image: url("node_modules/lucide-static/icons/check.svg");
       }
     </style>
   </head>
@@ -152,19 +316,75 @@
     <canvas id="screen" width="320" height="200"></canvas>
     <div id="mobile-controls">
       <button
-        id="fire-btn"
-        class="action-btn"
+        id="menu-btn"
+        class="action-btn chrome-btn"
         type="button"
-        aria-label="Fire"
+        aria-label="Menu"
       ></button>
-      <button
-        id="use-btn"
-        class="action-btn"
-        type="button"
-        aria-label="Use"
-      ></button>
-      <div id="joystick-left-zone"></div>
-      <div id="joystick-right-zone"></div>
+      <div id="left-controls" class="control-cell">
+        <div class="cell-buttons">
+          <button
+            id="use-btn"
+            class="action-btn"
+            type="button"
+            aria-label="Use"
+          ></button>
+        </div>
+        <div class="stick-zone">
+          <div id="joystick-left-zone"></div>
+          <div id="dpad">
+            <button
+              id="dpad-up"
+              class="action-btn dpad-btn"
+              type="button"
+              aria-label="Up"
+            ></button>
+            <button
+              id="dpad-left"
+              class="action-btn dpad-btn"
+              type="button"
+              aria-label="Left"
+            ></button>
+            <button
+              id="dpad-right"
+              class="action-btn dpad-btn"
+              type="button"
+              aria-label="Right"
+            ></button>
+            <button
+              id="dpad-down"
+              class="action-btn dpad-btn"
+              type="button"
+              aria-label="Down"
+            ></button>
+          </div>
+        </div>
+      </div>
+      <div id="right-controls" class="control-cell">
+        <div class="cell-buttons">
+          <button
+            id="weapon-btn"
+            class="action-btn"
+            type="button"
+            aria-label="Switch weapon"
+          ></button>
+          <button
+            id="back-btn"
+            class="action-btn"
+            type="button"
+            aria-label="Back"
+          ></button>
+          <button
+            id="fire-btn"
+            class="action-btn"
+            type="button"
+            aria-label="Fire"
+          ></button>
+        </div>
+        <div class="stick-zone">
+          <div id="joystick-right-zone"></div>
+        </div>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

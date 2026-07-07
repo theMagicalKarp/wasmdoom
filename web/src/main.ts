@@ -16,6 +16,7 @@ async function main() {
   if (!(canvas instanceof HTMLCanvasElement)) {
     throw new Error("missing #screen canvas element");
   }
+  const loadingOverlay = document.getElementById("loading-overlay");
   // The path selects the IWAD (/wad/<slug>); "/" boots the default.
   const wad = resolveWad(window.location.pathname, BASE_URL);
   const renderer = createDoomRenderer(canvas);
@@ -65,6 +66,10 @@ async function main() {
   // the headless simulator replays.
   const recorder = createRecorder({ flags });
   const input = createInput({ canvas, doom: doom.exports, audio, recorder });
+
+  // Engine is initialized and the first frame is about to render; drop the
+  // boot spinner that covered the download + init.
+  loadingOverlay?.classList.add("hidden");
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {

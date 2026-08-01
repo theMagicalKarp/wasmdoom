@@ -14,22 +14,11 @@
     />
     <title>wasmdoom</title>
     <style>
-      html,
-      body {
-        margin: 0;
-        height: 100%;
-        background: #000;
-        overflow: hidden;
-        touch-action: none;
-      }
+      :root {
+        /* Height reserved for the desktop control marquee; marquee.ts sets the
+           real value when it mounts, so mobile keeps the canvas full height. */
+        --marquee-h: 0px;
 
-      body {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-      }
-
-      #screen {
         /* Padding around the canvas; grows to clear the notch in landscape. */
         --pad-x: max(
           12px,
@@ -41,13 +30,74 @@
           env(safe-area-inset-top),
           env(safe-area-inset-bottom)
         );
-        width: min(
+
+        /* Canvas width, kept up here because the marquee matches it: the sign
+           reads as part of the cabinet rather than a bar across the page. */
+        --screen-w: min(
           calc(100vw - 2 * var(--pad-x)),
-          calc((100svh - 2 * var(--pad-y)) * 320 / 200)
+          calc((100svh - 2 * var(--pad-y) - var(--marquee-h)) * 320 / 200)
         );
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        touch-action: none;
+      }
+
+      /* Column so the marquee sits in flow directly under the canvas rather
+         than pinned to the bottom of the page: at narrow widths the canvas is
+         width-limited and short, and a fixed bar would float away from it. */
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+      }
+
+      #screen {
+        width: var(--screen-w);
         height: auto;
         margin: var(--pad-y) var(--pad-x);
         image-rendering: pixelated;
+      }
+
+      /* Desktop control ticker: a bulb-marquee sign spelling out the key
+         bindings. Populated and revealed from marquee.ts (mobile never mounts
+         it). It is a plain in-flow block, so it tracks the bottom of the canvas
+         on its own; #loading-overlay and #mobile-controls are fixed and
+         z-indexed above it, so the boot spinner still covers it, and
+         pointer-events: none guarantees it can never eat the canvas click that
+         acquires pointer lock. */
+      #marquee {
+        display: none;
+        /* Containing block for the two absolutely-positioned bulb layers. */
+        position: relative;
+        /* Same width as #screen, so the sign is as wide as the picture. */
+        width: var(--screen-w);
+        height: var(--marquee-h);
+        overflow: hidden;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none;
+        background: #000;
+      }
+
+      #marquee.visible {
+        display: block;
+      }
+
+      /* Two stacked layers, both full-bar and neither ever moving: the unlit
+         socket grid underneath (painted once) and the lit bulbs on top (the
+         only thing marquee.ts repaints as the message travels). */
+      #marquee canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        display: block;
       }
 
       /* Viewport-relative grid overlay: a top chrome row (back / menu) and a
@@ -345,6 +395,7 @@
       <div class="spinner"></div>
     </div>
     <canvas id="screen" width="320" height="200"></canvas>
+    <div id="marquee" aria-hidden="true"></div>
     <div id="mobile-controls">
       <button
         id="menu-btn"

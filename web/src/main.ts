@@ -7,7 +7,8 @@ import { createInput } from "./input.ts";
 import { createDoomRenderer } from "./doom-renderer.ts";
 import { createRecorder } from "./recorder.ts";
 import { flagsFromQuery, resolveWad } from "./wad-route.ts";
-import { pathJoin } from "./utils.ts";
+import { createMarquee } from "./marquee.ts";
+import { isMobileDevice, pathJoin } from "./utils.ts";
 
 const { BASE_URL } = import.meta.env;
 
@@ -66,6 +67,12 @@ async function main() {
   // the headless simulator replays.
   const recorder = createRecorder({ flags });
   const input = createInput({ canvas, doom: doom.exports, audio, recorder });
+
+  // Desktop gets the scrolling control ticker; mobile gets the labelled
+  // on-screen buttons instead, so the same check gates both.
+  if (!isMobileDevice(navigator)) {
+    createMarquee();
+  }
 
   // Engine is initialized and the first frame is about to render; drop the
   // boot spinner that covered the download + init.
